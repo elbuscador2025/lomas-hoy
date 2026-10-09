@@ -4,12 +4,12 @@ import { config } from "@/lomas.config.mjs";
 import { hora, type Fila } from "@/lib/datos";
 
 // Pie de cada dato: fuente, hora de actualización y botón "Avisar error".
-export default function Pie({ seccion, fuente, url, fila }: { seccion: string; fuente: string; url?: string; fila?: Fila<unknown> }) {
+export default function Pie({ seccion, fuente, url, fila, minutosViejo }: { seccion: string; fuente: string; url?: string; fila?: Fila<unknown>; minutosViejo?: number }) {
   const [abierto, setAbierto] = useState(false);
   const [texto, setTexto] = useState("");
   const [enviado, setEnviado] = useState(false);
   const [falloEnvio, setFalloEnvio] = useState(false);
-  const viejo = fila?.ok_en && Date.now() - new Date(fila.ok_en).getTime() > config.horasParaAvisarDatoViejo * 3600_000;
+  const viejo = fila?.ok_en && Date.now() - new Date(fila.ok_en).getTime() > (minutosViejo ?? config.horasParaAvisarDatoViejo * 60) * 60_000;
 
   async function enviar() {
     try {

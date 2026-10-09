@@ -74,10 +74,16 @@ export const config = {
   avisos: { topePorDia: 3, diasDeVigenciaSinFecha: 7 },
 
   clima: {
-    fuente: "Open-Meteo",
+    fuente: "SMN (Ezeiza Aero) y Open-Meteo",
     url: "https://open-meteo.com/",
     latitud: -34.76,
     longitud: -58.4,
+    // Estación del Servicio Meteorológico Nacional más cercana (datos abiertos de "tiempo presente").
+    estacionSmn: "Ezeiza",
+    // El clima se vuelve a pedir si lo guardado tiene más de estos minutos (una sola consulta compartida por todos).
+    minutosFrescura: 4,
+    // Pasados estos minutos sin poder actualizarse, se avisa que puede estar viejo.
+    minutosParaAvisarViejo: 15,
   },
 
 };

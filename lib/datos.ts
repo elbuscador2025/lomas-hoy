@@ -8,9 +8,14 @@ export type Tren = { novedades: AvisoTren[] };
 export type Luz = {
   cortes: { tension: "media" | "baja" | "otra"; localidad: string | null; usuarios: number; normalizacion: string | null }[];
 };
+export type EstadoClima = { icono: string; etiqueta: string };
 export type Clima = {
-  ahora: { temp: number; sensacion: number; humedad: number; viento: number; codigo: number };
-  horas: { hora: string; temp: number; codigo: number; lluvia: number }[];
+  ahora: {
+    temp: number; sensacion: number | null; humedad: number | null; viento: number | null;
+    medidoEn: string | null; estacion: string | null; // si vino del SMN: "HH:MM" y estación
+  } & EstadoClima;
+  horas: ({ hora: string; temp: number; lluvia: number | null } & EstadoClima)[]; // desde la hora actual
+  dias: ({ fecha: string; min: number; max: number; lluvia: number | null } & EstadoClima)[];
 };
 export type Colectivos = {
   paros: { titular: string; medio: string; link: string; fecha: string }[];
@@ -65,14 +70,6 @@ export const fechaLarga = () =>
 // "MM-DD" de hoy en Argentina
 export const hoyMMDD = () =>
   new Intl.DateTimeFormat("en-CA", { timeZone: ZONA, month: "2-digit", day: "2-digit" }).format(new Date()).replace("/", "-");
-
-const CODIGOS: Record<number, string> = {
-  0: "Despejado", 1: "Mayormente despejado", 2: "Parcialmente nublado", 3: "Nublado",
-  45: "Niebla", 48: "Niebla con escarcha", 51: "Llovizna leve", 53: "Llovizna", 55: "Llovizna intensa",
-  61: "Lluvia leve", 63: "Lluvia", 65: "Lluvia fuerte", 71: "Nevada leve", 73: "Nevada", 75: "Nevada fuerte",
-  80: "Chubascos leves", 81: "Chubascos", 82: "Chubascos fuertes", 95: "Tormenta", 96: "Tormenta con granizo", 99: "Tormenta con granizo fuerte",
-};
-export const textoClima = (c: number) => CODIGOS[c] ?? "—";
 
 export type Novedad = { id: string; vista: "tren" | "luz"; gravedad: "grave" | "aviso"; titulo: string; detalle: string };
 
@@ -155,3 +152,9 @@ export function ordenarLugares(ls: Lugar[], yo: { lat: number; lng: number } | n
 }
 
 export const normalizar = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+// Fila de horas: "Ahora" y las 24 horas siguientes a la hora actual de Argentina.
+export function proximasHoras(c: Clima, ahoraAR: string) {
+  const siguientes = c.horas.filter((h) => h.hora.slice(0, 13) > ahoraAR.slice(0, 13)).slice(0, 24);
+  return [{ hora: "Ahora", temp: c.ahora.temp, icono: c.ahora.icono, etiqueta: c.ahora.etiqueta, lluvia: c.horas.find((h) => h.hora.slice(0, 13) === ahoraAR.slice(0, 13))?.lluvia ?? null }, ...siguientes];
+}

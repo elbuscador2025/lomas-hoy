@@ -1,12 +1,15 @@
 import { redis } from "@/lib/servidor";
+import { asegurarClima } from "@/lib/clima";
 
-const CLAVES = ["tren", "luz", "clima", "colectivos"];
+const CLAVES = ["tren", "luz", "colectivos"];
 
 export async function GET() {
   try {
-    const filas = await redis(CLAVES.map((k) => ["GET", `datos:${k}`]));
-    const datos = filas.filter(Boolean).map((f) => JSON.parse(f as string));
-    return Response.json(datos, { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } });
+    const filas = await redis([...CLAVES, "clima"].map((k) => ["GET", `datos:${k}`]));
+    const [tren, luz, colectivos, climaGuardado] = filas.map((f) => (f ? JSON.parse(f as string) : null));
+    const clima = await asegurarClima(climaGuardado).catch(() => climaGuardado);
+    // Cache corto en la red de Vercel: el clima, que se renueva a los 4 min, nunca llega a los 10.
+    return Response.json([tren, luz, colectivos, clima].filter(Boolean), { headers: { "Cache-Control": "public, s-maxage=60" } });
   } catch {
     return Response.json({ error: "sin base" }, { status: 503 });
   }

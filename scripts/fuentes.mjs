@@ -73,37 +73,6 @@ export function leerLuz(js, cfg) {
   return { cortes, informadoPorEnre: informado, totalEdesur: total ? Number(total) : null };
 }
 
-// ---- Clima: Open-Meteo ----
-export function leerClima(json) {
-  const c = json?.current;
-  const h = json?.hourly;
-  if (!c || !h?.time?.length) throw new Error("Respuesta de clima incompleta");
-  const desde = h.time.findIndex((t) => t > c.time);
-  const inicio = desde === -1 ? h.time.length : desde;
-  const horas = h.time.slice(inicio, inicio + 24).map((hora, i) => ({
-    hora,
-    temp: h.temperature_2m[inicio + i],
-    codigo: h.weather_code[inicio + i],
-    lluvia: h.precipitation_probability[inicio + i],
-  }));
-  return {
-    ahora: {
-      temp: c.temperature_2m,
-      sensacion: c.apparent_temperature,
-      humedad: c.relative_humidity_2m,
-      viento: c.wind_speed_10m,
-      codigo: c.weather_code,
-    },
-    horas,
-  };
-}
-
-export const urlClima = (cfg) =>
-  `https://api.open-meteo.com/v1/forecast?latitude=${cfg.clima.latitud}&longitude=${cfg.clima.longitud}` +
-  `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code` +
-  `&hourly=temperature_2m,weather_code,precipitation_probability&forecast_days=2` +
-  `&timezone=${encodeURIComponent(cfg.zonaHoraria)}`;
-
 // ---- Colectivos: titulares de diarios (RSS público) ----
 const sinTildes = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const escapar = (s) => s.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

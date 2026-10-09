@@ -30,3 +30,11 @@ test("colectivos: detecta paros del AMBA y descarta otras provincias", () => {
   const r = buscarParos([nota("La UTA anunció un paro de colectivos en el AMBA"), nota("Paro de colectivos en Córdoba"), nota("Tomó un colectivo y paró en seco")], cfg);
   assert.deepEqual(r.map((x) => x.titular), ["La UTA anunció un paro de colectivos en el AMBA"]);
 });
+
+import { leerObservacionSmn } from "./clima.mjs";
+test("clima: lee Ezeiza del SMN y dice que llueve cuando la observación dice lluvia", () => {
+  const txt = " Ezeiza;09-octubre-2026;20:00;Cubierto con lluvia;10 km;13;No se calcula; 87;Sudeste  13;1019.8 /\n";
+  const o = leerObservacionSmn(txt, "Ezeiza", new Date("2026-10-09T23:20:00Z")); // 20:20 en Argentina
+  assert.deepEqual([o.temp, o.sensacion, o.humedad, o.viento, o.icono, o.etiqueta, o.medidoEn], [13, null, 87, 13, "lluvia", "Lluvia", "20:00"]);
+  assert.equal(leerObservacionSmn(txt, "Ezeiza", new Date("2026-10-10T03:00:00Z")), null); // observación de hace 7 h: no se usa
+});

@@ -2,12 +2,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { config } from "@/lomas.config.mjs";
 import {
-  cargarDatos, armarNovedades, clasificarTren, fechaLarga, hora, hoyMMDD, textoClima, nombreLindo,
+  cargarDatos, armarNovedades, clasificarTren, fechaLarga, hora, hoyMMDD, nombreLindo, proximasHoras,
   CATEGORIAS, ordenarLugares, distanciaKm, normalizar, ZONA,
   type Todo, type Lugar, type Novedad,
 } from "@/lib/datos";
 import { ahoraAR, esDeHoy, type AvisoPublico } from "@/lib/avisos";
-import { Icono, iconoClima } from "./Iconos";
+import { Icono } from "./Iconos";
 import Pie from "./Pie";
 import LugarCard from "./LugarCard";
 
@@ -82,10 +82,19 @@ export default function Inicio() {
           .catch(() => {});
       }
     } catch {}
+    // Al volver a la app después de un rato, se piden los datos de nuevo (el clima se renueva solo en el servidor).
+    let ultima = Date.now();
+    const alVolverAVer = () => {
+      if (document.visibilityState === "visible" && Date.now() - ultima > 3 * 60_000) {
+        ultima = Date.now();
+        cargarDatos().then((r) => { setDatos(r.datos); setLugares(r.lugares); setAvisos(r.avisos); setSinConexion(r.sinConexion); });
+      }
+    };
+    document.addEventListener("visibilitychange", alVolverAVer);
     // "Volver" del celular cierra el detalle en vez de salir de la app.
     const alVolver = (e: PopStateEvent) => setVista(e.state?.lomasHoy ?? null);
     window.addEventListener("popstate", alVolver);
-    return () => window.removeEventListener("popstate", alVolver);
+    return () => { window.removeEventListener("popstate", alVolver); document.removeEventListener("visibilitychange", alVolverAVer); };
   }, []);
 
   const abrir = useCallback((v: string) => {
@@ -109,7 +118,7 @@ export default function Inicio() {
   const alertasLuz = novedades.filter((n) => n.vista === "luz");
   const paros = (d.colectivos?.contenido?.paros ?? []).filter((p) => Date.now() - new Date(p.fecha).getTime() <= config.colectivos.diasMaximos * 86400_000);
   const clima = d.clima?.contenido ?? null;
-  const proximasHoras = clima ? clima.horas.filter((h) => h.hora > ahora.slice(0, 13) + ":00").slice(0, 5) : [];
+  const filaHoras = clima ? proximasHoras(clima, ahora) : [];
   const avisosOrdenados = [...avisos].sort((a, b) => Number(esDeHoy(b, ahora)) - Number(esDeHoy(a, ahora)) || (a.actividad ?? a.creado).localeCompare(b.actividad ?? b.creado));
   const lugaresDe = (vistaId: string) => lugares.filter((l) => CATEGORIAS_DE[vistaId].includes(l.categoria));
 
@@ -129,7 +138,7 @@ export default function Inicio() {
     avisosHoy.forEach((a) => lineas.push(`📢 ${a.titulo} (${a.firma})`));
     novedades.forEach((n) => lineas.push(`${n.gravedad === "grave" ? "🔴" : "🟡"} ${n.titulo}: ${n.detalle}`));
     if (!totalAlertas) lineas.push("✅ Sin alertas hoy");
-    if (clima) lineas.push(`🌡️ ${Math.round(clima.ahora.temp)}° – ${textoClima(clima.ahora.codigo)}`);
+    if (clima) lineas.push(`🌡️ ${Math.round(clima.ahora.temp)}° – ${clima.ahora.etiqueta}`);
     lineas.push(location.origin);
     wsp(lineas.join("\n"));
   }
@@ -155,7 +164,7 @@ export default function Inicio() {
       tren: s.tren.activa ? (d.tren?.contenido?.novedades ?? []).filter((n) => coincide(`${s.tren.titulo} tren roca ${n.ramal} ${n.motivo}`)) : [],
       paros: s.colectivos.activa ? paros.filter((p) => coincide(`colectivo colectivos paro uta ${p.titular}`)) : [],
       luz: s.luz.activa ? cortes.filter((c) => coincide(`${s.luz.titulo} luz corte edesur ${nombreLindo(c.localidad ?? "")}`)) : [],
-      clima: s.clima.activa && clima && coincide(`clima tiempo temperatura lluvia ${textoClima(clima.ahora.codigo)}`) ? clima : null,
+      clima: s.clima.activa && clima && coincide(`clima tiempo temperatura lluvia ${clima.ahora.etiqueta} ${clima.dias.map((d) => d.etiqueta).join(" ")}`) ? clima : null,
     };
   }, [busqueda, lugares, avisos, d.tren, paros, cortes, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
   const hayResultados = resultados && (resultados.lugares.length || resultados.avisos.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.clima);
@@ -172,28 +181,48 @@ export default function Inicio() {
   const abiertas24 = vets.filter((l) => /24 hs/i.test(l.horario)).length;
 
   // ---- Pantallas de detalle ----
-  if (vista === "clima")
+  if (vista === "clima") {
+    const a = clima?.ahora;
     return (
       <Detalle titulo="Clima" onVolver={volver}>
-        {!clima ? <SinDatos error={d.clima?.error} /> : (
+        {!clima || !a ? <SinDatos error={d.clima?.error} /> : (
           <>
-            <div className="clima-detalle"><Icono nombre={iconoClima(clima.ahora.codigo)} tam={64} />
-              <div><span className="temp-chica">{Math.round(clima.ahora.temp)}°</span><br />{textoClima(clima.ahora.codigo)}</div></div>
-            <p>Sensación {Math.round(clima.ahora.sensacion)}° · Humedad {clima.ahora.humedad}% · Viento {Math.round(clima.ahora.viento)} km/h</p>
-            <h2>Hora por hora</h2>
+            <div className="clima-detalle"><Icono nombre={a.icono} tam={64} />
+              <div><span className="temp-chica">{Math.round(a.temp)}°</span><br />{a.etiqueta}</div></div>
+            <p className="vacio">
+              {a.medidoEn ? `Medido en ${a.estacion} a las ${a.medidoEn} · SMN` : "Estimado por Open-Meteo (no hay una medición reciente del SMN)"}
+            </p>
+            <p>
+              {[a.sensacion != null && `Sensación ${Math.round(a.sensacion)}°`, a.humedad != null && `Humedad ${a.humedad}%`, a.viento != null && `Viento ${Math.round(a.viento)} km/h`]
+                .filter(Boolean).join(" · ")}
+            </p>
+            <h2>Pronóstico</h2>
+            <h3>Próximas 24 horas</h3>
             <ul className="lista">
-              {clima.horas.map((h) => (
+              {filaHoras.map((h) => (
                 <li key={h.hora} className="fila-hora">
-                  <b>{h.hora.slice(11, 16)}</b><Icono nombre={iconoClima(h.codigo)} tam={22} />
-                  <span>{textoClima(h.codigo)}</span><b>{Math.round(h.temp)}°</b><small>{h.lluvia}% lluvia</small>
+                  <b>{h.hora === "Ahora" ? "Ahora" : h.hora.slice(11, 16)}</b><Icono nombre={h.icono} tam={22} />
+                  <span>{h.etiqueta}</span><small>{h.lluvia != null ? `${h.lluvia}%` : ""}</small><b>{Math.round(h.temp)}°</b>
                 </li>
               ))}
             </ul>
+            <h3>Próximos 5 días</h3>
+            <ul className="lista">
+              {clima.dias.map((x) => (
+                <li key={x.fecha} className="fila-dia">
+                  <b>{capitalizar(new Date(`${x.fecha}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "long", day: "numeric" }).replace(",", ""))}</b>
+                  <Icono nombre={x.icono} tam={22} /><span>{x.etiqueta}</span>
+                  <small>{x.lluvia != null ? `${x.lluvia}%` : ""}</small><b>{Math.round(x.min)}° / {Math.round(x.max)}°</b>
+                </li>
+              ))}
+            </ul>
+            <p className="vacio">La hora actual es una medición; las horas y los días que siguen son pronóstico de Open-Meteo.</p>
           </>
         )}
-        <Pie seccion="clima" fuente={config.clima.fuente} url={config.clima.url} fila={d.clima} />
+        <Pie seccion="clima" fuente={config.clima.fuente} url={config.clima.url} fila={d.clima} minutosViejo={config.clima.minutosParaAvisarViejo} />
       </Detalle>
     );
+  }
 
   if (vista === "tren")
     return (
@@ -344,14 +373,25 @@ export default function Inicio() {
         <button className="clima-bloque" onClick={() => abrir("clima")} aria-label="Ver detalle del clima">
           <span className="clima-fila">
             <span className="temp">{clima ? `${Math.round(clima.ahora.temp)}°` : "--°"}</span>
-            <span className="clima-icono"><Icono nombre={clima ? iconoClima(clima.ahora.codigo) : "nube"} tam={84} ancho={1.6} /></span>
+            <span className="clima-icono"><Icono nombre={clima ? clima.ahora.icono : "nube"} tam={84} ancho={1.6} /></span>
           </span>
-          <span className="estado">{clima ? textoClima(clima.ahora.codigo) : datos ? "Sin datos del clima" : "Cargando…"}</span>
+          <span className="estado">{clima ? clima.ahora.etiqueta : datos ? "Sin datos del clima" : "Cargando…"}</span>
+          {clima && (
+            <span className="origen-azul">
+              {clima.ahora.medidoEn ? `Medido en ${clima.ahora.estacion} a las ${clima.ahora.medidoEn} · SMN` : "Estimado · Open-Meteo"}
+              {d.clima?.ok_en ? ` · Actualizado ${hora(d.clima.ok_en)}` : ""}
+            </span>
+          )}
           <span className="fecha-azul">{capitalizar(fechaLarga())}</span>
-          {proximasHoras.length > 0 && (
+          {filaHoras.length > 0 && (
             <span className="horas-azul">
-              {proximasHoras.map((h) => (
-                <span key={h.hora}><small>{h.hora.slice(11, 16)}</small><b>{Math.round(h.temp)}°</b></span>
+              {filaHoras.map((h) => (
+                <span key={h.hora} className={h.hora === "Ahora" ? "ahora" : ""}>
+                  <small>{h.hora === "Ahora" ? "Ahora" : h.hora.slice(11, 16)}</small>
+                  <Icono nombre={h.icono} tam={22} />
+                  <b>{Math.round(h.temp)}°</b>
+                  {h.lluvia != null && h.lluvia >= 30 ? <small className="lluvia"><Icono nombre="gota" tam={11} ancho={2.4} />{h.lluvia}%</small> : <small className="lluvia">&nbsp;</small>}
+                </span>
               ))}
             </span>
           )}
@@ -387,7 +427,7 @@ export default function Inicio() {
                 {resultados.luz.map((x, i) => <p key={i} className="tarjeta aviso"><b>{nombreLindo(x.localidad ?? config.ciudad)}</b><span>{plural(x.usuarios, "usuario", "usuarios")} · {x.normalizacion ? `hasta las ${x.normalizacion.slice(11, 16)} hs` : "sin hora estimada"}</span></p>)}
               </div>)}
             {resultados.clima && (
-              <div className="grupo"><h2>Clima</h2><p className="tarjeta ok"><b>{Math.round(resultados.clima.ahora.temp)}° · {textoClima(resultados.clima.ahora.codigo)}</b></p></div>)}
+              <div className="grupo"><h2>Clima</h2><p className="tarjeta ok"><b>{Math.round(resultados.clima.ahora.temp)}° · {resultados.clima.ahora.etiqueta}</b></p></div>)}
             {resultados.lugares.length > 0 && (
               <div className="grupo"><h2>Lugares</h2>
                 <ul className="lista">{resultados.lugares.map((l) => <LugarCard key={l.id} lugar={l} km={km(l)} />)}</ul>

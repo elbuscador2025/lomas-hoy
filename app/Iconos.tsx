@@ -12,6 +12,7 @@ const TRAZOS: Record<string, React.ReactNode> = {
   volver: <path d="M15 5l-7 7 7 7" />,
   flecha: <path d="M9 5l7 7-7 7" />,
   pin: <><path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z" /><circle cx="12" cy="9" r="2.5" /></>,
+  gota: <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z" />,
   // Estado del tiempo
   sol: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>,
   nube: <path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 10.5 3.75 3.75 0 0 1 17.5 18z" />,
@@ -31,14 +32,3 @@ export function Icono({ nombre, tam = 24, ancho = 2 }: { nombre: string; tam?: n
   );
 }
 
-// Código de clima (Open-Meteo) → ícono
-export function iconoClima(codigo: number) {
-  if (codigo === 0) return "sol";
-  if (codigo <= 2) return "solnube";
-  if (codigo === 3) return "nube";
-  if (codigo === 45 || codigo === 48) return "niebla";
-  if (codigo >= 95) return "tormenta";
-  if (codigo >= 71 && codigo <= 77) return "nieve";
-  if (codigo >= 51) return "lluvia";
-  return "nube";
-}

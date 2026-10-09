@@ -35,7 +35,8 @@ export const lugaresIniciales = [
   lugar("veterinarias", "CeVeDe / Cevisur", "Av. Hipólito Yrigoyen 8017", "Banfield", ["011 3773-9690"], "Abierta las 24 hs", maps("Cevisur Av. Hipólito Yrigoyen 8017 Banfield")),
   lugar("veterinarias", "Hospital Veterinario Temperley", "Av. Hipólito Yrigoyen 10287", "Temperley", [], "Abierto las 24 hs", maps("Hospital Veterinario Temperley Av. Hipólito Yrigoyen 10287")),
   lugar("veterinarias", "Hospital Municipal de Animales (Zoonosis)", "Av. 12 de Octubre 1100", "Villa Centenario", ["011 3797-3089"],
-    "Lun a vie 7:30 a 18 hs · Atención gratuita · No es guardia nocturna", maps("Hospital Municipal de Animales Zoonosis Av. 12 de Octubre 1100 Lomas de Zamora")),
+    "Lun a vie 8 a 18 hs · Sáb, dom y feriados 9 a 12 hs · Atención gratuita",
+    { fuente: "Municipio de Lomas de Zamora (horario) y ficha en Google Maps", fuenteUrl: "https://lomasdezamora.gov.ar/hospital-animales" }),
 
   // --- Guardias médicas y hospitales ---
   lugar("guardias", "Hospital Gandulfo", "Balcarce 351", "Lomas de Zamora", ["011 4243-5555"], "", GBA_HOSP),
