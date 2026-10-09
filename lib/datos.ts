@@ -61,7 +61,7 @@ export const ZONA = "America/Argentina/Buenos_Aires";
 export const hora = (iso: string) =>
   new Date(iso).toLocaleTimeString("es-AR", { timeZone: ZONA, hour: "2-digit", minute: "2-digit" });
 export const fechaLarga = () =>
-  new Date().toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "long", day: "numeric", month: "long" });
+  new Date().toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "long", day: "numeric", month: "long" }).replace(",", "");
 // "MM-DD" de hoy en Argentina
 export const hoyMMDD = () =>
   new Intl.DateTimeFormat("en-CA", { timeZone: ZONA, month: "2-digit", day: "2-digit" }).format(new Date()).replace("/", "-");

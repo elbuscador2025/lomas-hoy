@@ -16,7 +16,7 @@ type Tono = "ok" | "aviso" | "grave" | "neutro";
 const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
 const cuando = (a: string) =>
-  new Date(`${a}:00-03:00`).toLocaleString("es-AR", { timeZone: ZONA, weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+  new Date(`${a}:00-03:00`).toLocaleString("es-AR", { timeZone: ZONA, weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", hour12: false });
 const CATEGORIAS_DE: Record<string, string[]> = {
   guardias: ["guardias", "salitas"], vets: ["veterinarias"], otros: ["comisarias", "bomberos", "servicios"],
 };
