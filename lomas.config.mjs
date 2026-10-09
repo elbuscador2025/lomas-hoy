@@ -13,7 +13,7 @@ export const config = {
     clima: { activa: true, titulo: "Clima" },
     // Apagada: no se encontró una fuente oficial que se pueda leer automáticamente.
     farmacias: { activa: false, titulo: "Farmacias de turno" },
-    telefonos: { activa: true, titulo: "Teléfonos útiles" },
+    urgencias: { activa: true, titulo: "Urgencias y guardias" },
   },
 
   tren: {
@@ -21,10 +21,14 @@ export const config = {
     url: "https://www.argentina.gob.ar/transporte/trenes-argentinos/modificaciones-en-el-servicio-y-novedades",
     linea: "Línea Roca",
     estaciones: ["Banfield", "Lomas de Zamora", "Temperley", "Turdera", "Llavallol"],
-    // Una novedad cuenta si nombra alguna de estas palabras (ramales que pasan por el partido).
+    // Aviso del tren: cuenta si nombra estaciones del partido (o el ramal entero sin nombrar otra estación).
     palabrasDelPartido: ["Ezeiza", "Korn", "Temperley", "Banfield", "Lomas", "Turdera", "Llavallol"],
-    // Una novedad que nombra solo estas palabras (y ninguna de las de arriba) se descarta.
-    palabrasAjenas: ["Cañuelas", "Lobos", "La Plata", "Quilmes", "Tolosa"],
+    // Si el texto nombra SOLO estaciones de esta lista (fuera del partido), el aviso se descarta.
+    estacionesAjenas: [
+      "Constitución", "Hipólito Yrigoyen", "Darío Santillán", "Avellaneda", "Gerli", "Lanús", "Remedios de Escalada",
+      "Luis Guillón", "Monte Grande", "Jagüel", "Tristán Suárez", "Burzaco", "Adrogué", "Claypole", "Don Orione", "Glew",
+      "Hospital Español", "La Tablada", "San Justo", "Haedo", "Cañuelas", "Lobos", "La Plata", "Quilmes", "Tolosa", "Bosques", "Gutiérrez",
+    ],
   },
 
   luz: {
@@ -44,19 +48,4 @@ export const config = {
     longitud: -58.4,
   },
 
-  telefonos: {
-    fuente: "Municipio de Lomas de Zamora y empresas (verificar periódicamente)",
-    lista: [
-      { nombre: "Emergencias (SAME)", numero: "107" },
-      { nombre: "Policía", numero: "911" },
-      { nombre: "Seguridad Lomas (municipio)", numero: "147" },
-      { nombre: "Bomberos", numero: "100" },
-      { nombre: "Defensa Civil", numero: "103" },
-      { nombre: "Hospital Gandulfo (guardia)", numero: "011 4243-5555" },
-      { nombre: "Edesur (luz)", numero: "0800 333 3633" },
-      { nombre: "AySA (agua)", numero: "0800 321 2482" },
-      { nombre: "Municipio (consultas)", numero: "0800 666 6666" },
-      { nombre: "Violencia de género", numero: "144" },
-    ],
-  },
 };

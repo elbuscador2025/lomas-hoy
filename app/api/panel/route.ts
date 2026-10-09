@@ -1,13 +1,8 @@
-import { timingSafeEqual } from "node:crypto";
-import { redis, hoyArgentina } from "@/lib/servidor";
+import { redis, hoyArgentina, claveDelPanelOk } from "@/lib/servidor";
 
 export async function POST(req: Request) {
   const { password } = await req.json().catch(() => ({}));
-  const esperada = Buffer.from(process.env.PANEL_PASSWORD ?? "");
-  const dada = Buffer.from(String(password ?? ""));
-  if (!esperada.length || esperada.length !== dada.length || !timingSafeEqual(esperada, dada)) {
-    return Response.json({ ok: false }, { status: 401 });
-  }
+  if (!claveDelPanelOk(password)) return Response.json({ ok: false }, { status: 401 });
   const dias = Array.from({ length: 30 }, (_, i) => hoyArgentina(new Date(Date.now() - i * 86400_000)));
   const r = await redis([
     ...dias.flatMap((d) => [["SCARD", `v:${d}`], ["SCARD", `vuelve:${d}`]] as (string | number)[][]),

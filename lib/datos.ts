@@ -1,5 +1,9 @@
 export type Fila<T> = { clave: string; contenido: T | null; ok_en: string | null; intento_en: string | null; error: string | null };
-export type Tren = { novedades: { gravedad: "grave" | "aviso"; ramal: string; motivo: string }[] };
+export type AvisoTren = {
+  ramal: string; motivo: string; disrupcion: boolean; grave: boolean;
+  desde: string | null; hasta: string | null; // "MM-DD"
+};
+export type Tren = { novedades: AvisoTren[] };
 export type Luz = {
   cortes: { tension: "media" | "baja" | "otra"; localidad: string | null; usuarios: number; normalizacion: string | null }[];
 };
@@ -7,26 +11,38 @@ export type Clima = {
   ahora: { temp: number; sensacion: number; humedad: number; viento: number; codigo: number };
   horas: { hora: string; temp: number; codigo: number; lluvia: number }[];
 };
+export type Lugar = {
+  id: string; categoria: string; nombre: string; direccion: string; localidad: string;
+  telefonos: string[]; horario: string; fuente: string; fuenteUrl: string; lat?: number; lng?: number;
+};
 export type Todo = { tren?: Fila<Tren>; luz?: Fila<Luz>; clima?: Fila<Clima> };
 
 const CLAVE_CACHE = "lomas-hoy:datos";
+const CLAVE_LUGARES = "lomas-hoy:lugares";
+
+const leerCache = <T,>(clave: string, vacio: T): T => {
+  try { return JSON.parse(localStorage.getItem(clave) ?? "null") ?? vacio; } catch { return vacio; }
+};
+const guardarCache = (clave: string, valor: unknown) => {
+  try { localStorage.setItem(clave, JSON.stringify(valor)); } catch {}
+};
 
 // Lee del sitio (que lee la base); si no hay internet, devuelve lo último que se guardó en el celu.
-export async function cargarDatos(): Promise<{ datos: Todo; sinConexion: boolean }> {
-  try {
-    const r = await fetch("/api/datos");
-    if (!r.ok) throw new Error(String(r.status));
-    const filas: Fila<unknown>[] = await r.json();
-    const datos = Object.fromEntries(filas.map((f) => [f.clave, f])) as Todo;
-    try { localStorage.setItem(CLAVE_CACHE, JSON.stringify(datos)); } catch {}
-    return { datos, sinConexion: false };
-  } catch {
-    try {
-      return { datos: JSON.parse(localStorage.getItem(CLAVE_CACHE) ?? "{}"), sinConexion: true };
-    } catch {
-      return { datos: {}, sinConexion: true };
-    }
-  }
+export async function cargarDatos(): Promise<{ datos: Todo; lugares: Lugar[]; sinConexion: boolean }> {
+  const [d, l] = await Promise.allSettled([
+    fetch("/api/datos").then((r) => { if (!r.ok) throw new Error(); return r.json() as Promise<Fila<unknown>[]>; }),
+    fetch("/api/lugares").then((r) => { if (!r.ok) throw new Error(); return r.json() as Promise<Lugar[]>; }),
+  ]);
+  let datos: Todo, lugares: Lugar[];
+  if (d.status === "fulfilled") {
+    datos = Object.fromEntries(d.value.map((f) => [f.clave, f])) as Todo;
+    guardarCache(CLAVE_CACHE, datos);
+  } else datos = leerCache<Todo>(CLAVE_CACHE, {});
+  if (l.status === "fulfilled") {
+    lugares = l.value;
+    guardarCache(CLAVE_LUGARES, lugares);
+  } else lugares = leerCache<Lugar[]>(CLAVE_LUGARES, []);
+  return { datos, lugares, sinConexion: d.status === "rejected" && l.status === "rejected" };
 }
 
 export const ZONA = "America/Argentina/Buenos_Aires";
@@ -34,6 +50,9 @@ export const hora = (iso: string) =>
   new Date(iso).toLocaleTimeString("es-AR", { timeZone: ZONA, hour: "2-digit", minute: "2-digit" });
 export const fechaLarga = () =>
   new Date().toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "long", day: "numeric", month: "long" });
+// "MM-DD" de hoy en Argentina
+export const hoyMMDD = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: ZONA, month: "2-digit", day: "2-digit" }).format(new Date()).replace("/", "-");
 
 const CODIGOS: Record<number, string> = {
   0: "Despejado", 1: "Mayormente despejado", 2: "Parcialmente nublado", 3: "Nublado",
@@ -45,13 +64,27 @@ export const textoClima = (c: number) => CODIGOS[c] ?? "—";
 
 export type Novedad = { id: string; gravedad: "grave" | "aviso"; titulo: string; detalle: string };
 
+// Tren: arriba lo que pasa HOY (interrupción, demora o servicio limitado de un solo día o sin fecha de fin);
+// abajo "Obras y avisos" (lo que dura varios días, o no es una interrupción). Lo ya vencido se descarta.
+export function clasificarTren(avisos: AvisoTren[], hoy: string) {
+  const delDia: AvisoTren[] = [], obras: AvisoTren[] = [];
+  for (const a of avisos) {
+    if (a.hasta && a.hasta < hoy && !(a.desde && a.desde > a.hasta)) continue; // ya pasó
+    const rigeHoy = (!a.desde || a.desde <= hoy) && (!a.hasta || a.hasta >= hoy);
+    const variosDias = !!a.hasta && a.hasta !== (a.desde ?? a.hasta) || (!a.desde && !!a.hasta && a.hasta !== hoy);
+    (a.disrupcion && rigeHoy && !variosDias ? delDia : obras).push(a);
+  }
+  return { delDia, obras };
+}
+
 export function armarNovedades(d: Todo, graveDesdeUsuarios: number, activas: { tren: boolean; luz: boolean }) {
   const novedades: Novedad[] = [];
   const normales: string[] = [];
   if (activas.tren && d.tren?.contenido) {
-    const n = d.tren.contenido.novedades;
-    n.forEach((x, i) => novedades.push({ id: `tren${i}`, gravedad: x.gravedad, titulo: `Roca: ${x.ramal}`, detalle: x.motivo }));
-    if (n.length === 0) normales.push("tren");
+    const { delDia } = clasificarTren(d.tren.contenido.novedades, hoyMMDD());
+    delDia.forEach((x, i) =>
+      novedades.push({ id: `tren${i}`, gravedad: x.grave ? "grave" : "aviso", titulo: `Roca: ${x.ramal}`, detalle: x.motivo }));
+    if (delDia.length === 0) normales.push("tren");
   }
   if (activas.luz && d.luz?.contenido) {
     const porLocalidad = new Map<string, { usuarios: number; hasta: string | null }>();
@@ -77,3 +110,34 @@ export function armarNovedades(d: Todo, graveDesdeUsuarios: number, activas: { t
 }
 
 export const nombreLindo = (s: string) => s.toLowerCase().replace(/(^|\s)\S/g, (m) => m.toUpperCase());
+
+// ---- Lugares ----
+export const CATEGORIAS: { id: string; titulo: string }[] = [
+  { id: "guardias", titulo: "Guardias médicas y hospitales" },
+  { id: "salitas", titulo: "Salitas (centros de salud)" },
+  { id: "veterinarias", titulo: "Veterinarias" },
+  { id: "comisarias", titulo: "Comisarías" },
+  { id: "bomberos", titulo: "Bomberos" },
+  { id: "servicios", titulo: "Servicios y reclamos" },
+];
+
+export const telLink = (n: string) => `tel:${n.replace(/[^\d+]/g, "")}`;
+export const mapaLink = (l: Lugar) =>
+  `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${l.direccion}, ${l.localidad}, Lomas de Zamora, Buenos Aires, Argentina`)}`;
+
+export function distanciaKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const r = Math.PI / 180, R = 6371;
+  const h = Math.sin(((b.lat - a.lat) * r) / 2) ** 2 +
+    Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(((b.lng - a.lng) * r) / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+// Con ubicación: los que tienen coordenadas van primero, por cercanía. Sin ubicación: por nombre.
+export function ordenarLugares(ls: Lugar[], yo: { lat: number; lng: number } | null) {
+  const nombre = (a: Lugar, b: Lugar) => a.nombre.localeCompare(b.nombre, "es");
+  if (!yo) return [...ls].sort(nombre);
+  const km = (l: Lugar) => (l.lat != null && l.lng != null ? distanciaKm(yo, { lat: l.lat, lng: l.lng }) : Infinity);
+  return [...ls].sort((a, b) => km(a) - km(b) || nombre(a, b));
+}
+
+export const normalizar = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();

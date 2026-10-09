@@ -10,3 +10,16 @@ test("luz: toma solo los cortes de Lomas de Zamora (Edesur)", () => {
   const r = leerLuz(js, cfg);
   assert.deepEqual(r.cortes, [{ tension: "baja", localidad: "LAVALLOL", usuarios: 3, normalizacion: null }]);
 });
+
+import { leerTren } from "./fuentes.mjs";
+const alerta = (t, d) => `<div class="alert alert-warning"><h5 class="h5">${t}\n</h5><p>${d}</p></div>`;
+
+test("tren: descarta estaciones fuera del partido y guarda las fechas", () => {
+  const html = `<summary> Línea Roca</summary>` +
+    alerta("Ramal Temperley - Haedo", "Del sábado 10/10 al martes 13/10 inclusive recorrido limitado entre Temperley y San Justo.") +
+    alerta("Ramales Plaza Constitución – Ezeiza", "La estación Hipólito Yrigoyen se encuentra cerrada.") +
+    `</details>`;
+  const { novedades } = leerTren(html, cfg);
+  assert.equal(novedades.length, 1);
+  assert.deepEqual([novedades[0].desde, novedades[0].hasta, novedades[0].disrupcion], ["10-10", "10-13", true]);
+});

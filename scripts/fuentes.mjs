@@ -13,6 +13,9 @@ const decodificar = (s) =>
     .trim();
 
 // ---- Tren: página de Trenes Argentinos ----
+const tieneAlguna = (texto, palabras) => palabras.some((p) => texto.includes(p));
+const DISRUPCION = /interrump|suspendid|sin servicio|limitad|demora|no circul|cerrad|no llega|no se detien/i;
+
 export function leerTren(html, cfg) {
   const m = html.match(/<summary>\s*Línea Roca\s*<\/summary>([\s\S]*?)<\/details>/);
   if (!m) throw new Error("No se encontró la sección de la Línea Roca en la página");
@@ -21,14 +24,29 @@ export function leerTren(html, cfg) {
   )];
   const novedades = [];
   for (const [, nivel, t, d] of alertas) {
-    const titulo = decodificar(t);
-    const detalle = decodificar(d);
-    const texto = `${titulo} ${detalle}`;
-    const esNuestra = cfg.tren.palabrasDelPartido.some((p) => texto.includes(p));
-    const esAjena = cfg.tren.palabrasAjenas.some((p) => texto.includes(p));
-    if (esAjena && !esNuestra) continue;
-    const grave = nivel === "danger" || /interrump|suspendid|sin servicio/i.test(texto);
-    novedades.push({ gravedad: grave ? "grave" : "aviso", ramal: titulo, motivo: detalle });
+    const ramal = decodificar(t);
+    const motivo = decodificar(d);
+    // ¿Afecta al partido? Se mira primero el detalle (qué estaciones nombra) y después el ramal del título.
+    const nombraPartido = tieneAlguna(motivo, cfg.tren.estaciones.concat(["Lomas"]));
+    const nombraAjena = tieneAlguna(motivo, cfg.tren.estacionesAjenas);
+    const ramalDelPartido = tieneAlguna(ramal, cfg.tren.palabrasDelPartido);
+    const ramalAjeno = tieneAlguna(ramal, cfg.tren.estacionesAjenas);
+    const afecta = nombraPartido || (!nombraAjena && (ramalDelPartido || !ramalAjeno));
+    if (!afecta) continue;
+    // Fechas dd/mm del texto: "Del 10/10 al 13/10", "Hasta el 19/11", "El lunes 12/10".
+    const fechas = [...motivo.matchAll(/(\d{1,2})\/(\d{1,2})/g)].map(([, d, mm]) => `${mm.padStart(2, "0")}-${d.padStart(2, "0")}`);
+    const hasta = /\bhasta\b/i.test(motivo) && fechas.length === 1;
+    const desde = fechas.length === 0 || hasta ? null : fechas[0];
+    const fin = fechas.length === 0 ? null : fechas[fechas.length - 1];
+    const texto = `${ramal} ${motivo}`;
+    novedades.push({
+      ramal,
+      motivo,
+      disrupcion: DISRUPCION.test(texto),
+      grave: nivel === "danger" || /interrump|suspendid|sin servicio/i.test(texto),
+      desde, // "MM-DD" o null
+      hasta: fin, // "MM-DD" o null (sin fecha = rige ahora, hasta nuevo aviso)
+    });
   }
   return { novedades };
 }
@@ -38,7 +56,7 @@ export function leerLuz(js, cfg) {
   if (!js.includes("addressPoints_Cuadro_D")) throw new Error("Formato del ENRE no reconocido");
   const cortes = [];
   for (const [, cuerpo] of js.matchAll(/\[\s*-?\d+\.\d+,\s*-?\d+\.\d+,\s*\d+,\s*"([^"]*)"\s*\]/g)) {
-    const campo = (nombre) => cuerpo.match(new RegExp(`${nombre}:\s*([^,]*)`))?.[1]?.trim() ?? null;
+    const campo = (nombre) => cuerpo.match(new RegExp(`${nombre}:\\s*([^,]*)`))?.[1]?.trim() ?? null;
     if (campo("Partido")?.toUpperCase() !== cfg.luz.partido) continue;
     if (!cuerpo.toUpperCase().includes(cfg.luz.empresa)) continue;
     const usuarios = Number(campo("Usuarios afectados"));
