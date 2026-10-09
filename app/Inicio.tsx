@@ -10,6 +10,8 @@ import { ahoraAR, esDeHoy, type AvisoPublico } from "@/lib/avisos";
 import { Icono } from "./Iconos";
 import Pie from "./Pie";
 import LugarCard from "./LugarCard";
+import Notificaciones, { Bienvenida } from "./Notificaciones";
+import { usePush } from "./usePush";
 
 type Coord = { lat: number; lng: number };
 type Tono = "ok" | "aviso" | "grave" | "neutro";
@@ -66,6 +68,7 @@ export default function Inicio() {
   const [errorUbicacion, setErrorUbicacion] = useState(false);
   const [q, setQ] = useState("");
   const [vista, setVista] = useState<string | null>(null);
+  const push = usePush();
   const s = config.secciones;
 
   useEffect(() => {
@@ -91,6 +94,13 @@ export default function Inicio() {
       }
     };
     document.addEventListener("visibilitychange", alVolverAVer);
+    // Si venís de una notificación (/?v=tren), se abre directo en esa sección; "Volver" te lleva al inicio.
+    const directo = new URLSearchParams(location.search).get("v");
+    if (directo) {
+      history.replaceState({}, "", "/");
+      history.pushState({ lomasHoy: directo }, "");
+      setVista(directo);
+    }
     // "Volver" del celular cierra el detalle en vez de salir de la app.
     const alVolver = (e: PopStateEvent) => setVista(e.state?.lomasHoy ?? null);
     window.addEventListener("popstate", alVolver);
@@ -315,6 +325,13 @@ export default function Inicio() {
     );
   }
 
+  if (vista === "notificaciones")
+    return (
+      <Detalle titulo="Avisos" onVolver={volver}>
+        <Notificaciones push={push} />
+      </Detalle>
+    );
+
   if (vista === "avisos")
     return (
       <Detalle titulo={s.avisos.titulo} onVolver={volver}>
@@ -338,7 +355,7 @@ export default function Inicio() {
     const a = avisos.find((x) => x.id === vista.slice(6));
     return (
       <Detalle titulo={a?.titulo ?? "Aviso"} onVolver={volver}>
-        {!a ? <p>Este aviso ya no está vigente.</p> : (
+        {!a ? <p>{datos ? "Este aviso ya no está vigente." : "Cargando…"}</p> : (
           <>
             <p className="firma">{a.firma}</p>
             <p className="vacio">{a.zona}{a.actividad ? ` · ${capitalizar(cuando(a.actividad))} hs` : ""}</p>
@@ -365,9 +382,9 @@ export default function Inicio() {
       <header className="azul">
         <div className="azul-fila">
           <span className="marca">Lomas Hoy</span>
-          <button className="campana" aria-label="Avisos del municipio" onClick={() => abrir("avisos")}>
+          <button className="campana" aria-label="Avisos" onClick={() => abrir("notificaciones")}>
             <Icono nombre="campana" tam={22} />
-            {avisos.length > 0 && <span className="punto" />}
+            {(push.estado === "inactivo" || push.estado === "iosSinInstalar") && <span className="punto" />}
           </button>
         </div>
         <button className="clima-bloque" onClick={() => abrir("clima")} aria-label="Ver detalle del clima">
@@ -399,6 +416,7 @@ export default function Inicio() {
       </header>
 
       <section className="hoja">
+        <Bienvenida push={push} />
         <label className="buscador">
           <Icono nombre="lupa" tam={22} />
           <input type="search" placeholder="Buscar: veterinaria, Banfield, tren…" aria-label="Buscar" value={q} onChange={(e) => setQ(e.target.value)} />

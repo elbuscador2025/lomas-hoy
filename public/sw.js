@@ -1,5 +1,5 @@
-// Guarda la app en el celu para que abra sin internet.
-const CACHE = "lomas-hoy-v1";
+// Guarda la app en el celu para que abra sin internet, y muestra las notificaciones.
+const CACHE = "lomas-hoy-v2";
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.add("/")));
   self.skipWaiting();
@@ -20,5 +20,31 @@ self.addEventListener("fetch", (e) => {
         return res;
       })
       .catch(() => caches.match(req).then((r) => r || (req.mode === "navigate" ? caches.match("/") : Response.error())))
+  );
+});
+
+// Notificaciones: ícono de Lomas Hoy, título corto y una línea de texto.
+self.addEventListener("push", (e) => {
+  let d = {};
+  try { d = e.data.json(); } catch {}
+  e.waitUntil(
+    self.registration.showNotification(d.titulo || "Lomas Hoy", {
+      body: d.cuerpo || "",
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      tag: d.tag || undefined,
+      data: { url: d.url || "/" },
+    })
+  );
+});
+// Al tocarla se abre la app directamente en ese aviso o sección.
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const destino = new URL(e.notification.data?.url || "/", self.location.origin).href;
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((ventanas) => {
+      const v = ventanas.find((x) => "focus" in x);
+      return v ? v.navigate(destino).then(() => v.focus()) : self.clients.openWindow(destino);
+    })
   );
 });

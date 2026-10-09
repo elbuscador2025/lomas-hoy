@@ -7,3 +7,5 @@ next-env.d.ts
 
 .vercel
 .env*
+.env.vapid.tmp
+.vapid.tmp.json

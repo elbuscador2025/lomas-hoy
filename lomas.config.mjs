@@ -73,6 +73,20 @@ export const config = {
   // Avisos del municipio: cuántos por día (para todo el municipio) si no se cambió desde el panel, y cuánto duran sin fecha.
   avisos: { topePorDia: 3, diasDeVigenciaSinFecha: 7 },
 
+  // Notificaciones al celular (web push).
+  push: {
+    tipos: {
+      tren: { activa: true, titulo: "Tren Roca" },
+      luz: { activa: true, titulo: "Cortes de luz en mi barrio" },
+      // Apagado: el archivo abierto de alertas del SMN llegó vacío aunque había alertas vigentes en el país, así que no es confiable.
+      tormenta: { activa: false, titulo: "Alertas de tormenta" },
+      municipio: { activa: true, titulo: "Avisos del municipio" },
+    },
+    maximoPorDia: 6, // por celular, sumando todos los tipos
+    silencioDesde: 23, // de 23:00 a 7:00 no se manda nada (salvo tormenta naranja o roja)
+    silencioHasta: 7,
+  },
+
   clima: {
     fuente: "SMN (Ezeiza Aero) y Open-Meteo",
     url: "https://open-meteo.com/",
