@@ -1,14 +1,13 @@
-// Proceso automático: lee tren, luz y clima y guarda el resultado en Supabase.
-// Si una fuente falla, NO pisa el último dato bueno: solo anota el error.
+// Proceso automático: lee tren, luz y clima y se los manda al sitio (/api/ingest), que los guarda.
+// Si una fuente falla, el sitio NO pisa el último dato bueno: solo anota el error.
 import { config as cfg } from "../lomas.config.mjs";
 import { leerTren, leerLuz, leerClima, urlClima } from "./fuentes.mjs";
 
-const { NEXT_PUBLIC_SUPABASE_URL: URL_DB, SUPABASE_SERVICE_ROLE_KEY: KEY } = process.env;
-if (!URL_DB || !KEY) {
-  console.error("Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY");
+const { SITIO_URL, INGEST_SECRET } = process.env;
+if (!SITIO_URL || !INGEST_SECRET) {
+  console.error("Faltan SITIO_URL o INGEST_SECRET");
   process.exit(1);
 }
-const headers = { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" };
 
 async function traer(url, tipo) {
   const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (LomasHoy)" }, signal: AbortSignal.timeout(30000) });
@@ -16,13 +15,13 @@ async function traer(url, tipo) {
   return tipo === "json" ? r.json() : r.text();
 }
 
-async function guardar(clave, fila) {
-  const r = await fetch(`${URL_DB}/rest/v1/datos?on_conflict=clave`, {
+async function guardar(clave, cuerpo) {
+  const r = await fetch(`${SITIO_URL}/api/ingest`, {
     method: "POST",
-    headers: { ...headers, Prefer: "resolution=merge-duplicates" },
-    body: JSON.stringify({ clave, ...fila }),
+    headers: { Authorization: `Bearer ${INGEST_SECRET}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ clave, ...cuerpo }),
   });
-  if (!r.ok) throw new Error(`Supabase ${r.status}: ${await r.text()}`);
+  if (!r.ok) throw new Error(`Sitio ${r.status}`);
 }
 
 const tareas = {
@@ -34,15 +33,13 @@ const tareas = {
 let fallos = 0;
 for (const [clave, tarea] of Object.entries(tareas)) {
   if (!cfg.secciones[clave]?.activa) continue;
-  const ahora = new Date().toISOString();
   try {
-    const contenido = await tarea();
-    await guardar(clave, { contenido, ok_en: ahora, intento_en: ahora, error: null });
+    await guardar(clave, { contenido: await tarea() });
     console.log(`${clave}: ok`);
   } catch (e) {
     fallos++;
     console.error(`${clave}: falló -> ${e.message}`);
-    try { await guardar(clave, { intento_en: ahora, error: String(e.message).slice(0, 300) }); } catch {}
+    try { await guardar(clave, { error: e.message }); } catch {}
   }
 }
-process.exit(fallos === Object.keys(tareas).length ? 1 : 0);
+process.exit(fallos > 0 ? 1 : 0);

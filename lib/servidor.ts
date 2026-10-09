@@ -1,15 +1,23 @@
-// Cosas que solo corren en el servidor (usan la clave secreta de Supabase).
-export const URL_DB = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// Cosas que solo corren en el servidor. La base es Redis (Upstash), conectada desde Vercel.
+const URL_DB = process.env.KV_REST_API_URL!;
+const TOKEN = process.env.KV_REST_API_TOKEN!;
 
-export function db(path: string, init: RequestInit = {}) {
-  return fetch(`${URL_DB}/rest/v1/${path}`, {
-    ...init,
+type Comando = (string | number)[];
+
+export async function redis(comandos: Comando[]): Promise<unknown[]> {
+  const r = await fetch(`${URL_DB}/pipeline`, {
+    method: "POST",
     cache: "no-store",
-    headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json", ...init.headers },
+    headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify(comandos),
   });
+  if (!r.ok) throw new Error(`Redis ${r.status}`);
+  const filas: { result?: unknown; error?: string }[] = await r.json();
+  const mala = filas.find((f) => f.error);
+  if (mala) throw new Error(mala.error);
+  return filas.map((f) => f.result);
 }
 
-export function hoyArgentina() {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(new Date());
+export function hoyArgentina(fecha = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(fecha);
 }

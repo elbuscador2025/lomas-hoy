@@ -11,13 +11,10 @@ export type Todo = { tren?: Fila<Tren>; luz?: Fila<Luz>; clima?: Fila<Clima> };
 
 const CLAVE_CACHE = "lomas-hoy:datos";
 
-// Lee de Supabase; si no hay internet, devuelve lo último que se guardó en el celu.
+// Lee del sitio (que lee la base); si no hay internet, devuelve lo último que se guardó en el celu.
 export async function cargarDatos(): Promise<{ datos: Todo; sinConexion: boolean }> {
   try {
-    const r = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/datos?select=*`,
-      { headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` } }
-    );
+    const r = await fetch("/api/datos");
     if (!r.ok) throw new Error(String(r.status));
     const filas: Fila<unknown>[] = await r.json();
     const datos = Object.fromEntries(filas.map((f) => [f.clave, f])) as Todo;

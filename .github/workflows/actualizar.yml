@@ -12,5 +12,5 @@ jobs:
         with: { node-version: 22 }
       - run: node scripts/actualizar.mjs
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SITIO_URL: ${{ secrets.SITIO_URL }}
+          INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
