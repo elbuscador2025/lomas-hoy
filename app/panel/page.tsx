@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { CATEGORIAS, type Lugar } from "@/lib/datos";
+import PanelMunicipio from "./PanelMunicipio";
 
 type Datos = {
   dias: { dia: string; visitantes: number; volvieron: number }[];
@@ -15,7 +16,7 @@ export default function Panel() {
   const [password, setPassword] = useState("");
   const [datos, setDatos] = useState<Datos | null>(null);
   const [lugares, setLugares] = useState<Lugar[]>([]);
-  const [pestana, setPestana] = useState<"stats" | "lugares">("stats");
+  const [pestana, setPestana] = useState<"stats" | "lugares" | "muni">("stats");
   const [editando, setEditando] = useState<(Lugar & { tels: string; direccionOriginal?: string }) | null>(null);
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
@@ -80,7 +81,10 @@ export default function Panel() {
       <div className="pestanas">
         <button className={`btn ${pestana === "stats" ? "" : "claro"}`} onClick={() => setPestana("stats")}>Visitas y reportes</button>
         <button className={`btn ${pestana === "lugares" ? "" : "claro"}`} onClick={() => setPestana("lugares")}>Lugares ({lugares.length})</button>
+        <button className={`btn ${pestana === "muni" ? "" : "claro"}`} onClick={() => setPestana("muni")}>Municipio</button>
       </div>
+
+      {pestana === "muni" && <PanelMunicipio password={password} />}
 
       {pestana === "stats" && (
         <>

@@ -8,7 +8,7 @@ test("luz: toma solo los cortes de Lomas de Zamora (Edesur)", () => {
     [-34.79, -58.42, 21, "<b>CORTE DE BAJA TENSION</b>, EDESUR S.A., Partido: LOMAS DE ZAMORA, Localidad: LAVALLOL, Usuarios afectados: 3 "]
     ,[-34.6, -58.4, 21, "<b>CORTE DE BAJA TENSION</b>, EDESUR S.A., Partido: CAPITAL, Localidad: FLORESTA, Usuarios afectados: 18 "]];`;
   const r = leerLuz(js, cfg);
-  assert.deepEqual(r.cortes, [{ tension: "baja", localidad: "LAVALLOL", usuarios: 3, normalizacion: null }]);
+  assert.deepEqual(r.cortes, [{ tension: "baja", localidad: "LLAVALLOL", usuarios: 3, normalizacion: null }]);
 });
 
 import { leerTren } from "./fuentes.mjs";
@@ -22,4 +22,11 @@ test("tren: descarta estaciones fuera del partido y guarda las fechas", () => {
   const { novedades } = leerTren(html, cfg);
   assert.equal(novedades.length, 1);
   assert.deepEqual([novedades[0].desde, novedades[0].hasta, novedades[0].disrupcion], ["10-10", "10-13", true]);
+});
+
+import { buscarParos } from "./fuentes.mjs";
+test("colectivos: detecta paros del AMBA y descarta otras provincias", () => {
+  const nota = (titular) => ({ titular, link: `https://x/${titular}`, fecha: new Date(), medio: "Diario" });
+  const r = buscarParos([nota("La UTA anunció un paro de colectivos en el AMBA"), nota("Paro de colectivos en Córdoba"), nota("Tomó un colectivo y paró en seco")], cfg);
+  assert.deepEqual(r.map((x) => x.titular), ["La UTA anunció un paro de colectivos en el AMBA"]);
 });

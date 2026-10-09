@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "Lomas Hoy" },
   icons: { icon: "/icon-192.png", apple: "/icon-192.png" },
 };
-export const viewport: Viewport = { themeColor: "#0b5cad", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { themeColor: "#1F5AD6", width: "device-width", initialScale: 1 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

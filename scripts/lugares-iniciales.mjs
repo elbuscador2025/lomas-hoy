@@ -20,6 +20,7 @@ const GUIA = {
 };
 const BVLZ = { fuente: "Bomberos Voluntarios de Lomas de Zamora", fuenteUrl: "https://www.bvlz.org.ar/destacamentos/" };
 
+const maps = (q) => ({ fuente: "Ficha del lugar en Google Maps", fuenteUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}` });
 const lugar = (categoria, nombre, direccion, localidad, telefonos, horario, fuente) => ({
   categoria, nombre, direccion, localidad, telefonos, horario, ...fuente,
 });
@@ -29,9 +30,12 @@ const caps = (nombre, direccion, localidad, tel, horario) =>
   lugar("salitas", `CAPS ${nombre}`, direccion, localidad, tel ? [tel.length === 9 ? `011 ${tel}` : tel] : [], horario, GUIA);
 
 export const lugaresIniciales = [
-  // --- Veterinarias (solo la municipal: no se confirmó ninguna con guardia 24 hs en fuente oficial) ---
-  lugar("veterinarias", "Hospital de Animales (municipal)", "12 de Octubre 1100", "Villa Centenario", [],
-    "Lun a vie 8 a 18 hs · Sáb, dom y feriados 9 a 12 hs", MUNI_ANIMALES),
+  // --- Veterinarias y salud animal (datos indicados por el dueño; fuente: ficha del lugar en Google Maps) ---
+  lugar("veterinarias", "Danke Clínica Veterinaria", "Laprida 1502", "Lomas de Zamora", ["011 4283-1111"], "Abierta las 24 hs", maps("Danke Clínica Veterinaria Laprida 1502 Lomas de Zamora")),
+  lugar("veterinarias", "CeVeDe / Cevisur", "Av. Hipólito Yrigoyen 8017", "Banfield", ["011 3773-9690"], "Abierta las 24 hs", maps("Cevisur Av. Hipólito Yrigoyen 8017 Banfield")),
+  lugar("veterinarias", "Hospital Veterinario Temperley", "Av. Hipólito Yrigoyen 10287", "Temperley", [], "Abierto las 24 hs", maps("Hospital Veterinario Temperley Av. Hipólito Yrigoyen 10287")),
+  lugar("veterinarias", "Hospital Municipal de Animales (Zoonosis)", "Av. 12 de Octubre 1100", "Villa Centenario", ["011 3797-3089"],
+    "Lun a vie 7:30 a 18 hs · Atención gratuita · No es guardia nocturna", maps("Hospital Municipal de Animales Zoonosis Av. 12 de Octubre 1100 Lomas de Zamora")),
 
   // --- Guardias médicas y hospitales ---
   lugar("guardias", "Hospital Gandulfo", "Balcarce 351", "Lomas de Zamora", ["011 4243-5555"], "", GBA_HOSP),

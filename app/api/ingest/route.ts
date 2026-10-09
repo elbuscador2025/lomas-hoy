@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     return Response.json({ ok: false }, { status: 401 });
   }
   const { clave, contenido, error } = await req.json().catch(() => ({}));
-  if (!["tren", "luz", "clima"].includes(clave)) return Response.json({ ok: false }, { status: 400 });
+  if (!["tren", "luz", "clima", "colectivos"].includes(clave)) return Response.json({ ok: false }, { status: 400 });
 
   const ahora = new Date().toISOString();
   const llave = `datos:${clave}`;

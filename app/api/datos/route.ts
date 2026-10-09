@@ -1,6 +1,6 @@
 import { redis } from "@/lib/servidor";
 
-const CLAVES = ["tren", "luz", "clima"];
+const CLAVES = ["tren", "luz", "clima", "colectivos"];
 
 export async function GET() {
   try {

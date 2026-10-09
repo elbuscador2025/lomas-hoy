@@ -63,7 +63,7 @@ export function leerLuz(js, cfg) {
     if (!Number.isFinite(usuarios)) continue;
     cortes.push({
       tension: /MEDIA TENSION/i.test(cuerpo) ? "media" : /BAJA TENSION/i.test(cuerpo) ? "baja" : "otra",
-      localidad: campo("Localidad"),
+      localidad: campo("Localidad")?.replace(/^LAVALLOL$/i, "LLAVALLOL") ?? null,
       usuarios,
       normalizacion: cuerpo.match(/normalizacion:\s*([\d-]+ [\d:]+)/)?.[1] ?? null, // hora de Argentina
     });
@@ -103,3 +103,29 @@ export const urlClima = (cfg) =>
   `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code` +
   `&hourly=temperature_2m,weather_code,precipitation_probability&forecast_days=2` +
   `&timezone=${encodeURIComponent(cfg.zonaHoraria)}`;
+
+// ---- Colectivos: titulares de diarios (RSS público) ----
+const sinTildes = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const escapar = (s) => s.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const palabras = (lista, sinAcentos = true) => new RegExp(`\\b(${lista.map((p) => escapar(sinAcentos ? sinTildes(p) : p)).join("|")})\\b`);
+
+export function leerRss(xml, medio) {
+  return [...xml.matchAll(/<item[\s>][\s\S]*?<\/item>/g)].map(([item]) => {
+    const campo = (c) => item.match(new RegExp(`<${c}[^>]*>([\\s\\S]*?)</${c}>`))?.[1]
+      ?.replace(/^\s*<!\[CDATA\[|\]\]>\s*$/g, "").trim();
+    return { titular: decodificar(campo("title") ?? ""), link: campo("link") ?? "", fecha: new Date(campo("pubDate") ?? campo("dc:date") ?? ""), medio };
+  });
+}
+
+export function buscarParos(notas, cfg, ahora = new Date()) {
+  const c = cfg.colectivos;
+  const paro = palabras(c.palabrasParo, false), bus = palabras(c.palabrasColectivos), ajeno = palabras(c.lugaresAjenos);
+  const vistos = new Set();
+  return notas
+    .filter((n) => n.titular && n.link && !Number.isNaN(n.fecha.getTime()))
+    .filter((n) => ahora - n.fecha <= c.diasMaximos * 86400_000 && n.fecha - ahora < 86400_000)
+    .filter((n) => { const t = sinTildes(n.titular); return paro.test(n.titular.toLowerCase()) && bus.test(t) && !ajeno.test(t); })
+    .filter((n) => !vistos.has(n.link) && vistos.add(n.link))
+    .sort((a, b) => b.fecha - a.fecha)
+    .map((n) => ({ titular: n.titular, medio: n.medio, link: n.link, fecha: n.fecha.toISOString() }));
+}

@@ -3,7 +3,7 @@ import { redis } from "@/lib/servidor";
 
 export async function POST(req: Request) {
   const { seccion, mensaje } = await req.json().catch(() => ({}));
-  if (!(seccion in config.secciones) && !String(seccion).startsWith("lugar:")) return Response.json({ ok: false }, { status: 400 });
+  if (!(seccion in config.secciones) && !/^(lugar|aviso):/.test(String(seccion))) return Response.json({ ok: false }, { status: 400 });
   const reporte = { creado_en: new Date().toISOString(), seccion: String(seccion).slice(0, 100), mensaje: String(mensaje ?? "").slice(0, 300) };
   try {
     await redis([["LPUSH", "reportes", JSON.stringify(reporte)], ["LTRIM", "reportes", 0, 999]]);

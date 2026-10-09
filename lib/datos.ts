@@ -1,3 +1,4 @@
+import { vigente, type AvisoPublico } from "@/lib/avisos";
 export type Fila<T> = { clave: string; contenido: T | null; ok_en: string | null; intento_en: string | null; error: string | null };
 export type AvisoTren = {
   ramal: string; motivo: string; disrupcion: boolean; grave: boolean;
@@ -11,14 +12,19 @@ export type Clima = {
   ahora: { temp: number; sensacion: number; humedad: number; viento: number; codigo: number };
   horas: { hora: string; temp: number; codigo: number; lluvia: number }[];
 };
+export type Colectivos = {
+  paros: { titular: string; medio: string; link: string; fecha: string }[];
+  diariosLeidos: string[]; diariosSinLeer: string[];
+};
 export type Lugar = {
   id: string; categoria: string; nombre: string; direccion: string; localidad: string;
   telefonos: string[]; horario: string; fuente: string; fuenteUrl: string; lat?: number; lng?: number;
 };
-export type Todo = { tren?: Fila<Tren>; luz?: Fila<Luz>; clima?: Fila<Clima> };
+export type Todo = { tren?: Fila<Tren>; luz?: Fila<Luz>; clima?: Fila<Clima>; colectivos?: Fila<Colectivos> };
 
 const CLAVE_CACHE = "lomas-hoy:datos";
 const CLAVE_LUGARES = "lomas-hoy:lugares";
+const CLAVE_AVISOS = "lomas-hoy:avisos";
 
 const leerCache = <T,>(clave: string, vacio: T): T => {
   try { return JSON.parse(localStorage.getItem(clave) ?? "null") ?? vacio; } catch { return vacio; }
@@ -28,12 +34,13 @@ const guardarCache = (clave: string, valor: unknown) => {
 };
 
 // Lee del sitio (que lee la base); si no hay internet, devuelve lo último que se guardó en el celu.
-export async function cargarDatos(): Promise<{ datos: Todo; lugares: Lugar[]; sinConexion: boolean }> {
-  const [d, l] = await Promise.allSettled([
+export async function cargarDatos(): Promise<{ datos: Todo; lugares: Lugar[]; avisos: AvisoPublico[]; sinConexion: boolean }> {
+  const [d, l, v] = await Promise.allSettled([
     fetch("/api/datos").then((r) => { if (!r.ok) throw new Error(); return r.json() as Promise<Fila<unknown>[]>; }),
     fetch("/api/lugares").then((r) => { if (!r.ok) throw new Error(); return r.json() as Promise<Lugar[]>; }),
+    fetch("/api/avisos").then((r) => { if (!r.ok) throw new Error(); return r.json() as Promise<AvisoPublico[]>; }),
   ]);
-  let datos: Todo, lugares: Lugar[];
+  let datos: Todo, lugares: Lugar[], avisos: AvisoPublico[];
   if (d.status === "fulfilled") {
     datos = Object.fromEntries(d.value.map((f) => [f.clave, f])) as Todo;
     guardarCache(CLAVE_CACHE, datos);
@@ -42,7 +49,12 @@ export async function cargarDatos(): Promise<{ datos: Todo; lugares: Lugar[]; si
     lugares = l.value;
     guardarCache(CLAVE_LUGARES, lugares);
   } else lugares = leerCache<Lugar[]>(CLAVE_LUGARES, []);
-  return { datos, lugares, sinConexion: d.status === "rejected" && l.status === "rejected" };
+  if (v.status === "fulfilled") {
+    avisos = v.value;
+    guardarCache(CLAVE_AVISOS, avisos);
+  } else avisos = leerCache<AvisoPublico[]>(CLAVE_AVISOS, []);
+  avisos = avisos.filter((a) => vigente(a)); // lo guardado en el celu puede estar vencido
+  return { datos, lugares, avisos, sinConexion: d.status === "rejected" && l.status === "rejected" };
 }
 
 export const ZONA = "America/Argentina/Buenos_Aires";
@@ -62,7 +74,7 @@ const CODIGOS: Record<number, string> = {
 };
 export const textoClima = (c: number) => CODIGOS[c] ?? "—";
 
-export type Novedad = { id: string; gravedad: "grave" | "aviso"; titulo: string; detalle: string };
+export type Novedad = { id: string; vista: "tren" | "luz"; gravedad: "grave" | "aviso"; titulo: string; detalle: string };
 
 // Tren: arriba lo que pasa HOY (interrupción, demora o servicio limitado de un solo día o sin fecha de fin);
 // abajo "Obras y avisos" (lo que dura varios días, o no es una interrupción). Lo ya vencido se descarta.
@@ -77,14 +89,13 @@ export function clasificarTren(avisos: AvisoTren[], hoy: string) {
   return { delDia, obras };
 }
 
-export function armarNovedades(d: Todo, graveDesdeUsuarios: number, activas: { tren: boolean; luz: boolean }) {
+export function armarNovedades(d: Todo, luz: { alertaDesdeUsuarios: number; graveDesdeUsuarios: number }, activas: { tren: boolean; luz: boolean }) {
   const novedades: Novedad[] = [];
   const normales: string[] = [];
   if (activas.tren && d.tren?.contenido) {
     const { delDia } = clasificarTren(d.tren.contenido.novedades, hoyMMDD());
     delDia.forEach((x, i) =>
-      novedades.push({ id: `tren${i}`, gravedad: x.grave ? "grave" : "aviso", titulo: `Roca: ${x.ramal}`, detalle: x.motivo }));
-    if (delDia.length === 0) normales.push("tren");
+      novedades.push({ id: `tren${i}`, vista: "tren", gravedad: x.grave ? "grave" : "aviso", titulo: `Roca: ${x.ramal}`, detalle: x.motivo }));
   }
   if (activas.luz && d.luz?.contenido) {
     const porLocalidad = new Map<string, { usuarios: number; hasta: string | null }>();
@@ -96,26 +107,29 @@ export function armarNovedades(d: Todo, graveDesdeUsuarios: number, activas: { t
       porLocalidad.set(k, a);
     }
     for (const [loc, a] of porLocalidad) {
+      if (a.usuarios < luz.alertaDesdeUsuarios) continue; // los cortes chicos solo se ven dentro de Luz
       novedades.push({
+        vista: "luz",
         id: `luz${loc}`,
-        gravedad: a.usuarios >= graveDesdeUsuarios ? "grave" : "aviso",
+        gravedad: a.usuarios >= luz.graveDesdeUsuarios ? "grave" : "aviso",
         titulo: `Corte de luz en ${nombreLindo(loc)}`,
         detalle: `${a.usuarios} ${a.usuarios === 1 ? "usuario afectado" : "usuarios afectados"}` + (a.hasta ? ` · hasta las ${a.hasta.slice(11, 16)} hs` : ""),
       });
     }
-    if (porLocalidad.size === 0) normales.push("luz");
   }
   novedades.sort((a, b) => (a.gravedad === b.gravedad ? 0 : a.gravedad === "grave" ? -1 : 1));
   return { novedades, normales };
 }
 
-export const nombreLindo = (s: string) => s.toLowerCase().replace(/(^|\s)\S/g, (m) => m.toUpperCase());
+export const nombreLindo = (s: string) =>
+  s.toLowerCase().replace(/(^|\s)\S/g, (m) => m.toUpperCase()).replace(/^Lavallol$/, "Llavallol");
 
 // ---- Lugares ----
-export const CATEGORIAS: { id: string; titulo: string }[] = [
-  { id: "guardias", titulo: "Guardias médicas y hospitales" },
-  { id: "salitas", titulo: "Salitas (centros de salud)" },
-  { id: "veterinarias", titulo: "Veterinarias" },
+// "claves" son palabras extra con las que el buscador también encuentra la categoría.
+export const CATEGORIAS: { id: string; titulo: string; claves?: string }[] = [
+  { id: "guardias", titulo: "Guardias médicas y hospitales", claves: "hospital guardia urgencia" },
+  { id: "salitas", titulo: "Salitas (centros de salud)", claves: "salita sala centro de salud caps" },
+  { id: "veterinarias", titulo: "Veterinarias y salud animal", claves: "veterinaria veterinario perro gato mascota zoonosis animal" },
   { id: "comisarias", titulo: "Comisarías" },
   { id: "bomberos", titulo: "Bomberos" },
   { id: "servicios", titulo: "Servicios y reclamos" },
