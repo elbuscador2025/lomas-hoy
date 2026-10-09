@@ -82,7 +82,7 @@ export async function todosLosAvisos(): Promise<Aviso[]> {
 
 export async function topeDiario() {
   const [x] = await redis([["GET", "muni:tope"]]);
-  const n = Number(x);
+  const n = x == null ? NaN : Number(x); // sin valor guardado = el de la configuración
   return Number.isInteger(n) && n >= 0 ? n : config.avisos.topePorDia;
 }
 
