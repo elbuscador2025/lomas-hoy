@@ -83,7 +83,7 @@ p.tarjeta { cursor:default; }
 .subseccion > summary::-webkit-details-marker { display:none; }
 .subseccion > summary b { flex:1; }
 .subseccion > summary small { color:var(--suave); }
-.flecha { font-size:26px; color:var(--suave); transition:transform .15s; }
+.flecha { display:inline-block; width:18px; text-align:center; font-size:26px; color:var(--suave); transition:transform .15s; }
 details[open] > summary > .flecha { transform:rotate(90deg); }
 
 .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; background:var(--azul); color:#fff; border:0; border-radius:14px; padding:6px 18px; font-size:16px; font-weight:700; text-decoration:none; cursor:pointer; text-align:center; }
