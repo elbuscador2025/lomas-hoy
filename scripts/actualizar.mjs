@@ -1,7 +1,7 @@
 // Proceso automático: lee tren, luz y colectivos (el clima se pide al abrir la app, ver lib/clima.ts) y se los manda al sitio (/api/ingest), que los guarda.
 // Si una fuente falla, el sitio NO pisa el último dato bueno: solo anota el error.
 import { config as cfg } from "../lomas.config.mjs";
-import { leerTren, leerLuz, leerRss, buscarParos } from "./fuentes.mjs";
+import { leerTren, leerLuz, leerRss, buscarParos, leerProgramados } from "./fuentes.mjs";
 
 const { SITIO_URL, INGEST_SECRET } = process.env;
 if (!SITIO_URL || !INGEST_SECRET) {
@@ -27,6 +27,7 @@ async function guardar(clave, cuerpo) {
 const tareas = {
   tren: async () => leerTren(await traer(cfg.tren.url, "text"), cfg),
   luz: async () => leerLuz(await traer(cfg.luz.url, "text"), cfg),
+  programados: async () => leerProgramados(await traer(cfg.programados.url, "json"), cfg),
   colectivos: async () => {
     const diarios = cfg.colectivos.diarios;
     const lecturas = await Promise.allSettled(diarios.map(async (d) => leerRss(await traer(d.url, "text"), d.medio)));
@@ -39,7 +40,7 @@ const tareas = {
 
 let fallos = 0;
 for (const [clave, tarea] of Object.entries(tareas)) {
-  if (!cfg.secciones[clave]?.activa) continue;
+  if (!(cfg.secciones[clave] ?? cfg[clave])?.activa) continue;
   try {
     await guardar(clave, { contenido: await tarea() });
     console.log(`${clave}: ok`);

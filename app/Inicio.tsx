@@ -10,7 +10,7 @@ import { ahoraAR, esDeHoy, type AvisoPublico } from "@/lib/avisos";
 import { Icono } from "./Iconos";
 import Pie from "./Pie";
 import LugarCard from "./LugarCard";
-import Notificaciones, { Bienvenida } from "./Notificaciones";
+import Notificaciones, { CartelInstalar, CartelAvisos } from "./Notificaciones";
 import { usePush } from "./usePush";
 
 type Coord = { lat: number; lng: number };
@@ -128,6 +128,9 @@ export default function Inicio() {
   const alertasLuz = novedades.filter((n) => n.vista === "luz");
   const paros = (d.colectivos?.contenido?.paros ?? []).filter((p) => Date.now() - new Date(p.fecha).getTime() <= config.colectivos.diasMaximos * 86400_000);
   const clima = d.clima?.contenido ?? null;
+  const programados = (d.programados?.contenido?.cortes ?? []).filter((c) => c.fin >= ahora).sort((a, b) => a.inicio.localeCompare(b.inicio));
+  const diaCorto = (f: string) => capitalizar(new Date(`${f}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "long", day: "numeric", month: "long" }).replace(",", ""));
+  const horaCorte = (f: string) => f.slice(11, 16);
   const filaHoras = clima ? proximasHoras(clima, ahora) : [];
   const avisosOrdenados = [...avisos].sort((a, b) => Number(esDeHoy(b, ahora)) - Number(esDeHoy(a, ahora)) || (a.actividad ?? a.creado).localeCompare(b.actividad ?? b.creado));
   const lugaresDe = (vistaId: string) => lugares.filter((l) => CATEGORIAS_DE[vistaId].includes(l.categoria));
@@ -173,11 +176,12 @@ export default function Inicio() {
       avisos: avisos.filter((a) => coincide(`aviso municipio ${a.titulo} ${a.texto} ${a.zona} ${a.firma} ${a.direccion}`)),
       tren: s.tren.activa ? (d.tren?.contenido?.novedades ?? []).filter((n) => coincide(`${s.tren.titulo} tren roca ${n.ramal} ${n.motivo}`)) : [],
       paros: s.colectivos.activa ? paros.filter((p) => coincide(`colectivo colectivos paro uta ${p.titular}`)) : [],
+      programados: s.luz.activa ? programados.filter((c) => coincide(`corte programado luz edesur ${c.localidad} ${c.motivo}`)) : [],
       luz: s.luz.activa ? cortes.filter((c) => coincide(`${s.luz.titulo} luz corte edesur ${nombreLindo(c.localidad ?? "")}`)) : [],
       clima: s.clima.activa && clima && coincide(`clima tiempo temperatura lluvia ${clima.ahora.etiqueta} ${clima.dias.map((d) => d.etiqueta).join(" ")}`) ? clima : null,
     };
-  }, [busqueda, lugares, avisos, d.tren, paros, cortes, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
-  const hayResultados = resultados && (resultados.lugares.length || resultados.avisos.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.clima);
+  }, [busqueda, lugares, avisos, d.tren, paros, cortes, programados, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
+  const hayResultados = resultados && (resultados.lugares.length || resultados.avisos.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.clima);
 
   // ---- Estado de cada cuadradito ----
   const hayGrave = (v: Novedad["vista"]) => novedades.some((n) => n.vista === v && n.gravedad === "grave");
@@ -299,6 +303,29 @@ export default function Inicio() {
           </ul>
         )}
         <Pie seccion="luz" fuente={config.luz.fuente} url={config.luz.paginaPublica} fila={d.luz} />
+        {config.programados.activa && (
+          <div className="bloque">
+            <h2>Cortes programados</h2>
+            {!d.programados?.contenido ? <SinDatos error={d.programados?.error} /> : programados.length === 0 ? (
+              <p>No hay cortes programados para los próximos días.</p>
+            ) : (
+              <ul className="lista">
+                {programados.map((c) => (
+                  <li key={c.id + c.inicio}>
+                    <b>{c.localidad}</b>
+                    <br />
+                    {c.inicio.slice(0, 10) === c.fin.slice(0, 10)
+                      ? `${diaCorto(c.inicio.slice(0, 10))}, de ${horaCorte(c.inicio)} a ${horaCorte(c.fin)} hs`
+                      : `Desde el ${diaCorto(c.inicio.slice(0, 10))} a las ${horaCorte(c.inicio)} hasta el ${diaCorto(c.fin.slice(0, 10))} a las ${horaCorte(c.fin)} hs`}
+                    <br /><small>{c.clientes != null ? `${plural(c.clientes, "cliente", "clientes")} · ` : ""}{c.motivo}</small>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="vacio">Horario estimado, según Edesur. Puede reprogramarse.</p>
+            <Pie seccion="luz" fuente={config.programados.fuente} url={config.programados.paginaPublica} fila={d.programados} />
+          </div>
+        )}
       </Detalle>
     );
 
@@ -416,7 +443,8 @@ export default function Inicio() {
       </header>
 
       <section className="hoja">
-        <Bienvenida push={push} />
+        <CartelInstalar />
+        <CartelAvisos push={push} />
         <label className="buscador">
           <Icono nombre="lupa" tam={22} />
           <input type="search" placeholder="Buscar: veterinaria, Banfield, tren…" aria-label="Buscar" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -443,6 +471,10 @@ export default function Inicio() {
             {resultados.luz.length > 0 && (
               <div className="grupo"><h2>Cortes de luz</h2>
                 {resultados.luz.map((x, i) => <p key={i} className="tarjeta aviso"><b>{nombreLindo(x.localidad ?? config.ciudad)}</b><span>{plural(x.usuarios, "usuario", "usuarios")} · {x.normalizacion ? `hasta las ${x.normalizacion.slice(11, 16)} hs` : "sin hora estimada"}</span></p>)}
+              </div>)}
+            {resultados.programados.length > 0 && (
+              <div className="grupo"><h2>Cortes programados</h2>
+                {resultados.programados.map((c) => <p key={c.id + c.inicio} className="tarjeta aviso"><b>{c.localidad}</b><span>{diaCorto(c.inicio.slice(0, 10))}, de {horaCorte(c.inicio)} a {horaCorte(c.fin)} hs</span><small>Horario estimado, según Edesur</small></p>)}
               </div>)}
             {resultados.clima && (
               <div className="grupo"><h2>Clima</h2><p className="tarjeta ok"><b>{Math.round(resultados.clima.ahora.temp)}° · {resultados.clima.ahora.etiqueta}</b></p></div>)}
@@ -491,7 +523,7 @@ export default function Inicio() {
               )}
               {s.luz.activa && (
                 <Tile icono="luz" titulo="Luz" estado={luzEstado} tono={luzTono} onClick={() => abrir("luz")}
-                  resumen={!d.luz?.contenido ? "Sin datos por ahora" : cortes.length === 0 ? "Sin cortes" : `${plural(cortes.length, "corte", "cortes")} · ${plural(usuariosSinLuz, "usuario", "usuarios")}`} />
+                  resumen={(!d.luz?.contenido ? "Sin datos por ahora" : cortes.length === 0 ? "Sin cortes" : `${plural(cortes.length, "corte", "cortes")} · ${plural(usuariosSinLuz, "usuario", "usuarios")}`) + (programados.length ? ` · ${plural(programados.length, "programado", "programados")}` : "")} />
               )}
               {s.urgencias.activa && (
                 <>

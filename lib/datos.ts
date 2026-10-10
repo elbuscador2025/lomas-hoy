@@ -21,11 +21,12 @@ export type Colectivos = {
   paros: { titular: string; medio: string; link: string; fecha: string }[];
   diariosLeidos: string[]; diariosSinLeer: string[];
 };
+export type Programados = { cortes: { id: string; localidad: string; inicio: string; fin: string; clientes: number | null; motivo: string }[] };
 export type Lugar = {
   id: string; categoria: string; nombre: string; direccion: string; localidad: string;
   telefonos: string[]; horario: string; fuente: string; fuenteUrl: string; lat?: number; lng?: number;
 };
-export type Todo = { tren?: Fila<Tren>; luz?: Fila<Luz>; clima?: Fila<Clima>; colectivos?: Fila<Colectivos> };
+export type Todo = { tren?: Fila<Tren>; luz?: Fila<Luz>; clima?: Fila<Clima>; colectivos?: Fila<Colectivos>; programados?: Fila<Programados> };
 
 const CLAVE_CACHE = "lomas-hoy:datos";
 const CLAVE_LUGARES = "lomas-hoy:lugares";

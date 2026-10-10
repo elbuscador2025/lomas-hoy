@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { after } from "next/server";
-import { evaluarTren, evaluarLuz } from "@/lib/eventos";
+import { evaluarTren, evaluarLuz, evaluarProgramados } from "@/lib/eventos";
 import { redis } from "@/lib/servidor";
 
 // Lo llama el proceso automático (GitHub Actions) con la clave secreta.
@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     return Response.json({ ok: false }, { status: 401 });
   }
   const { clave, contenido, error } = await req.json().catch(() => ({}));
-  if (!["tren", "luz", "clima", "colectivos"].includes(clave)) return Response.json({ ok: false }, { status: 400 });
+  if (!["tren", "luz", "clima", "colectivos", "programados"].includes(clave)) return Response.json({ ok: false }, { status: 400 });
 
   const ahora = new Date().toISOString();
   const llave = `datos:${clave}`;
@@ -19,6 +19,7 @@ export async function POST(req: Request) {
     await redis([["SET", llave, JSON.stringify({ clave, contenido, ok_en: ahora, intento_en: ahora, error: null })]]);
     // Las notificaciones salen después de responder: si fallan, el dato ya quedó guardado.
     if (clave === "tren") after(() => evaluarTren(contenido).catch((e) => console.error("push tren", e)));
+    if (clave === "programados") after(() => evaluarProgramados(contenido).catch((e) => console.error("push programados", e)));
     if (clave === "luz") after(() => evaluarLuz(contenido).catch((e) => console.error("push luz", e)));
   } else {
     // Falló la lectura: se conserva el último dato bueno y solo se anota el error.

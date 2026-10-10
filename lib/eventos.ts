@@ -3,7 +3,8 @@ import { createHash } from "node:crypto";
 import { config } from "@/lomas.config.mjs";
 import { clasificarTren, hoyMMDD, nombreLindo, type Tren, type Luz } from "@/lib/datos";
 import { notificarSeguro } from "@/lib/push";
-import type { Aviso } from "@/lib/avisos";
+import { redis } from "@/lib/servidor";
+import { ahoraAR, type Aviso } from "@/lib/avisos";
 
 const hash = (s: string) => createHash("sha1").update(s).digest("hex").slice(0, 12);
 
@@ -44,4 +45,62 @@ export async function notificarAviso(a: Aviso) {
     tipo: "municipio", clave: `muni:${a.id}`, ttl: 30 * 86400, zona: a.zona,
     titulo: a.titulo, cuerpo: `${a.firma}: ${a.texto}`, url: `/?v=aviso:${a.id}`,
   });
+}
+
+// ---- Cortes programados de Edesur ----
+type CorteProgramado = { id: string; localidad: string; inicio: string; fin: string; clientes: number | null; motivo: string };
+type Estado = { inicio: string; fin: string; avisado: boolean };
+
+const hh = (hora: string) => { const [h, m] = hora.split(":"); return m === "00" ? String(Number(h)) : `${Number(h)}:${m}`; };
+const dia = (fecha: string) =>
+  new Date(`${fecha}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: config.zonaHoraria, weekday: "long", day: "numeric" }).replace(",", "");
+// "de 8 a 16 hs" si es el mismo día; si dura varios días, con el día de inicio y de fin
+const cuando = (c: { inicio: string; fin: string }) =>
+  c.inicio.slice(0, 10) === c.fin.slice(0, 10)
+    ? `de ${hh(c.inicio.slice(11, 16))} a ${hh(c.fin.slice(11, 16))} hs`
+    : `desde el ${dia(c.inicio.slice(0, 10))} a las ${hh(c.inicio.slice(11, 16))} hasta el ${dia(c.fin.slice(0, 10))} a las ${hh(c.fin.slice(11, 16))} hs`;
+const sumarDia = (fecha: string) => new Date(new Date(`${fecha}T12:00:00Z`).getTime() + 86400_000).toISOString().slice(0, 10);
+
+// Corre cada vez que el proceso automático trae los cortes (cada ~20 min):
+//  · el día anterior entre las 18 y las 20 hs → "Mañana hay corte…"
+//  · el mismo día desde las 7:30, si todavía no empezó → recordatorio
+//  · si Edesur cambia el día u horario de un corte ya avisado → aviso de la corrección
+// Cada aviso tiene su clave (corte + horario), así que nunca se repite.
+export async function evaluarProgramados(p: { cortes: CorteProgramado[] }) {
+  const ahora = ahoraAR();
+  const hoy = ahora.slice(0, 10), manana = sumarDia(hoy), hm = ahora.slice(11, 16);
+  const cfg = config.programados;
+  const [crudo] = await redis([["HGETALL", "prog:estado"]]);
+  const estados = new Map<string, Estado>();
+  const plano = (Array.isArray(crudo) ? crudo : []) as string[];
+  for (let i = 0; i < plano.length; i += 2) estados.set(plano[i], JSON.parse(plano[i + 1]));
+
+  const primero = new Map<string, CorteProgramado>(); // un horario por corte: el más próximo
+  for (const c of p.cortes) if (!primero.has(c.id)) primero.set(c.id, c);
+
+  for (const c of primero.values()) {
+    const antes = estados.get(c.id);
+    let avisado = antes?.avisado ?? false;
+    const base = { tipo: "luz" as const, ttl: 10 * 86400, zona: c.localidad };
+    const clave = `prog:${c.id}:${c.inicio}`;
+
+    if (antes?.avisado && (antes.inicio !== c.inicio || antes.fin !== c.fin)) {
+      await notificarSeguro({ ...base, clave: `${clave}:${c.fin}:corr`, titulo: "Cambió un corte de luz programado",
+        cuerpo: `${c.localidad}: ahora ${dia(c.inicio.slice(0, 10))}, ${cuando(c)}. Horario estimado, según Edesur.`, url: "/?v=luz" });
+    } else if (c.inicio.slice(0, 10) === manana && hm >= cfg.avisoAnterior.desde && hm < cfg.avisoAnterior.hasta) {
+      await notificarSeguro({ ...base, clave: `${clave}:ant`, titulo: `Mañana hay corte de luz en ${c.localidad}`,
+        cuerpo: `Mañana hay corte de luz programado en ${c.localidad}, ${cuando(c)}. Horario estimado, según Edesur.`, url: "/?v=luz" });
+      avisado = true;
+    } else if (c.inicio.slice(0, 10) === hoy && hm >= cfg.recordatorio.desde && hm < cfg.recordatorio.hasta && c.inicio > ahora) {
+      await notificarSeguro({ ...base, clave: `${clave}:rec`, titulo: `Hoy hay corte de luz en ${c.localidad}`,
+        cuerpo: `Hoy hay corte de luz programado en ${c.localidad}, ${cuando(c)}. Horario estimado, según Edesur.`, url: "/?v=luz" });
+      avisado = true;
+    }
+    if (!antes || antes.inicio !== c.inicio || antes.fin !== c.fin || antes.avisado !== avisado) {
+      await redis([["HSET", "prog:estado", c.id, JSON.stringify({ inicio: c.inicio, fin: c.fin, avisado })]]);
+    }
+  }
+  // Se olvidan los cortes que ya no figuran en la lista de Edesur
+  const vencidos = [...estados.keys()].filter((id) => !primero.has(id));
+  if (vencidos.length) await redis([["HDEL", "prog:estado", ...vencidos]]);
 }

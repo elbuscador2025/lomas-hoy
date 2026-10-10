@@ -73,6 +73,17 @@ export const config = {
   // Avisos del municipio: cuántos por día (para todo el municipio) si no se cambió desde el panel, y cuánto duran sin fecha.
   avisos: { topePorDia: 3, diasDeVigenciaSinFecha: 7 },
 
+  // Cortes de luz programados de Edesur (mapa público de cortes programados). La API no trae calles ni partido: se filtra por localidad.
+  programados: {
+    activa: true,
+    fuente: "Edesur – Cortes programados",
+    url: "https://ed.edesur.com.ar/api/utils/outage-report",
+    paginaPublica: "https://www.edesur.com.ar/servicios-al-cliente/cortes-programados/",
+    diasAdelante: 14,
+    avisoAnterior: { desde: "18:00", hasta: "20:00" }, // el día anterior
+    recordatorio: { desde: "07:30", hasta: "09:00" }, // el mismo día, solo si el corte empieza después
+  },
+
   // Notificaciones al celular (web push).
   push: {
     tipos: {

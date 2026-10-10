@@ -1,4 +1,5 @@
 // Lectores de cada fuente. Si algo no se entiende, devuelven null o tiran error: nunca inventan.
+import { createHash } from "node:crypto";
 
 const decodificar = (s) =>
   s
@@ -97,4 +98,47 @@ export function buscarParos(notas, cfg, ahora = new Date()) {
     .filter((n) => !vistos.has(n.link) && vistos.add(n.link))
     .sort((a, b) => b.fecha - a.fecha)
     .map((n) => ({ titular: n.titular, medio: n.medio, link: n.link, fecha: n.fecha.toISOString() }));
+}
+
+// ---- Cortes programados de Edesur ----
+const distancia = (a, b) => {
+  const f = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) f[0][j] = j;
+  for (let i = 1; i <= a.length; i++)
+    for (let j = 1; j <= b.length; j++)
+      f[i][j] = Math.min(f[i - 1][j] + 1, f[i][j - 1] + 1, f[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return f[a.length][b.length];
+};
+const CAJA = { latMin: -34.86, latMax: -34.68, lngMin: -58.52, lngMax: -58.3 }; // alrededor del partido
+const fechaEdesur = (s) => { // "09/10/2026 08:00:00" (hora de Argentina) -> "2026-10-09T08:00"
+  const m = String(s ?? "").match(/^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})/);
+  return m ? `${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}` : null;
+};
+const ahoraArgentina = (zona, ahora) => {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: zona, hour12: false, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
+    .formatToParts(ahora).map((x) => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day}T${p.hour === "24" ? "00" : p.hour}:${p.minute}`;
+};
+
+// Se queda con los cortes del partido que todavía no terminaron. Edesur escribe la localidad a su manera
+// ("BANDFIELD"): se acepta igual si es la misma salvo una letra. Si algo no se entiende, se descarta (no se inventa).
+export function leerProgramados(json, cfg, ahora = new Date()) {
+  if (!Array.isArray(json)) throw new Error("Formato de Edesur no reconocido");
+  const nombres = cfg.localidades.map((n) => ({ canon: n, norm: sinTildes(n) }));
+  const ahoraAR = ahoraArgentina(cfg.zonaHoraria, ahora);
+  const limite = ahoraArgentina(cfg.zonaHoraria, new Date(ahora.getTime() + cfg.programados.diasAdelante * 86400_000));
+  const salida = new Map();
+  for (const x of json) {
+    const loc = sinTildes(String(x.localidad ?? "")).replace(/\s+/g, " ").trim();
+    const n = nombres.find((k) => loc === k.norm || loc.startsWith(k.norm + " ") || (k.norm.length >= 7 && distancia(loc, k.norm) <= 1));
+    const lat = Number(x.latitud), lng = Number(x.longitud);
+    if (!n || !(lat > CAJA.latMin && lat < CAJA.latMax && lng > CAJA.lngMin && lng < CAJA.lngMax)) continue;
+    const inicio = fechaEdesur(x.fechaInicio), fin = fechaEdesur(x.fechaFin);
+    if (!inicio || !fin || fin < ahoraAR || inicio > limite) continue;
+    const clientes = Number(x.clientesAfectados);
+    const id = createHash("sha1").update([n.canon, x.latitud, x.longitud, clientes, x.motivo].join("|")).digest("hex").slice(0, 12);
+    if (!salida.has(`${id}|${inicio}|${fin}`))
+      salida.set(`${id}|${inicio}|${fin}`, { id, localidad: n.canon, inicio, fin, clientes: Number.isFinite(clientes) ? clientes : null, motivo: decodificar(String(x.motivo ?? "")) });
+  }
+  return { cortes: [...salida.values()].sort((a, b) => a.inicio.localeCompare(b.inicio)) };
 }

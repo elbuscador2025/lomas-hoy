@@ -38,3 +38,11 @@ test("clima: lee Ezeiza del SMN y dice que llueve cuando la observación dice ll
   assert.deepEqual([o.temp, o.sensacion, o.humedad, o.viento, o.icono, o.etiqueta, o.medidoEn], [13, null, 87, 13, "lluvia", "Lluvia", "20:00"]);
   assert.equal(leerObservacionSmn(txt, "Ezeiza", new Date("2026-10-10T03:00:00Z")), null); // observación de hace 7 h: no se usa
 });
+
+import { leerProgramados } from "./fuentes.mjs";
+test("cortes programados: toma solo el partido (aunque Edesur escriba mal la localidad) y junta repetidos", () => {
+  const corte = (localidad, lat, lng) => ({ fechaInicio: "10/10/2026 08:00:00", fechaFin: "10/10/2026 16:00:00", latitud: lat, longitud: lng, clientesAfectados: 16, motivo: "Pedido de instalacion para obras", localidad });
+  const json = [corte("BANDFIELD", "-34.745", "-58.39"), corte("BANDFIELD", "-34.745", "-58.39"), corte("LANUS ESTE", "-34.70", "-58.38"), corte("DOMSELAAR", "-35.06", "-58.30")];
+  const r = leerProgramados(json, cfg, new Date("2026-10-09T23:00:00Z"));
+  assert.deepEqual(r.cortes.map((c) => [c.localidad, c.inicio, c.fin]), [["Banfield", "2026-10-10T08:00", "2026-10-10T16:00"]]);
+});

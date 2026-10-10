@@ -110,3 +110,28 @@ export function usePush() {
   return { estado, prefs, setPrefs, error, ocupado, activar, guardar, desactivar };
 }
 export type Push = ReturnType<typeof usePush>;
+
+// Instalar la app: en Android el navegador avisa cuándo se puede y se instala con un toque.
+type EventoInstalar = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
+export function useInstalar() {
+  const [instalada, setInstalada] = useState(true); // hasta saber, no se muestra nada
+  const [ios, setIos] = useState(false);
+  const [evento, setEvento] = useState<EventoInstalar | null>(null);
+  useEffect(() => {
+    setInstalada(estaInstalada());
+    setIos(esIOS());
+    const antes = (e: Event) => { e.preventDefault(); setEvento(e as EventoInstalar); };
+    const despues = () => { setInstalada(true); setEvento(null); };
+    window.addEventListener("beforeinstallprompt", antes);
+    window.addEventListener("appinstalled", despues);
+    return () => { window.removeEventListener("beforeinstallprompt", antes); window.removeEventListener("appinstalled", despues); };
+  }, []);
+  const instalar = useCallback(async () => {
+    if (!evento) return;
+    await evento.prompt();
+    const r = await evento.userChoice;
+    if (r.outcome === "accepted") setInstalada(true);
+    setEvento(null);
+  }, [evento]);
+  return { instalada, ios, evento, instalar };
+}

@@ -2,11 +2,12 @@
 import { useEffect, useState } from "react";
 import { config } from "@/lomas.config.mjs";
 import { ZONAS } from "@/lib/avisos";
-import { esIOS, estaInstalada, type Push } from "./usePush";
+import { Icono } from "./Iconos";
+import { useInstalar, type Push } from "./usePush";
 
-function Selector({ valor, onCambio }: { valor: string; onCambio: (v: string) => void }) {
+function Selector({ valor, onCambio, etiqueta = "Mi barrio" }: { valor: string; onCambio: (v: string) => void; etiqueta?: string }) {
   return (
-    <label className="campo">Mi barrio
+    <label className="campo">{etiqueta}
       <select value={valor} onChange={(e) => onCambio(e.target.value)}>
         {ZONAS.map((z) => <option key={z}>{z}</option>)}
       </select>
@@ -25,50 +26,66 @@ function PasosIPhone() {
   );
 }
 
-// Tarjeta de bienvenida (se puede cerrar). Pide el permiso solo al tocar "Activar avisos".
-export function Bienvenida({ push }: { push: Push }) {
-  const [oculta, setOculta] = useState(true);
-  const [ios, setIos] = useState(false);
-  const [instalada, setInstalada] = useState(false);
-  const [barrio, setBarrio] = useState("Todo Lomas");
-  useEffect(() => {
-    try { setOculta(localStorage.getItem("lomas-hoy:bienvenida") === "cerrada"); } catch { setOculta(false); }
-    setIos(esIOS()); setInstalada(estaInstalada());
-  }, []);
-  if (oculta || (push.estado !== "inactivo" && push.estado !== "iosSinInstalar")) return null;
+const guardarCierre = (clave: string) => { try { localStorage.setItem(clave, "cerrada"); } catch {} };
+const estaCerrado = (clave: string) => { try { return localStorage.getItem(clave) === "cerrada"; } catch { return false; } };
 
-  const cerrar = () => { try { localStorage.setItem("lomas-hoy:bienvenida", "cerrada"); } catch {} setOculta(true); };
+// Cartel aparte para instalar la app. Si ya está instalada, no aparece.
+export function CartelInstalar() {
+  const { instalada, ios, evento, instalar } = useInstalar();
+  const [cerrado, setCerrado] = useState(true);
+  useEffect(() => setCerrado(estaCerrado("lomas-hoy:cartel-instalar")), []);
+  // En Android solo se ofrece cuando el navegador dice que se puede instalar (si ya está instalada, no lo dice).
+  if (cerrado || instalada || (!ios && !evento)) return null;
   return (
-    <section className="bienvenida" aria-label="Bienvenida">
-      <div className="bienvenida-arriba">
-        <b>Bienvenido a Lomas Hoy</b>
-        <button className="cerrar" onClick={cerrar} aria-label="Cerrar">Cerrar</button>
-      </div>
-      <div className="paso">
-        <span className="num">1</span>
-        <div>
-          <b>Agregá Lomas Hoy a tu pantalla</b>
-          {instalada ? <p>Listo, ya la tenés.</p>
-            : ios ? <p>En Safari tocá <b>Compartir</b> y elegí <b>Agregar a inicio</b>.</p>
-            : <p>En Chrome tocá el menú <b>⋮</b> y elegí <b>Instalar app</b>.</p>}
-        </div>
-      </div>
-      <div className="paso">
-        <span className="num">2</span>
-        <div>
-          <b>Activá los avisos</b>
-          {push.estado === "iosSinInstalar" ? (
-            <p>En iPhone los avisos solo funcionan si abrís la app desde el ícono de la pantalla de inicio. Hacé el paso 1 y volvé a abrirla desde ahí.</p>
-          ) : (
-            <>
-              <p>Tren, cortes de luz y avisos del municipio, solo lo que te importa.</p>
-              <Selector valor={barrio} onCambio={setBarrio} />
-              <button className="btn ancho" disabled={push.ocupado} onClick={() => push.activar({ ...push.prefs, barrio })}>Activar avisos</button>
-              {push.error && <p className="error">{push.error}</p>}
-            </>
-          )}
-        </div>
-      </div>
+    <section className="cartel" aria-label="Instalar la app">
+      <b>Instalá Lomas Hoy en tu celular</b>
+      {ios ? (
+        <ol className="pasos">
+          <li>Tocá el botón <b>Compartir</b> (el cuadrado con una flecha hacia arriba).</li>
+          <li>Después tocá <b>Agregar a inicio</b>.</li>
+        </ol>
+      ) : (
+        <button className="btn ancho" onClick={instalar}>Instalar</button>
+      )}
+      <button className="link" onClick={() => { guardarCierre("lomas-hoy:cartel-instalar"); setCerrado(true); }}>Ahora no</button>
+    </section>
+  );
+}
+
+const AVISOS_QUE_LLEGAN: { icono: string; texto: string; activo: boolean }[] = [
+  { icono: "tren", texto: "Se corta o se demora el tren Roca", activo: config.push.tipos.tren.activa },
+  { icono: "reloj", texto: "Va a haber un corte de luz programado", activo: config.push.tipos.luz.activa && config.programados.activa },
+  { icono: "luz", texto: "Hay un corte de luz ahora", activo: config.push.tipos.luz.activa },
+  { icono: "tormenta", texto: "Hay alerta de tormenta", activo: config.push.tipos.tormenta.activa },
+  { icono: "megafono", texto: "El municipio publica algo", activo: config.push.tipos.municipio.activa },
+];
+
+// Cartel para activar los avisos. Pide el permiso del navegador solo al tocar "Activar avisos".
+export function CartelAvisos({ push }: { push: Push }) {
+  const [cerrado, setCerrado] = useState(true);
+  const [barrio, setBarrio] = useState("Todo Lomas");
+  useEffect(() => setCerrado(estaCerrado("lomas-hoy:bienvenida")), []);
+  if (cerrado || (push.estado !== "inactivo" && push.estado !== "iosSinInstalar")) return null;
+  return (
+    <section className="cartel" aria-label="Activar los avisos">
+      <b>Activá los avisos</b>
+      <p>Te suena el celular cuando pasa algo en tu barrio:</p>
+      <ul className="que-llega">
+        {AVISOS_QUE_LLEGAN.filter((a) => a.activo).map((a) => (
+          <li key={a.texto}><span className="icono-aviso"><Icono nombre={a.icono} tam={22} /></span>{a.texto}</li>
+        ))}
+      </ul>
+      {push.estado === "iosSinInstalar" ? (
+        <p>En iPhone los avisos solo funcionan si abrís la app desde el ícono de la pantalla de inicio. Primero instalala con los pasos de arriba y abrila desde ahí.</p>
+      ) : (
+        <>
+          <Selector valor={barrio} onCambio={setBarrio} etiqueta="Elegí tu barrio" />
+          <button className="btn ancho grande-btn" disabled={push.ocupado} onClick={() => push.activar({ ...push.prefs, barrio })}>Activar avisos</button>
+          <small className="chico">Los podés apagar cuando quieras.</small>
+          {push.error && <p className="error">{push.error}</p>}
+        </>
+      )}
+      <button className="link" onClick={() => { guardarCierre("lomas-hoy:bienvenida"); setCerrado(true); }}>Ahora no</button>
     </section>
   );
 }
