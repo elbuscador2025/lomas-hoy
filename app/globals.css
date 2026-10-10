@@ -139,3 +139,4 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 .interruptor.on span { background:var(--azul); }
 .interruptor.on span::after { transform:translateX(20px); }
 .interruptor:disabled { opacity:.45; cursor:not-allowed; }
+.cartel .grande-btn { min-height:56px; font-size:18px; margin-top:4px; }
