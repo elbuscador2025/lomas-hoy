@@ -24,7 +24,7 @@ export type Colectivos = {
 export type Programados = { cortes: { id: string; localidad: string; lat?: number; lng?: number; inicio: string; fin: string; clientes: number | null; motivo: string }[] };
 export type Lugar = {
   id: string; categoria: string; nombre: string; direccion: string; localidad: string;
-  telefonos: string[]; horario: string; fuente: string; fuenteUrl: string; lat?: number; lng?: number;
+  telefonos: string[]; horario: string; etiqueta?: string; fuente: string; fuenteUrl: string; lat?: number; lng?: number;
 };
 export type Todo = { tren?: Fila<Tren>; luz?: Fila<Luz>; clima?: Fila<Clima>; colectivos?: Fila<Colectivos>; programados?: Fila<Programados> };
 

@@ -141,3 +141,6 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 .interruptor:disabled { opacity:.45; cursor:not-allowed; }
 .cartel .grande-btn { min-height:56px; font-size:18px; margin-top:4px; }
 .distancia { color:var(--azul); font-weight:700; width:100%; }
+.dato { display:flex; align-items:center; gap:6px; }
+.dato svg { flex:none; color:var(--azul); }
+.etiqueta { align-self:flex-start; }

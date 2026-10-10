@@ -27,6 +27,7 @@ export async function POST(req: Request) {
       localidad: texto(lugar.localidad),
       telefonos: (Array.isArray(lugar.telefonos) ? lugar.telefonos : []).map((t: unknown) => texto(t, 30)).filter(Boolean),
       horario: texto(lugar.horario),
+      etiqueta: texto(lugar.etiqueta, 40),
       fuente: texto(lugar.fuente),
       fuenteUrl: texto(lugar.fuenteUrl, 400),
     } as Record<string, unknown>;

@@ -12,8 +12,8 @@ export const config = {
     colectivos: { activa: true, titulo: "Colectivos" },
     luz: { activa: true, titulo: "Cortes de luz" },
     clima: { activa: true, titulo: "Clima" },
-    // Apagada: no se encontró una fuente oficial que se pueda leer automáticamente.
-    farmacias: { activa: false, titulo: "Farmacias de turno" },
+    // Sin fuente oficial de turnos legible: la sección solo ofrece buscar farmacias abiertas en Google Maps.
+    farmacias: { activa: true, titulo: "Farmacias" },
     urgencias: { activa: true, titulo: "Urgencias y guardias" },
     avisos: { activa: true, titulo: "Avisos del municipio" },
   },

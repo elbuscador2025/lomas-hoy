@@ -20,7 +20,10 @@ const GUIA = {
 };
 const BVLZ = { fuente: "Bomberos Voluntarios de Lomas de Zamora", fuenteUrl: "https://www.bvlz.org.ar/destacamentos/" };
 
-const maps = (q) => ({ fuente: "Ficha del lugar en Google Maps", fuenteUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}` });
+const maps = (q) => ({ fuente: "Ficha del comercio en Google Maps", fuenteUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}` });
+// Veterinaria: fuente = ficha del comercio en Google Maps
+const vet = (nombre, direccion, localidad, tel, horario = "") =>
+  lugar("veterinarias", nombre, direccion, localidad, tel ? [tel] : [], horario, maps(`${nombre} ${direccion} ${localidad}`));
 const lugar = (categoria, nombre, direccion, localidad, telefonos, horario, fuente) => ({
   categoria, nombre, direccion, localidad, telefonos, horario, ...fuente,
 });
@@ -30,13 +33,37 @@ const caps = (nombre, direccion, localidad, tel, horario) =>
   lugar("salitas", `CAPS ${nombre}`, direccion, localidad, tel ? [tel.length === 9 ? `011 ${tel}` : tel] : [], horario, GUIA);
 
 export const lugaresIniciales = [
-  // --- Veterinarias y salud animal (datos indicados por el dueño; fuente: ficha del lugar en Google Maps) ---
-  lugar("veterinarias", "Danke Clínica Veterinaria", "Laprida 1502", "Lomas de Zamora", ["011 4283-1111"], "Abierta las 24 hs", maps("Danke Clínica Veterinaria Laprida 1502 Lomas de Zamora")),
-  lugar("veterinarias", "CeVeDe / Cevisur", "Av. Hipólito Yrigoyen 8017", "Banfield", ["011 3773-9690"], "Abierta las 24 hs", maps("Cevisur Av. Hipólito Yrigoyen 8017 Banfield")),
-  lugar("veterinarias", "Hospital Veterinario Temperley", "Av. Hipólito Yrigoyen 10287", "Temperley", [], "Abierto las 24 hs", maps("Hospital Veterinario Temperley Av. Hipólito Yrigoyen 10287")),
-  lugar("veterinarias", "Hospital Municipal de Animales (Zoonosis)", "Av. 12 de Octubre 1100", "Villa Centenario", ["011 3797-3089"],
-    "Lun a vie 8 a 18 hs · Sáb, dom y feriados 9 a 12 hs · Atención gratuita",
-    { fuente: "Municipio de Lomas de Zamora (horario) y ficha en Google Maps", fuenteUrl: "https://lomasdezamora.gov.ar/hospital-animales" }),
+  // --- Veterinarias y salud animal (datos indicados por el dueño; fuente: ficha del comercio en Google Maps) ---
+  // Las que atienden las 24 hs tienen horario; en las demás NO se muestra horario (la pantalla dice "Consultá el horario por teléfono").
+  vet("Danke Clínica Veterinaria", "Laprida 1502", "Lomas de Zamora", "011 4283-1111", "Abierta las 24 hs"),
+  vet("CeVeDe / Cevisur", "Av. Hipólito Yrigoyen 8017", "Banfield", "011 3773-9690", "Abierta las 24 hs"),
+  vet("Hospital Veterinario Temperley", "Av. Hipólito Yrigoyen 10287", "Temperley", "", "Abierta las 24 hs"),
+  { ...vet("Hospital Municipal de Animales (Zoonosis)", "Av. 12 de Octubre 1100", "Villa Centenario", "011 3797-3089", "Lun a vie 8 a 18 hs · Sáb, dom y feriados 9 a 12 hs"),
+    etiqueta: "Municipal y gratuito", fuente: "Municipio de Lomas de Zamora (horario) y ficha en Google Maps", fuenteUrl: "https://lomasdezamora.gov.ar/hospital-animales" },
+  vet("VetCare Lomas", "Mariano Sánchez de Loria 456", "Lomas de Zamora", "11 7826-9824"),
+  vet("Lomas del Sur Veterinaria", "Av. Meeks 31", "Lomas de Zamora", ""),
+  vet("Lomas Vet", "Av. Colombres 877", "Lomas de Zamora", "11 5104-7872"),
+  vet("Veterinaria Integral Colombres", "Molina Arrotea 619", "Lomas de Zamora", "011 4245-2001"),
+  vet("Veterinaria Randall", "Av. Alsina 1176", "Banfield", "011 3151-0976"),
+  vet("Veterinaria San Bernardo", "25 de Mayo 308", "Temperley", "011 4292-1216"),
+  vet("Veterinaria Alem", "25 de Mayo 699", "Temperley", "011 4262-5691"),
+  vet("Veterinaria Temperley, consultorio de especialidad", "Av. Tomás Espora 171", "Temperley", "011 5740-3987"),
+  vet("Clínica Veterinaria Dr. Llaneza", "Scalabrini Ortiz 99", "Temperley", "011 5880-0428"),
+  vet("Clínica Veterinaria Dr. Serviddio", "Antártida Argentina 300", "Turdera", "011 4418-2836"),
+  vet("Veterinaria Santo Tomas", "Primera Junta 20", "Turdera", "011 6196-9754"),
+  vet("Clínica Veterinaria MAPA", "Camino de Cintura 794", "Llavallol", "11 3927-4330"),
+  vet("Veterinaria Marisol", "Int. Pedro Pablo Turner 1645", "Ingeniero Budge", "011 5528-8422"),
+  vet("Veterinaria Budge", "Calle Recondo", "Ingeniero Budge", "011 3817-2870"),
+  vet("Veterinaria Da.No", "Pres. Juan Domingo Perón 2237", "Villa Centenario", "011 2058-3392"),
+  vet("Veterinaria Hermida", "Pres. Juan Domingo Perón 2284", "Villa Centenario", "011 3608-7640"),
+  vet("Mascotas Unamuno", "Miguel de Unamuno 528", "Villa Centenario", "11 2705-1514"),
+  vet("Consultorio Veterinario San José", "Salta 69", "San José", "011 4264-4900"),
+  // Nombre sin confirmar (no apareció en una ficha ni en la página del comercio): se usa "Veterinaria" y la dirección.
+  vet("Veterinaria Av. Almirante Brown 2968", "Av. Almirante Brown 2968", "Temperley", "011 4245-1122"),
+  vet("Veterinaria Av. Alsina 515", "Av. Alsina 515", "Banfield", "011 3399-1853"),
+  vet("Veterinaria Camino Presidente Perón 3001", "Camino Presidente Perón 3001", "Banfield", "011 4276-2412"),
+  vet("Veterinaria Antártida Argentina 790", "Antártida Argentina 790", "Llavallol", "011 6377-9708"),
+  vet("Veterinaria Cosquín 2678", "Cosquín 2678", "Ingeniero Budge", "011 2101-3618"),
 
   // --- Guardias médicas y hospitales ---
   lugar("guardias", "Hospital Gandulfo", "Balcarce 351", "Lomas de Zamora", ["011 4243-5555"], "", GBA_HOSP),

@@ -182,10 +182,11 @@ export default function Inicio() {
       paros: s.colectivos.activa ? paros.filter((p) => coincide(`colectivo colectivos paro uta ${p.titular}`)) : [],
       programados: s.luz.activa ? programados.filter((c) => coincide(`corte programado luz edesur ${c.localidad} ${c.motivo}`)) : [],
       luz: s.luz.activa ? cortes.filter((c) => coincide(`${s.luz.titulo} luz corte edesur ${nombreLindo(c.localidad ?? "")}`)) : [],
+      farmacias: s.farmacias.activa && coincide("farmacia farmacias turno turnos de turno remedios medicamentos"),
       clima: s.clima.activa && clima && coincide(`clima tiempo temperatura lluvia ${clima.ahora.etiqueta} ${clima.dias.map((d) => d.etiqueta).join(" ")}`) ? clima : null,
     };
   }, [busqueda, lugares, avisos, d.tren, paros, cortes, programados, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
-  const hayResultados = resultados && (resultados.lugares.length || resultados.avisos.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.clima);
+  const hayResultados = resultados && (resultados.lugares.length || resultados.avisos.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.farmacias || resultados.clima);
 
   // ---- Estado de cada cuadradito ----
   const hayGrave = (v: Novedad["vista"]) => novedades.some((n) => n.vista === v && n.gravedad === "grave");
@@ -197,6 +198,7 @@ export default function Inicio() {
   const usuariosSinLuz = cortes.reduce((t, c) => t + c.usuarios, 0);
   const vets = lugaresDe("vets");
   const abiertas24 = vets.filter((l) => /24 hs/i.test(l.horario)).length;
+  const mapaFarmacias = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("farmacias abiertas ahora")}`;
 
   // ---- Pantallas de detalle ----
   if (vista === "clima") {
@@ -343,7 +345,37 @@ export default function Inicio() {
       </Detalle>
     );
 
-  if (vista === "guardias" || vista === "vets" || vista === "otros") {
+  if (vista === "farmacias")
+    return (
+      <Detalle titulo={s.farmacias.titulo} onVolver={volver}>
+        <p>Todavía no tenemos el cronograma oficial de turnos.</p>
+        <a className="btn grande-btn" target="_blank" rel="noreferrer" href={mapaFarmacias}>Ver farmacias abiertas ahora</a>
+        <p className="vacio">Se abre Google Maps y busca las farmacias abiertas cerca tuyo.</p>
+      </Detalle>
+    );
+
+  if (vista === "vets") {
+    const de24 = (l: Lugar) => /24 hs/i.test(l.horario);
+    const guardia = ordenarLugares(vets.filter(de24), yo);
+    const municipal = vets.filter((l) => !de24(l) && l.etiqueta);
+    const otras = vets.filter((l) => !de24(l) && !l.etiqueta);
+    // con ubicación, por cercanía; sin ubicación, por localidad
+    const resto = yo ? ordenarLugares(otras, yo) : [...otras].sort((a, b) => a.localidad.localeCompare(b.localidad, "es") || a.nombre.localeCompare(b.nombre, "es"));
+    return (
+      <Detalle titulo={TITULO_DE.vets} onVolver={volver}>
+        {yo
+          ? <p className="vacio">Ordenado por cercanía a tu ubicación.</p>
+          : <button className="btn claro ancho" onClick={pedirUbicacion}><Icono nombre="pin" tam={20} /> Ordenar por cercanía</button>}
+        {errorUbicacion && <p className="aviso-pie">No pudimos obtener tu ubicación. Revisá el permiso del navegador.</p>}
+        {lugares.length === 0 && <SinDatos />}
+        {guardia.length > 0 && (<><h2>Guardia 24 hs</h2><ul className="lista">{guardia.map((l) => <LugarCard key={l.id} lugar={l} km={km(l)} />)}</ul></>)}
+        {municipal.length > 0 && (<><h2>Hospital Municipal de Animales</h2><ul className="lista">{municipal.map((l) => <LugarCard key={l.id} lugar={l} km={km(l)} />)}</ul></>)}
+        {resto.length > 0 && (<><h2>Todas las veterinarias</h2><ul className="lista">{resto.map((l) => <LugarCard key={l.id} lugar={l} km={km(l)} />)}</ul></>)}
+      </Detalle>
+    );
+  }
+
+  if (vista === "guardias" || vista === "otros") {
     const cats = CATEGORIAS.filter((c) => CATEGORIAS_DE[vista].includes(c.id));
     return (
       <Detalle titulo={TITULO_DE[vista]} onVolver={volver}>
@@ -490,6 +522,11 @@ export default function Inicio() {
               <div className="grupo"><h2>Cortes programados</h2>
                 {resultados.programados.map((c) => <p key={c.id + c.inicio} className="tarjeta aviso"><b>{c.localidad}</b><span>{diaCorto(c.inicio.slice(0, 10))}, de {horaCorte(c.inicio)} a {horaCorte(c.fin)} hs</span><small>Horario estimado, según Edesur</small></p>)}
               </div>)}
+            {resultados.farmacias && (
+              <div className="grupo"><h2>{s.farmacias.titulo}</h2>
+                <p>Todavía no tenemos el cronograma oficial de turnos.</p>
+                <a className="btn grande-btn" target="_blank" rel="noreferrer" href={mapaFarmacias}>Ver farmacias abiertas ahora</a>
+              </div>)}
             {resultados.clima && (
               <div className="grupo"><h2>Clima</h2><p className="tarjeta ok"><b>{Math.round(resultados.clima.ahora.temp)}° · {resultados.clima.ahora.etiqueta}</b></p></div>)}
             {resultados.lugares.length > 0 && (
@@ -543,9 +580,13 @@ export default function Inicio() {
                 <>
                   <Tile icono="guardia" titulo="Guardias y salitas" estado={plural(lugaresDe("guardias").length, "lugar", "lugares")} tono="neutro" onClick={() => abrir("guardias")}
                     resumen="Hospitales, guardias y centros de salud" />
-                  <Tile icono="patita" titulo="Veterinarias" estado={plural(vets.length, "lugar", "lugares")} tono="neutro" onClick={() => abrir("vets")}
-                    resumen={abiertas24 ? `${plural(abiertas24, "abierta", "abiertas")} las 24 hs` : "Veterinarias y salud animal"} />
+                  <Tile icono="patita" titulo="Veterinarias" estado={`${vets.length} en total`} tono="neutro" onClick={() => abrir("vets")}
+                    resumen={abiertas24 ? `${abiertas24} de guardia 24 hs` : "Veterinarias y salud animal"} />
                 </>
+              )}
+              {s.farmacias.activa && (
+                <Tile icono="farmacia" titulo={s.farmacias.titulo} estado="Mapa" tono="neutro" onClick={() => abrir("farmacias")}
+                  resumen="Farmacias abiertas ahora, cerca tuyo" />
               )}
               {s.avisos.activa && (
                 <Tile icono="megafono" titulo="Avisos del municipio" estado={avisos.length ? String(avisos.length) : "Sin avisos"} tono={avisos.length ? "ok" : "neutro"}

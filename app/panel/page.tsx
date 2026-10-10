@@ -152,6 +152,7 @@ export default function Panel() {
           <label>Localidad<input value={editando.localidad} onChange={(e) => set("localidad", e.target.value)} /></label>
           <label>Teléfonos (separados por coma)<input value={editando.tels} onChange={(e) => set("tels", e.target.value)} /></label>
           <label>Horario<input value={editando.horario} onChange={(e) => set("horario", e.target.value)} /></label>
+          <label>Etiqueta (opcional, ej. Municipal y gratuito)<input value={editando.etiqueta ?? ""} onChange={(e) => set("etiqueta", e.target.value)} /></label>
           <label>Fuente (de dónde salió el dato)<input value={editando.fuente} onChange={(e) => set("fuente", e.target.value)} /></label>
           <label>Link de la fuente<input value={editando.fuenteUrl} onChange={(e) => set("fuenteUrl", e.target.value)} /></label>
           <button className="btn" onClick={guardar}>Guardar</button>
