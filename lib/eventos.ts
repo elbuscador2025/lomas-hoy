@@ -55,6 +55,7 @@ const hh = (hora: string) => { const [h, m] = hora.split(":"); return m === "00"
 const dia = (fecha: string) =>
   new Date(`${fecha}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: config.zonaHoraria, weekday: "long", day: "numeric" }).replace(",", "");
 // "de 8 a 16 hs" si es el mismo día; si dura varios días, con el día de inicio y de fin
+const clientes = (n: number | null) => ` (${n} clientes)`;
 const cuando = (c: { inicio: string; fin: string }) =>
   c.inicio.slice(0, 10) === c.fin.slice(0, 10)
     ? `de ${hh(c.inicio.slice(11, 16))} a ${hh(c.fin.slice(11, 16))} hs`
@@ -79,21 +80,22 @@ export async function evaluarProgramados(p: { cortes: CorteProgramado[] }) {
   for (const c of p.cortes) if (!primero.has(c.id)) primero.set(c.id, c);
 
   for (const c of primero.values()) {
+    if ((c.clientes ?? 0) < cfg.avisarDesdeClientes) continue; // corte chico: sin notificación
     const antes = estados.get(c.id);
     let avisado = antes?.avisado ?? false;
     const base = { tipo: "luz" as const, ttl: 10 * 86400, zona: c.localidad };
     const clave = `prog:${c.id}:${c.inicio}`;
 
     if (antes?.avisado && (antes.inicio !== c.inicio || antes.fin !== c.fin)) {
-      await notificarSeguro({ ...base, clave: `${clave}:${c.fin}:corr`, titulo: "Cambió un corte de luz programado",
-        cuerpo: `${c.localidad}: ahora ${dia(c.inicio.slice(0, 10))}, ${cuando(c)}. Horario estimado, según Edesur.`, url: "/?v=luz" });
+      await notificarSeguro({ ...base, clave: `${clave}:${c.fin}:corr`, titulo: "Cambió un corte programado",
+        cuerpo: `Cambió el corte programado en parte de ${c.localidad}: ahora ${dia(c.inicio.slice(0, 10))}, ${cuando(c)}${clientes(c.clientes)}. Horario estimado, según Edesur.`, url: "/?v=luz" });
     } else if (c.inicio.slice(0, 10) === manana && hm >= cfg.avisoAnterior.desde && hm < cfg.avisoAnterior.hasta) {
-      await notificarSeguro({ ...base, clave: `${clave}:ant`, titulo: `Mañana hay corte de luz en ${c.localidad}`,
-        cuerpo: `Mañana hay corte de luz programado en ${c.localidad}, ${cuando(c)}. Horario estimado, según Edesur.`, url: "/?v=luz" });
+      await notificarSeguro({ ...base, clave: `${clave}:ant`, titulo: `Mañana hay un corte programado`,
+        cuerpo: `Mañana hay un corte programado en parte de ${c.localidad}, ${cuando(c)}${clientes(c.clientes)}. Horario estimado, según Edesur.`, url: "/?v=luz" });
       avisado = true;
     } else if (c.inicio.slice(0, 10) === hoy && hm >= cfg.recordatorio.desde && hm < cfg.recordatorio.hasta && c.inicio > ahora) {
-      await notificarSeguro({ ...base, clave: `${clave}:rec`, titulo: `Hoy hay corte de luz en ${c.localidad}`,
-        cuerpo: `Hoy hay corte de luz programado en ${c.localidad}, ${cuando(c)}. Horario estimado, según Edesur.`, url: "/?v=luz" });
+      await notificarSeguro({ ...base, clave: `${clave}:rec`, titulo: `Hoy hay un corte programado`,
+        cuerpo: `Hoy hay un corte programado en parte de ${c.localidad}, ${cuando(c)}${clientes(c.clientes)}. Horario estimado, según Edesur.`, url: "/?v=luz" });
       avisado = true;
     }
     if (!antes || antes.inicio !== c.inicio || antes.fin !== c.fin || antes.avisado !== avisado) {

@@ -122,7 +122,7 @@ export async function notificar(ev: Evento) {
   for (let i = 0; i < plano.length; i += 2) cuenta.set(plano[i], Number(plano[i + 1]));
   const destino = interesadas.filter((s) => (cuenta.get(idDe(s.endpoint)) ?? 0) < config.push.maximoPorDia);
 
-  const carga = { titulo: corto(ev.titulo, 60), cuerpo: corto(ev.cuerpo, 120), url: ev.url, tag: ev.clave };
+  const carga = { titulo: corto(ev.titulo, 60), cuerpo: corto(ev.cuerpo, 160), url: ev.url, tag: ev.clave };
   const res = await enviarATodas(destino, carga);
 
   const ok = destino.filter((_, i) => res[i].ok), mal = res.filter((r) => !r.ok);

@@ -80,6 +80,7 @@ export const config = {
     url: "https://ed.edesur.com.ar/api/utils/outage-report",
     paginaPublica: "https://www.edesur.com.ar/servicios-al-cliente/cortes-programados/",
     diasAdelante: 14,
+    avisarDesdeClientes: 50, // los cortes más chicos se ven en la sección Luz, pero no mandan notificación
     avisoAnterior: { desde: "18:00", hasta: "20:00" }, // el día anterior
     recordatorio: { desde: "07:30", hasta: "09:00" }, // el mismo día, solo si el corte empieza después
   },
