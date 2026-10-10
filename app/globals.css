@@ -144,3 +144,4 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 .dato { display:flex; align-items:center; gap:6px; }
 .dato svg { flex:none; color:var(--azul); }
 .etiqueta { align-self:flex-start; }
+.btn.grande-btn { min-height:56px; font-size:18px; }
