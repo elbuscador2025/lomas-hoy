@@ -138,7 +138,7 @@ export function leerProgramados(json, cfg, ahora = new Date()) {
     const clientes = Number(x.clientesAfectados);
     const id = createHash("sha1").update([n.canon, x.latitud, x.longitud, clientes, x.motivo].join("|")).digest("hex").slice(0, 12);
     if (!salida.has(`${id}|${inicio}|${fin}`))
-      salida.set(`${id}|${inicio}|${fin}`, { id, localidad: n.canon, inicio, fin, clientes: Number.isFinite(clientes) ? clientes : null, motivo: decodificar(String(x.motivo ?? "")) });
+      salida.set(`${id}|${inicio}|${fin}`, { id, localidad: n.canon, lat, lng, inicio, fin, clientes: Number.isFinite(clientes) ? clientes : null, motivo: decodificar(String(x.motivo ?? "")) });
   }
   return { cortes: [...salida.values()].sort((a, b) => a.inicio.localeCompare(b.inicio)) };
 }

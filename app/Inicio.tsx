@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { config } from "@/lomas.config.mjs";
 import {
   cargarDatos, armarNovedades, clasificarTren, fechaLarga, hora, hoyMMDD, nombreLindo, proximasHoras,
-  CATEGORIAS, ordenarLugares, distanciaKm, normalizar, ZONA,
+  CATEGORIAS, ordenarLugares, distanciaKm, distanciaTexto, normalizar, ZONA,
   type Todo, type Lugar, type Novedad,
 } from "@/lib/datos";
 import { ahoraAR, esDeHoy, type AvisoPublico } from "@/lib/avisos";
@@ -101,6 +101,10 @@ export default function Inicio() {
       history.pushState({ lomasHoy: directo }, "");
       setVista(directo);
     }
+    // Si la persona ya había dado permiso de ubicación, se usa para mostrar distancias (sin volver a preguntar).
+    navigator.permissions?.query({ name: "geolocation" }).then((p) => {
+      if (p.state === "granted") navigator.geolocation.getCurrentPosition((g) => setYo({ lat: g.coords.latitude, lng: g.coords.longitude }), () => {});
+    }).catch(() => {});
     // "Volver" del celular cierra el detalle en vez de salir de la app.
     const alVolver = (e: PopStateEvent) => setVista(e.state?.lomasHoy ?? null);
     window.addEventListener("popstate", alVolver);
@@ -318,11 +322,21 @@ export default function Inicio() {
                       ? `${diaCorto(c.inicio.slice(0, 10))}, de ${horaCorte(c.inicio)} a ${horaCorte(c.fin)} hs`
                       : `Desde el ${diaCorto(c.inicio.slice(0, 10))} a las ${horaCorte(c.inicio)} hasta el ${diaCorto(c.fin.slice(0, 10))} a las ${horaCorte(c.fin)} hs`}
                     <br /><small>{c.clientes != null ? `${plural(c.clientes, "cliente", "clientes")} · ` : ""}{c.motivo}</small>
+                    {c.lat != null && c.lng != null && (
+                      <div className="acciones">
+                        {yo && <small className="distancia">El corte está {distanciaTexto(distanciaKm(yo, { lat: c.lat, lng: c.lng }))} de vos</small>}
+                        <a className="btn claro" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`}>Ver la zona en el mapa</a>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
             )}
-            <p className="vacio">Horario estimado, según Edesur. Puede reprogramarse.</p>
+            {!yo && programados.some((c) => c.lat != null) && (
+              <button className="btn claro ancho" onClick={pedirUbicacion}><Icono nombre="pin" tam={20} /> Ver a qué distancia está de mí</button>
+            )}
+            {errorUbicacion && <p className="aviso-pie">No pudimos obtener tu ubicación. Revisá el permiso del navegador.</p>}
+            <p className="vacio">Horario estimado, según Edesur. Puede reprogramarse. El mapa marca el punto que informa Edesur; la zona afectada puede ser más grande.</p>
             <Pie seccion="luz" fuente={config.programados.fuente} url={config.programados.paginaPublica} fila={d.programados} />
           </div>
         )}

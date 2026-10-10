@@ -21,7 +21,7 @@ export type Colectivos = {
   paros: { titular: string; medio: string; link: string; fecha: string }[];
   diariosLeidos: string[]; diariosSinLeer: string[];
 };
-export type Programados = { cortes: { id: string; localidad: string; inicio: string; fin: string; clientes: number | null; motivo: string }[] };
+export type Programados = { cortes: { id: string; localidad: string; lat?: number; lng?: number; inicio: string; fin: string; clientes: number | null; motivo: string }[] };
 export type Lugar = {
   id: string; categoria: string; nombre: string; direccion: string; localidad: string;
   telefonos: string[]; horario: string; fuente: string; fuenteUrl: string; lat?: number; lng?: number;
@@ -136,6 +136,12 @@ export const CATEGORIAS: { id: string; titulo: string; claves?: string }[] = [
 export const telLink = (n: string) => `tel:${n.replace(/[^\d+]/g, "")}`;
 export const mapaLink = (l: Lugar) =>
   `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${l.direccion}, ${l.localidad}, Lomas de Zamora, Buenos Aires, Argentina`)}`;
+
+// "a 3 cuadras" (una cuadra ≈ 100 m) o "a 2,5 km"
+export function distanciaTexto(km: number) {
+  if (km < 1) { const c = Math.max(1, Math.round(km * 10)); return `a ${c} ${c === 1 ? "cuadra" : "cuadras"}`; }
+  return `a ${km < 10 ? km.toFixed(1).replace(".", ",").replace(",0", "") : Math.round(km)} km`;
+}
 
 export function distanciaKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const r = Math.PI / 180, R = 6371;
