@@ -165,3 +165,11 @@ export function proximasHoras(c: Clima, ahoraAR: string) {
   const siguientes = c.horas.filter((h) => h.hora.slice(0, 13) > ahoraAR.slice(0, 13)).slice(0, 24);
   return [{ hora: "Ahora", temp: c.ahora.temp, icono: c.ahora.icono, etiqueta: c.ahora.etiqueta, lluvia: c.horas.find((h) => h.hora.slice(0, 13) === ahoraAR.slice(0, 13))?.lluvia ?? null }, ...siguientes];
 }
+
+// Búsqueda en Google Maps siempre con zona: centrada en la persona si dio permiso de ubicación;
+// si no, buscando "... en Lomas de Zamora" y centrada en el partido.
+export function mapaBusqueda(texto: string, yo: { lat: number; lng: number } | null, centro: { lat: number; lng: number }, ciudad: string) {
+  const q = yo ? texto : `${texto} en ${ciudad}`;
+  const c = yo ?? centro;
+  return `https://www.google.com/maps/search/${encodeURIComponent(q)}/@${c.lat.toFixed(5)},${c.lng.toFixed(5)},${yo ? 15 : 13}z`;
+}

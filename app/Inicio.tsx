@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { config } from "@/lomas.config.mjs";
 import {
   cargarDatos, armarNovedades, clasificarTren, fechaLarga, hora, hoyMMDD, nombreLindo, proximasHoras,
-  CATEGORIAS, ordenarLugares, distanciaKm, distanciaTexto, normalizar, ZONA,
+  CATEGORIAS, ordenarLugares, distanciaKm, distanciaTexto, normalizar, mapaBusqueda, ZONA,
   type Todo, type Lugar, type Novedad,
 } from "@/lib/datos";
 import { ahoraAR, esDeHoy, type AvisoPublico } from "@/lib/avisos";
@@ -198,7 +198,8 @@ export default function Inicio() {
   const usuariosSinLuz = cortes.reduce((t, c) => t + c.usuarios, 0);
   const vets = lugaresDe("vets");
   const abiertas24 = vets.filter((l) => /24 hs/i.test(l.horario)).length;
-  const mapaFarmacias = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("farmacias abiertas ahora")}`;
+  const centroLomas = { lat: config.clima.latitud, lng: config.clima.longitud }; // el partido de Lomas de Zamora
+  const mapaFarmacias = mapaBusqueda("farmacias abiertas ahora", yo, centroLomas, config.ciudad);
 
   // ---- Pantallas de detalle ----
   if (vista === "clima") {
@@ -350,7 +351,7 @@ export default function Inicio() {
       <Detalle titulo={s.farmacias.titulo} onVolver={volver}>
         <p>Todavía no tenemos el cronograma oficial de turnos.</p>
         <a className="btn grande-btn" target="_blank" rel="noreferrer" href={mapaFarmacias}>Ver farmacias abiertas ahora</a>
-        <p className="vacio">Se abre Google Maps y busca las farmacias abiertas cerca tuyo.</p>
+        <p className="vacio">Se abre Google Maps y busca las farmacias abiertas {yo ? "cerca de tu ubicación" : `en ${config.ciudad}`}.</p>
       </Detalle>
     );
 
@@ -535,7 +536,7 @@ export default function Inicio() {
               </div>)}
             {!hayResultados && (
               <a className="btn grande-btn" target="_blank" rel="noreferrer"
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${q.trim()} Lomas de Zamora`)}`}>
+                href={mapaBusqueda(q.trim(), yo, centroLomas, config.ciudad)}>
                 Buscar “{q.trim()}” en Google Maps
               </a>
             )}
