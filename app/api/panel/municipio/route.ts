@@ -1,48 +1,51 @@
-import { redis, claveDelPanelOk } from "@/lib/servidor";
-import {
-  hashear, claveValida, usuarioValido, leerUsuario, todosLosAvisos, topeDiario, publicadosHoy, barriosActuales, guardarBarrios, FIRMA_POR_DEFECTO, type UsuarioMuni,
-} from "@/lib/municipio";
+import { redis } from "@/lib/servidor";
+import { esAdmin, crearEnlace, cerrarSesionesDe } from "@/lib/cuentas";
+import { todosLosAvisos, topeDiario, publicadosHoy, barriosActuales, guardarBarrios, leerUsuario, type UsuarioMuni } from "@/lib/municipio";
 
 const limpio = (v: unknown, max: number) => String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, max);
 const sinSecretos = ({ sal: _sal, hash: _hash, ...u }: UsuarioMuni) => u;
 
-// Mi panel: usuarios del municipio, todos los avisos y el tope diario.
+// Mi panel → pestaña Municipio: gente, invitaciones, barrios, avisos y tope diario.
 export async function POST(req: Request) {
+  if (!req.headers.get("content-type")?.includes("application/json")) return Response.json({ ok: false }, { status: 415 });
+  if (!(await esAdmin(req))) return Response.json({ ok: false }, { status: 401 });
   const c = await req.json().catch(() => ({}));
-  if (!claveDelPanelOk(c.password)) return Response.json({ ok: false }, { status: 401 });
+  const origen = new URL(req.url).origin;
 
   switch (c.accion) {
     case "listar": {
       const [us] = await redis([["HVALS", "muni:usuarios"]]);
+      const avisos = await todosLosAvisos();
       return Response.json({
         ok: true,
-        usuarios: (us as string[]).map((j) => sinSecretos(JSON.parse(j))),
-        avisos: await todosLosAvisos(),
+        usuarios: (us as string[]).map((j) => {
+          const u = sinSecretos(JSON.parse(j));
+          return { ...u, avisos: avisos.filter((a) => a.autor === u.usuario).length };
+        }),
+        avisos,
         tope: await topeDiario(),
         barrios: (await barriosActuales()).filter((b) => b !== "Todo Lomas"),
         publicadosHoy: await publicadosHoy(),
       });
     }
-    case "crearUsuario": {
-      const usuario = limpio(c.usuario, 30).toLowerCase();
-      if (!usuarioValido(usuario)) return Response.json({ ok: false, error: "Usuario: 3 a 30 letras minúsculas, números, punto o guion." }, { status: 400 });
-      if (!claveValida(c.clave)) return Response.json({ ok: false, error: "La contraseña debe tener al menos 8 caracteres." }, { status: 400 });
-      if (await leerUsuario(usuario)) return Response.json({ ok: false, error: "Ese usuario ya existe." }, { status: 409 });
-      const u: UsuarioMuni = { usuario, nombre: limpio(c.nombre, 60) || usuario, firma: limpio(c.firma, 60) || FIRMA_POR_DEFECTO, activo: true, ...(await hashear(c.clave)) };
-      await redis([["HSET", "muni:usuarios", usuario, JSON.stringify(u)]]);
-      return Response.json({ ok: true });
+    // Enlace para que una persona del municipio se registre: sirve una sola vez y vence a los 7 días
+    case "invitar": {
+      const token = await crearEnlace("invitacion", { creada: new Date().toISOString() }, 7 * 86400);
+      return Response.json({ ok: true, url: `${origen}/invitacion/${token}` });
     }
+    // Enlace para que una persona elija una contraseña nueva: una sola vez, vence a las 24 horas
+    case "nuevaClave": {
+      const u = await leerUsuario(limpio(c.usuario, 80));
+      if (!u) return Response.json({ ok: false }, { status: 404 });
+      const token = await crearEnlace("reset", { usuario: u.usuario }, 86400);
+      return Response.json({ ok: true, url: `${origen}/restablecer/${token}` });
+    }
+    // Dar de baja (o volver a dar de alta). La baja cierra sus sesiones.
     case "activar": {
-      const u = await leerUsuario(limpio(c.usuario, 30));
+      const u = await leerUsuario(limpio(c.usuario, 80));
       if (!u) return Response.json({ ok: false }, { status: 404 });
       await redis([["HSET", "muni:usuarios", u.usuario, JSON.stringify({ ...u, activo: !!c.activo })]]);
-      return Response.json({ ok: true });
-    }
-    case "cambiarClave": {
-      const u = await leerUsuario(limpio(c.usuario, 30));
-      if (!u) return Response.json({ ok: false }, { status: 404 });
-      if (!claveValida(c.clave)) return Response.json({ ok: false, error: "La contraseña debe tener al menos 8 caracteres." }, { status: 400 });
-      await redis([["HSET", "muni:usuarios", u.usuario, JSON.stringify({ ...u, ...(await hashear(c.clave)) })]]);
+      if (!c.activo) await cerrarSesionesDe("muni", u.usuario);
       return Response.json({ ok: true });
     }
     case "borrarAviso": {
@@ -64,7 +67,6 @@ export async function POST(req: Request) {
       if (!lista.includes(viejo) || !nuevo || nuevo.toLowerCase() === "todo lomas") return Response.json({ ok: false, error: "No se pudo renombrar." }, { status: 400 });
       if (lista.some((b) => b !== viejo && b.toLowerCase() === nuevo.toLowerCase())) return Response.json({ ok: false, error: "Ese nombre ya existe." }, { status: 409 });
       await guardarBarrios(lista.map((b) => (b === viejo ? nuevo : b)));
-      // los avisos que tenían el nombre viejo pasan al nuevo
       for (const a of await todosLosAvisos()) if (a.zona === viejo) await redis([["HSET", "avisos", a.id, JSON.stringify({ ...a, zona: nuevo })]]);
       return Response.json({ ok: true });
     }

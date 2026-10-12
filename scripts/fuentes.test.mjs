@@ -58,3 +58,11 @@ test("clima: la frase pone primero la lluvia, y sino lo más importante", () => 
   assert.equal(armarFrase({ horas: frio, ahora: "2026-10-11T10:30", ahoraEstado: nublado }), "Hoy hace fresco, salí abrigado");
   assert.equal(armarFrase({ horas: [h("10")], ahora: "2026-10-11T10:30", ahoraEstado: nublado }), "Hoy no llueve");
 });
+
+import { esDeNoche, deNoche } from "./clima.mjs";
+test("clima: de noche (entre la puesta y la salida del sol) el sol pasa a luna", () => {
+  const sol = [{ fecha: "2026-10-11", sale: "06:35", pone: "19:12" }];
+  assert.equal(esDeNoche(sol, "2026-10-11T22:00"), true);
+  assert.equal(esDeNoche(sol, "2026-10-11T12:00"), false);
+  assert.deepEqual([deNoche("sol"), deNoche("solnube"), deNoche("lluvia")], ["luna", "lunanube", "lluvia"]);
+});

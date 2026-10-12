@@ -1,8 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CATEGORIAS, type Lugar } from "@/lib/datos";
 import PanelMunicipio from "./PanelMunicipio";
 import PanelPush from "./PanelPush";
+import MiCuenta from "./MiCuenta";
+import { post, salir } from "./api";
 
 type Datos = {
   dias: { dia: string; visitantes: number; volvieron: number }[];
@@ -14,25 +16,18 @@ const vacio: Lugar = { id: "", categoria: "guardias", nombre: "", direccion: "",
 const fecha = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" });
 
 export default function Panel() {
-  const [password, setPassword] = useState("");
   const [datos, setDatos] = useState<Datos | null>(null);
   const [lugares, setLugares] = useState<Lugar[]>([]);
   const [pestana, setPestana] = useState<"stats" | "lugares" | "muni" | "push">("stats");
   const [editando, setEditando] = useState<(Lugar & { tels: string; direccionOriginal?: string }) | null>(null);
   const [mensaje, setMensaje] = useState("");
-  const [error, setError] = useState("");
 
-  const llamar = (ruta: string, cuerpo: object) =>
-    fetch(ruta, { method: "POST", body: JSON.stringify({ password, ...cuerpo }) });
+  const llamar = post;
 
-  async function entrar(e: React.FormEvent) {
-    e.preventDefault();
-    const r = await llamar("/api/panel", {});
-    if (!r.ok) return setError("Contraseña incorrecta");
-    setError("");
-    setDatos(await r.json());
-    cargarLugares();
-  }
+  // Al abrir el panel: si no hay sesión, la primera llamada manda a la pantalla de entrada.
+  useEffect(() => {
+    post("/api/panel").then(async (r) => { if (r.ok) { setDatos(await r.json()); cargarLugares(); } });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function cargarLugares() {
     const r = await llamar("/api/panel/lugares", { accion: "listar" });
@@ -64,21 +59,15 @@ export default function Panel() {
   const editar = (l: Lugar) => setEditando({ ...l, tels: l.telefonos.join(", "), direccionOriginal: l.direccion });
   const set = (campo: keyof Lugar | "tels", valor: string) => setEditando((e) => (e ? { ...e, [campo]: valor } : e));
 
-  if (!datos)
-    return (
-      <main className="wrap">
-        <h1>Panel</h1>
-        <form onSubmit={entrar} className="form">
-          <input type="password" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <button className="btn">Entrar</button>
-          {error && <p className="error">{error}</p>}
-        </form>
-      </main>
-    );
+  if (!datos) return <main className="wrap"><p className="vacio">Cargando…</p></main>;
 
   return (
     <main className="wrap">
-      <h1>Panel</h1>
+      <div className="encabezado-panel">
+        <h1>Panel</h1>
+        <button className="btn claro chico" onClick={() => salir()}>Salir</button>
+      </div>
+      <MiCuenta />
       <div className="pestanas">
         <button className={`btn ${pestana === "stats" ? "" : "claro"}`} onClick={() => setPestana("stats")}>Visitas y reportes</button>
         <button className={`btn ${pestana === "lugares" ? "" : "claro"}`} onClick={() => setPestana("lugares")}>Lugares ({lugares.length})</button>
@@ -86,8 +75,8 @@ export default function Panel() {
         <button className={`btn ${pestana === "push" ? "" : "claro"}`} onClick={() => setPestana("push")}>Avisos push</button>
       </div>
 
-      {pestana === "muni" && <PanelMunicipio password={password} />}
-      {pestana === "push" && <PanelPush password={password} />}
+      {pestana === "muni" && <PanelMunicipio />}
+      {pestana === "push" && <PanelPush />}
 
       {pestana === "stats" && (
         <>

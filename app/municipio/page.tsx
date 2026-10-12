@@ -10,8 +10,6 @@ const json = { "Content-Type": "application/json" };
 export default function Municipio() {
   const [estado, setEstado] = useState<Estado | null>(null);
   const [cargando, setCargando] = useState(true);
-  const [usuario, setUsuario] = useState("");
-  const [clave, setClave] = useState("");
   const [form, setForm] = useState(vacio);
   const [msg, setMsg] = useState("");
   const [filtro, setFiltro] = useState("");
@@ -19,23 +17,15 @@ export default function Municipio() {
 
   const cargar = useCallback(async () => {
     const r = await fetch("/api/municipio/avisos");
+    if (r.status === 401) { location.replace("/entrar"); return; } // sin sesión: pantalla de entrada
     setEstado(r.ok ? await r.json() : null);
     setCargando(false);
   }, []);
   useEffect(() => { cargar(); }, [cargar]);
 
-  async function entrar(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    const r = await fetch("/api/municipio/login", { method: "POST", headers: json, body: JSON.stringify({ usuario, clave }) });
-    if (!r.ok) return setError((await r.json().catch(() => ({}))).error ?? "No se pudo ingresar.");
-    setClave("");
-    cargar();
-  }
-
   async function salir() {
-    await fetch("/api/municipio/logout", { method: "POST", headers: json });
-    setEstado(null);
+    await fetch("/api/salir", { method: "POST" }).catch(() => {});
+    location.href = "/";
   }
 
   async function publicar(e: React.FormEvent) {
@@ -59,19 +49,7 @@ export default function Municipio() {
 
   if (cargando) return <main className="wrap"><p className="vacio">Cargando…</p></main>;
 
-  if (!estado)
-    return (
-      <main className="wrap">
-        <h1>Avisos del municipio</h1>
-        <p className="vacio">Ingresá con tu usuario para publicar avisos para los vecinos.</p>
-        <form onSubmit={entrar} className="form">
-          <input placeholder="Usuario" autoCapitalize="none" autoComplete="username" value={usuario} onChange={(e) => setUsuario(e.target.value)} />
-          <input type="password" placeholder="Contraseña" autoComplete="current-password" value={clave} onChange={(e) => setClave(e.target.value)} />
-          <button className="btn">Ingresar</button>
-          {error && <p className="error">{error}</p>}
-        </form>
-      </main>
-    );
+  if (!estado) return <main className="wrap"><p className="vacio">No se pudieron cargar los avisos. Probá de nuevo.</p></main>;
 
   const sinCupo = estado.cupo.publicadosHoy >= estado.cupo.tope && !form.id;
   return (
@@ -125,7 +103,10 @@ export default function Municipio() {
           </li>
         ))}
       </ul>
-      <button className="link" onClick={salir}>Salir</button>
+      <a className="btn claro ancho" target="_blank" rel="noreferrer"
+        href={`https://wa.me/?text=${encodeURIComponent(`Mirá Lomas Hoy: la app con lo que pasa hoy en Lomas de Zamora (tren, luz, clima, guardias y avisos del municipio). Es gratis y no hace falta registrarse:
+${location.origin}`)}`}>Compartir Lomas Hoy</a>
+      <button className="btn claro ancho" onClick={salir}>Salir</button>
     </main>
   );
 }

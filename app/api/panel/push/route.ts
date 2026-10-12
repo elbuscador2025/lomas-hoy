@@ -1,10 +1,12 @@
-import { redis, hoyArgentina, claveDelPanelOk } from "@/lib/servidor";
+import { redis, hoyArgentina } from "@/lib/servidor";
+import { esAdmin } from "@/lib/cuentas";
 import { todasLasSuscripciones, enviarPrueba } from "@/lib/push";
 
 // Mi panel: cuántos celulares tienen avisos, cuántas notificaciones salieron, y el botón de prueba.
 export async function POST(req: Request) {
+  if (!req.headers.get("content-type")?.includes("application/json")) return Response.json({ ok: false }, { status: 415 });
+  if (!(await esAdmin(req))) return Response.json({ ok: false }, { status: 401 });
   const c = await req.json().catch(() => ({}));
-  if (!claveDelPanelOk(c.password)) return Response.json({ ok: false }, { status: 401 });
 
   if (c.accion === "prueba") {
     const r = await enviarPrueba(String(c.endpoint ?? ""));

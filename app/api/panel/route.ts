@@ -1,8 +1,8 @@
-import { redis, hoyArgentina, claveDelPanelOk } from "@/lib/servidor";
+import { redis, hoyArgentina } from "@/lib/servidor";
+import { esAdmin } from "@/lib/cuentas";
 
 export async function POST(req: Request) {
-  const { password } = await req.json().catch(() => ({}));
-  if (!claveDelPanelOk(password)) return Response.json({ ok: false }, { status: 401 });
+  if (!(await esAdmin(req))) return Response.json({ ok: false }, { status: 401 });
   const dias = Array.from({ length: 30 }, (_, i) => hoyArgentina(new Date(Date.now() - i * 86400_000)));
   const r = await redis([
     ...dias.flatMap((d) => [["SCARD", `v:${d}`], ["SCARD", `vuelve:${d}`]] as (string | number)[][]),

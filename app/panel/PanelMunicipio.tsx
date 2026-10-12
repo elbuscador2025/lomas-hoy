@@ -1,49 +1,78 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { post } from "./api";
 
-type Usuario = { usuario: string; nombre: string; firma: string; activo: boolean };
+type Persona = { usuario: string; nombre: string; area?: string; correo?: string; alta?: string; ultimoIngreso?: string | null; activo: boolean; firma: string; avisos: number };
 type Aviso = { id: string; titulo: string; zona: string; actividad: string | null; firma: string; autor: string; creado: string };
-const fecha = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", dateStyle: "short", timeStyle: "short" });
+const fecha = (iso?: string | null) =>
+  iso ? new Date(iso).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", dateStyle: "short", timeStyle: "short", hour12: false }) : "—";
 
-// Pestaña "Municipio" de mi panel: usuarios, avisos y tope diario.
-export default function PanelMunicipio({ password }: { password: string }) {
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+// Enlace de un solo uso con "Copiar" y "Mandar por WhatsApp"
+function EnlaceCompartible({ url, texto, nota }: { url: string; texto: string; nota: string }) {
+  const [copiado, setCopiado] = useState(false);
+  return (
+    <div className="enlace">
+      <input readOnly value={url} onFocus={(e) => e.currentTarget.select()} aria-label="Enlace" />
+      <small>{nota}</small>
+      <div className="acciones">
+        <button className="btn claro" onClick={async () => { try { await navigator.clipboard.writeText(url); setCopiado(true); } catch {} }}>{copiado ? "¡Copiado!" : "Copiar"}</button>
+        <a className="btn whatsapp-chico" target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(`${texto}\n${url}`)}`}>Mandar por WhatsApp</a>
+      </div>
+    </div>
+  );
+}
+
+// Pestaña "Municipio" de mi panel: gente, invitaciones, barrios, avisos y tope diario.
+export default function PanelMunicipio() {
+  const [gente, setGente] = useState<Persona[]>([]);
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [tope, setTope] = useState(3);
   const [hoy, setHoy] = useState(0);
   const [barrios, setBarrios] = useState<string[]>([]);
   const [barrioNuevo, setBarrioNuevo] = useState("");
-  const [nuevo, setNuevo] = useState({ usuario: "", nombre: "", firma: "", clave: "" });
+  const [invitacion, setInvitacion] = useState("");
+  const [enlaces, setEnlaces] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState("");
 
-  const llamar = useCallback(async (cuerpo: object) => {
-    const r = await fetch("/api/panel/municipio", { method: "POST", body: JSON.stringify({ password, ...cuerpo }) });
-    return { ok: r.ok, datos: await r.json().catch(() => ({})) };
-  }, [password]);
-
   const cargar = useCallback(async () => {
-    const { ok, datos } = await llamar({ accion: "listar" });
-    if (ok) { setUsuarios(datos.usuarios); setAvisos(datos.avisos); setTope(datos.tope); setHoy(datos.publicadosHoy); setBarrios(datos.barrios); }
-  }, [llamar]);
+    const r = await post("/api/panel/municipio", { accion: "listar" });
+    if (!r.ok) return;
+    const d = await r.json();
+    setGente(d.usuarios); setAvisos(d.avisos); setTope(d.tope); setHoy(d.publicadosHoy); setBarrios(d.barrios);
+  }, []);
   useEffect(() => { cargar(); }, [cargar]);
 
   async function accion(cuerpo: object, ok = "Listo.") {
-    const r = await llamar(cuerpo);
-    setMsg(r.ok ? ok : r.datos.error ?? "No se pudo.");
+    const r = await post("/api/panel/municipio", cuerpo);
+    const d = await r.json().catch(() => ({}));
+    setMsg(r.ok ? ok : d.error ?? "No se pudo.");
     if (r.ok) cargar();
-    return r.ok;
+    return r.ok ? d : null;
   }
 
   return (
     <div>
       {msg && <p className="normal">{msg}</p>}
 
-      <h2>Tope de avisos por día</h2>
-      <p className="vacio">Para todo el municipio. Hoy se publicaron {hoy}.</p>
-      <div className="avisar">
-        <input type="number" min={0} max={100} value={tope} onChange={(e) => setTope(Number(e.target.value))} />
-        <button className="btn chico" onClick={() => accion({ accion: "tope", tope }, "Tope guardado.")}>Guardar</button>
-      </div>
+      <h2>Invitar a una persona del municipio</h2>
+      <p className="vacio">El enlace sirve una sola vez y vence a los 7 días.</p>
+      <button className="btn ancho" onClick={async () => { const d = await accion({ accion: "invitar" }, "Enlace creado."); if (d) setInvitacion(d.url); }}>Invitar</button>
+      {invitacion && <EnlaceCompartible url={invitacion} nota="Sirve una sola vez. Vence en 7 días." texto="Te invito a publicar avisos para los vecinos en Lomas Hoy. Creá tu cuenta con este enlace (sirve una sola vez y vence en 7 días):" />}
+
+      <h2>Gente del municipio</h2>
+      {gente.length === 0 && <p className="vacio">Todavía no hay nadie. Usá “Invitar”.</p>}
+      {gente.map((p) => (
+        <div key={p.usuario} className="persona">
+          <b>{p.nombre}{p.activo ? "" : " (de baja)"}</b>
+          <span>{p.area ?? "—"} · {p.correo ?? p.usuario}</span>
+          <small>Alta: {fecha(p.alta)} · Último ingreso: {fecha(p.ultimoIngreso)} · Avisos: {p.avisos}</small>
+          <div className="acciones">
+            <button className="btn claro chico" onClick={() => confirm(p.activo ? `¿Dar de baja a ${p.nombre}?` : `¿Volver a dar de alta a ${p.nombre}?`) && accion({ accion: "activar", usuario: p.usuario, activo: !p.activo }, p.activo ? "Dado de baja." : "Dado de alta.")}>{p.activo ? "Dar de baja" : "Dar de alta"}</button>
+            {p.activo && <button className="btn claro chico" onClick={async () => { const d = await accion({ accion: "nuevaClave", usuario: p.usuario }, "Enlace creado."); if (d) setEnlaces((e) => ({ ...e, [p.usuario]: d.url })); }}>Nueva contraseña</button>}
+          </div>
+          {enlaces[p.usuario] && <EnlaceCompartible url={enlaces[p.usuario]} nota="Sirve una sola vez. Vence en 24 horas." texto={`Hola ${p.nombre}, con este enlace elegís tu contraseña nueva de Lomas Hoy (sirve una sola vez y vence en 24 horas):`} />}
+        </div>
+      ))}
 
       <h2>Barrios</h2>
       <p className="vacio">Son los que el municipio puede poner al principio del título de un aviso. “Todo Lomas” siempre está.</p>
@@ -61,29 +90,12 @@ export default function PanelMunicipio({ password }: { password: string }) {
         <button className="btn chico">Agregar</button>
       </form>
 
-      <h2>Usuarios del municipio</h2>
-      {usuarios.length === 0 && <p className="vacio">Todavía no hay usuarios.</p>}
-      {usuarios.map((u) => (
-        <div key={u.usuario} className="fila-panel">
-          <span><b>{u.usuario}</b> {u.activo ? "" : "(desactivado)"}<br /><small>{u.nombre} · firma: {u.firma}</small></span>
-          <span className="acciones">
-            <button className="btn claro chico" onClick={() => accion({ accion: "activar", usuario: u.usuario, activo: !u.activo })}>{u.activo ? "Desactivar" : "Activar"}</button>
-            <button className="btn claro chico" onClick={() => {
-              const clave = prompt(`Nueva contraseña para ${u.usuario} (mínimo 8 caracteres):`);
-              if (clave) accion({ accion: "cambiarClave", usuario: u.usuario, clave }, "Contraseña cambiada.");
-            }}>Cambiar clave</button>
-          </span>
-        </div>
-      ))}
-
-      <form className="form" onSubmit={async (e) => { e.preventDefault(); if (await accion({ accion: "crearUsuario", ...nuevo }, "Usuario creado.")) setNuevo({ usuario: "", nombre: "", firma: "", clave: "" }); }}>
-        <h2>Crear usuario</h2>
-        <input placeholder="Usuario (minúsculas, sin espacios)" value={nuevo.usuario} onChange={(e) => setNuevo({ ...nuevo, usuario: e.target.value })} />
-        <input placeholder="Nombre de la persona" value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} />
-        <input placeholder="Firma (vacío = Municipio de Lomas de Zamora)" value={nuevo.firma} onChange={(e) => setNuevo({ ...nuevo, firma: e.target.value })} />
-        <input type="password" placeholder="Contraseña (mínimo 8 caracteres)" value={nuevo.clave} onChange={(e) => setNuevo({ ...nuevo, clave: e.target.value })} />
-        <button className="btn">Crear usuario</button>
-      </form>
+      <h2>Tope de avisos por día</h2>
+      <p className="vacio">Para todo el municipio. Hoy se publicaron {hoy}.</p>
+      <div className="avisar">
+        <input type="number" min={0} max={100} value={tope} onChange={(e) => setTope(Number(e.target.value))} />
+        <button className="btn chico" onClick={() => accion({ accion: "tope", tope }, "Tope guardado.")}>Guardar</button>
+      </div>
 
       <h2>Todos los avisos ({avisos.length})</h2>
       {avisos.length === 0 && <p className="vacio">Todavía no hay avisos.</p>}

@@ -76,7 +76,7 @@ export const urlOpenMeteo = (cfg) =>
   `https://api.open-meteo.com/v1/forecast?latitude=${cfg.clima.latitud}&longitude=${cfg.clima.longitud}` +
   `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,precipitation,rain,showers` +
   `&hourly=temperature_2m,apparent_temperature,weather_code,precipitation_probability,precipitation,wind_speed_10m` +
-  `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum` +
+  `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset` +
   `&forecast_days=7&timezone=${encodeURIComponent(cfg.zonaHoraria)}`;
 
 // "Ahora" según Open-Meteo. Si está cayendo agua en este momento, se dice aunque el código general diga "nublado".
@@ -91,12 +91,23 @@ export function ahoraDesdeOpenMeteo(c) {
   return { temp: c.temperature_2m, sensacion: c.apparent_temperature, humedad: c.relative_humidity_2m, viento: c.wind_speed_10m, ...estado, medidoEn: null, estacion: null };
 }
 
+// De noche (entre la puesta y la salida del sol) el sol pasa a ser luna
+export const deNoche = (icono) => (icono === "sol" ? "luna" : icono === "solnube" ? "lunanube" : icono);
+// sol: [{ fecha, sale: "HH:MM", pone: "HH:MM" }]. hora: "YYYY-MM-DDTHH:mm" en hora de Argentina.
+export function esDeNoche(sol, hora) {
+  const dia = sol?.find((x) => x.fecha === hora.slice(0, 10));
+  if (!dia) return false; // sin datos del sol, se deja el ícono de día
+  const hm = hora.slice(11, 16);
+  return hm < dia.sale || hm >= dia.pone;
+}
+
 // Palabra para un día: "Llueve", "Probable lluvia" o "No llueve"
 export const palabraDia = (prob, mm) => ((prob ?? 0) >= 70 && (mm ?? 0) >= 1 ? "Llueve" : (prob ?? 0) >= 40 ? "Probable lluvia" : "No llueve");
 
 export function leerPronostico(json) {
   const c = json?.current, h = json?.hourly, d = json?.daily;
   if (!c || !h?.time?.length || !d?.time?.length) throw new Error("Respuesta de clima incompleta");
+  const sol = d.time.map((fecha, i) => ({ fecha, sale: d.sunrise?.[i]?.slice(11, 16), pone: d.sunset?.[i]?.slice(11, 16) })).filter((x) => x.sale && x.pone);
   const desde = h.time.findIndex((t) => t.slice(0, 13) >= c.time.slice(0, 13)); // desde la hora actual
   const horas = h.time.slice(desde, desde + 48).map((hora, i) => ({
     hora,
@@ -107,7 +118,7 @@ export function leerPronostico(json) {
     mm: h.precipitation[desde + i],
     codigo: h.weather_code[desde + i],
     ...(desdeCodigo(h.weather_code[desde + i]) ?? { icono: "nube", etiqueta: "—" }),
-  }));
+  })).map((x) => (esDeNoche(sol, x.hora) ? { ...x, icono: deNoche(x.icono) } : x));
   const dias = d.time.slice(1, 6).map((fecha, i) => ({
     fecha, min: d.temperature_2m_min[i + 1], max: d.temperature_2m_max[i + 1], lluvia: d.precipitation_probability_max[i + 1],
     palabra: palabraDia(d.precipitation_probability_max[i + 1], d.precipitation_sum[i + 1]),
@@ -115,7 +126,7 @@ export function leerPronostico(json) {
   }));
   const actual = ahoraDesdeOpenMeteo(c);
   if (!actual) throw new Error("No hay estado actual del tiempo");
-  return { actual, horas, dias };
+  return { actual, horas, dias, sol };
 }
 
 // ---- La frase de arriba: reglas fijas, primero la lluvia ----
@@ -167,7 +178,8 @@ export async function consultarSmn(cfg, traer = fetch) {
 
 // Junta lo medido (SMN, si hay) con el pronóstico guardado. ahoraAR: "YYYY-MM-DDTHH:mm".
 export function componerClima(pron, medido, ahoraAR) {
-  const ahora = medido ?? pron.actual;
+  const base = medido ?? pron.actual;
+  const ahora = esDeNoche(pron.sol, ahoraAR) ? { ...base, icono: deNoche(base.icono) } : base; // de noche, luna en vez de sol
   return {
     ahora,
     frase: armarFrase({ horas: pron.horas, ahora: ahoraAR, ahoraEstado: ahora }),

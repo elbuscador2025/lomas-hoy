@@ -69,6 +69,7 @@ export default function Inicio() {
   const [q, setQ] = useState("");
   const [vista, setVista] = useState<string | null>(null);
   const push = usePush();
+  const [panel, setPanel] = useState<string | null>(null); // adónde lleva el enlace del pie: mi panel / el del municipio
   const s = config.secciones;
 
   useEffect(() => {
@@ -94,6 +95,7 @@ export default function Inicio() {
       }
     };
     document.addEventListener("visibilitychange", alVolverAVer);
+    fetch("/api/sesion").then((r) => r.json()).then((s) => setPanel(s.destino)).catch(() => {});
     // Si venís de una notificación (/?v=tren), se abre directo en esa sección; "Volver" te lleva al inicio.
     const directo = new URLSearchParams(location.search).get("v");
     if (directo) {
@@ -474,8 +476,7 @@ export default function Inicio() {
           <span className="estado">{clima ? clima.ahora.etiqueta : datos ? "Sin datos del clima" : "Cargando…"}</span>
           {clima && (
             <span className="origen-azul">
-              {clima.ahora.medidoEn ? `Medido en ${clima.ahora.estacion} a las ${clima.ahora.medidoEn} · SMN` : "Estimado · Open-Meteo"}
-              {d.clima?.ok_en ? ` · Actualizado ${hora(d.clima.ok_en)}` : ""}
+              {d.clima?.ok_en ? `Actualizado ${hora(d.clima.ok_en)}` : ""}
             </span>
           )}
           <span className="fecha-azul">{capitalizar(fechaLarga())}</span>
@@ -497,7 +498,7 @@ export default function Inicio() {
       <section className="hoja">
         <form className="buscador" role="search" onSubmit={(e) => { e.preventDefault(); (document.activeElement as HTMLElement | null)?.blur(); }}>
           <Icono nombre="lupa" tam={28} ancho={2.5} />
-          <input type="search" placeholder="Buscar: veterinaria, Banfield, tren…" aria-label="Buscar" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input type="search" placeholder="¿Qué buscás? Farmacia, veterinaria…" aria-label="Buscar" value={q} onChange={(e) => setQ(e.target.value)} />
           <button className="buscar-btn" type="submit" aria-label="Buscar"><Icono nombre="lupa" tam={24} ancho={2.5} /></button>
         </form>
         {!resultados && <><CartelInstalar /><CartelAvisos push={push} /></>}
@@ -606,6 +607,7 @@ export default function Inicio() {
             <button className="btn whatsapp" onClick={compartirDia}>Compartir por WhatsApp</button>
           </>
         )}
+        <p className="pie-ingresar"><a href={panel ?? "/entrar"}>{panel ? "Mi panel" : "Ingresar"}</a></p>
       </section>
     </main>
   );

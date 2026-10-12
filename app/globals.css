@@ -24,7 +24,7 @@ h2 { font-size:17px; margin:20px 0 8px; }
 .clima-fila { display:flex; justify-content:space-between; align-items:center; }
 .temp { font-size:96px; font-weight:900; line-height:1; letter-spacing:-4px; }
 .clima-icono { display:grid; place-items:center; padding-right:6px; }
-.estado { font-size:22px; font-weight:700; margin-top:4px; }
+.estado { font-size:16px; font-weight:600; margin-top:6px; opacity:.95; }
 .fecha-azul { opacity:.9; margin-bottom:14px; }
 .origen-azul { font-size:13px; opacity:.9; margin-top:2px; }
 .horas-azul { display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; -webkit-overflow-scrolling:touch; }
@@ -149,8 +149,21 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 .btn.grande-btn { min-height:56px; font-size:18px; }
 
 /* ---------- Clima: frase y detalle ---------- */
-.frase-azul { display:block; font-size:20px; font-weight:800; line-height:1.25; margin-top:6px; }
+.frase-azul { display:block; font-size:28px; font-weight:800; line-height:1.15; margin-top:6px; letter-spacing:-.3px; }
 .frase { font-size:20px; font-weight:800; color:var(--azul); margin:8px 0; }
 .fila-hora { grid-template-columns:52px 28px 1fr auto; row-gap:2px; }
 .fila-hora .detalle-hora { grid-column:2 / -1; color:var(--suave); }
 .fila-dia { grid-template-columns:96px 28px 1fr auto; }
+
+/* ---------- Cuentas ---------- */
+.encabezado-panel { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.seccion-chica { background:var(--gris-azul); border-radius:14px; padding:4px 14px; margin:8px 0; }
+.seccion-chica > summary { min-height:44px; display:flex; align-items:center; cursor:pointer; font-weight:700; }
+.seccion-chica .form { padding-bottom:12px; }
+.pie-ingresar { text-align:center; margin-top:18px; font-size:13px; }
+.pie-ingresar a { color:var(--suave); padding:12px 8px; display:inline-block; min-height:44px; }
+.persona { display:flex; flex-direction:column; gap:3px; padding:10px 0; border-top:1px solid var(--linea); overflow-wrap:anywhere; }
+.persona small { color:var(--suave); }
+.enlace { background:var(--gris-azul); border-radius:14px; padding:10px; margin:8px 0; display:flex; flex-direction:column; gap:6px; }
+.enlace input { width:100%; min-height:44px; padding:8px 10px; border:1px solid #C3D0E6; border-radius:12px; font-size:14px; background:#fff; color:var(--texto); }
+.enlace small { color:var(--suave); }

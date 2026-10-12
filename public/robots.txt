@@ -2,3 +2,6 @@ User-agent: *
 Disallow: /panel
 Disallow: /api
 Disallow: /municipio
+Disallow: /entrar
+Disallow: /invitacion
+Disallow: /restablecer

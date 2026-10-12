@@ -2,8 +2,9 @@ import { randomUUID } from "node:crypto";
 import { after } from "next/server";
 import { notificarAviso } from "@/lib/eventos";
 import { redis } from "@/lib/servidor";
+import { usuarioDeSesion } from "@/lib/cuentas";
 import {
-  usuarioDeSesion, todosLosAvisos, validarAviso, reservarCupo, topeDiario, publicadosHoy, barriosActuales, FIRMA_POR_DEFECTO, type Aviso,
+  todosLosAvisos, validarAviso, reservarCupo, topeDiario, publicadosHoy, barriosActuales, FIRMA_POR_DEFECTO, type Aviso,
 } from "@/lib/municipio";
 
 // Historial: se ven todos los avisos (con fecha), pero cada usuario edita o borra solo los suyos.

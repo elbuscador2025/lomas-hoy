@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { post } from "./api";
 
 type Resumen = {
   total: number;
@@ -9,14 +10,14 @@ type Resumen = {
 const hora = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
 
 // Pestaña "Avisos push" de mi panel.
-export default function PanelPush({ password }: { password: string }) {
+export default function PanelPush() {
   const [r, setR] = useState<Resumen | null>(null);
   const [msg, setMsg] = useState("");
 
   const cargar = useCallback(async () => {
-    const res = await fetch("/api/panel/push", { method: "POST", body: JSON.stringify({ password }) });
+    const res = await post("/api/panel/push");
     if (res.ok) setR(await res.json());
-  }, [password]);
+  }, []);
   useEffect(() => { cargar(); }, [cargar]);
 
   // La prueba va al celular (o navegador) desde el que estás mirando el panel, si tiene los avisos activados.
@@ -25,7 +26,7 @@ export default function PanelPush({ password }: { password: string }) {
     try {
       const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
       if (!sub) return setMsg("Este celular no tiene los avisos activados. Activalos primero desde la app (campana de arriba).");
-      const res = await fetch("/api/panel/push", { method: "POST", body: JSON.stringify({ password, accion: "prueba", endpoint: sub.endpoint }) });
+      const res = await post("/api/panel/push", { accion: "prueba", endpoint: sub.endpoint });
       setMsg((await res.json().catch(() => ({}))).mensaje ?? "No se pudo enviar.");
       cargar();
     } catch {

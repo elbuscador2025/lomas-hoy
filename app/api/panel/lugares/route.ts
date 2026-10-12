@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { redis, claveDelPanelOk } from "@/lib/servidor";
+import { redis } from "@/lib/servidor";
+import { esAdmin } from "@/lib/cuentas";
 import { geocodificar } from "@/scripts/geocodificar.mjs";
 
 const CATEGORIAS = ["veterinarias", "guardias", "salitas", "comisarias", "bomberos", "servicios"];
@@ -7,8 +8,9 @@ const texto = (v: unknown, max = 200) => String(v ?? "").trim().slice(0, max);
 
 // Panel: listar, guardar (crear o corregir) y borrar lugares. Pide la contraseña en cada llamada.
 export async function POST(req: Request) {
-  const { password, accion, lugar, id } = await req.json().catch(() => ({}));
-  if (!claveDelPanelOk(password)) return Response.json({ ok: false }, { status: 401 });
+  if (!req.headers.get("content-type")?.includes("application/json")) return Response.json({ ok: false }, { status: 415 });
+  if (!(await esAdmin(req))) return Response.json({ ok: false }, { status: 401 });
+  const { accion, lugar, id } = await req.json().catch(() => ({}));
 
   if (accion === "listar") {
     const [todos] = await redis([["HVALS", "lugares"]]);

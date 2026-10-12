@@ -22,10 +22,3 @@ export function hoyArgentina(fecha = new Date()) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(fecha);
 }
 
-import { timingSafeEqual } from "node:crypto";
-
-export function claveDelPanelOk(password: unknown) {
-  const esperada = Buffer.from(process.env.PANEL_PASSWORD ?? "");
-  const dada = Buffer.from(String(password ?? ""));
-  return esperada.length > 0 && esperada.length === dada.length && timingSafeEqual(esperada, dada);
-}

@@ -6,11 +6,13 @@ import { redis, hoyArgentina } from "@/lib/servidor";
 
 const scrypt = promisify(scryptCb) as (p: string, s: Buffer, n: number) => Promise<Buffer>;
 
-export type UsuarioMuni = { usuario: string; nombre: string; firma: string; activo: boolean; sal: string; hash: string };
+export type UsuarioMuni = {
+  usuario: string; nombre: string; firma: string; activo: boolean; sal: string; hash: string;
+  correo?: string; area?: string; alta?: string; ultimoIngreso?: string | null; // los usuarios viejos no los tienen
+};
 import { FIRMA_POR_DEFECTO, ahoraAR, vigente, type Aviso } from "@/lib/avisos";
 export { FIRMA_POR_DEFECTO, ahoraAR, vigente };
 export type { Aviso };
-const HORAS_SESION = 12;
 
 // ---- Contraseñas (cifradas con scrypt, nunca en texto plano) ----
 export async function hashear(clave: string, salHex = randomBytes(16).toString("hex")) {
@@ -30,35 +32,6 @@ export async function leerUsuario(usuario: string): Promise<UsuarioMuni | null> 
   const [x] = await redis([["HGET", "muni:usuarios", usuario]]);
   return x ? JSON.parse(x as string) : null;
 }
-
-// ---- Ingreso con límite de intentos fallidos ----
-const MAX_POR_USUARIO = 5, MAX_POR_IP = 20, VENTANA = 15 * 60;
-
-export async function ingresar(usuario: string, clave: string, ip: string) {
-  const [porUsuario, porIp] = await redis([["GET", `muni:fallos:u:${usuario}`], ["GET", `muni:fallos:ip:${ip}`]]);
-  if (Number(porUsuario) >= MAX_POR_USUARIO || Number(porIp) >= MAX_POR_IP) return { error: "bloqueado" as const };
-  const u = usuarioValido(usuario) ? await leerUsuario(usuario) : null;
-  if (!(await claveCorrecta(u, clave)) || !u?.activo) {
-    await redis([
-      ["INCR", `muni:fallos:u:${usuario.slice(0, 30)}`], ["EXPIRE", `muni:fallos:u:${usuario.slice(0, 30)}`, VENTANA],
-      ["INCR", `muni:fallos:ip:${ip}`], ["EXPIRE", `muni:fallos:ip:${ip}`, VENTANA],
-    ]);
-    return { error: "datos" as const };
-  }
-  const token = randomBytes(32).toString("hex");
-  await redis([["SET", `muni:sesion:${token}`, u.usuario, "EX", HORAS_SESION * 3600], ["DEL", `muni:fallos:u:${usuario}`]]);
-  return { token, maxAge: HORAS_SESION * 3600 };
-}
-
-export async function usuarioDeSesion(req: Request): Promise<UsuarioMuni | null> {
-  const token = /(?:^|;\s*)muni=([a-f0-9]{64})/.exec(req.headers.get("cookie") ?? "")?.[1];
-  if (!token) return null;
-  const [nombre] = await redis([["GET", `muni:sesion:${token}`]]);
-  const u = typeof nombre === "string" ? await leerUsuario(nombre) : null;
-  return u?.activo ? u : null;
-}
-
-export const ipDe = (req: Request) => (req.headers.get("x-forwarded-for") ?? "desconocida").split(",")[0].trim().slice(0, 45);
 
 // ---- Avisos ----
 const limpiar = (v: unknown, max: number) =>
