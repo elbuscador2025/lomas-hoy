@@ -18,8 +18,7 @@ const TRAZOS: Record<string, React.ReactNode> = {
   gota: <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z" />,
   // Estado del tiempo
   sol: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>,
-  luna: <path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z" />,
-  lunanube: <><path d="M10 3.5a5 5 0 0 0 5.5 7.4 5 5 0 0 1-5.5-7.4z" /><path d="M8 20a4 4 0 0 1-.4-7.98A5.2 5.2 0 0 1 17.8 13a3.5 3.5 0 0 1-.3 7z" /></>,
+  luna: <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />,
   nube: <path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 10.5 3.75 3.75 0 0 1 17.5 18z" />,
   solnube: <><path d="M9 4v1.5M3.8 6.3l1 1M2 12h1.5M14.2 6.3l-1 1" /><path d="M7 10a3.5 3.5 0 0 1 6.2-2.2" /><path d="M8 20a4 4 0 0 1-.4-7.98A5.2 5.2 0 0 1 17.8 13a3.5 3.5 0 0 1-.3 7z" /></>,
   lluvia: <><path d="M7 15a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 7.5 3.75 3.75 0 0 1 17.5 15z" /><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3" /></>,
@@ -28,12 +27,26 @@ const TRAZOS: Record<string, React.ReactNode> = {
   nieve: <><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9" /></>,
 };
 
-export function Icono({ nombre, tam = 24, ancho = 2 }: { nombre: string; tam?: number; ancho?: number }) {
-  return (
-    <svg width={tam} height={tam} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={ancho}
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden focusable="false">
-      {TRAZOS[nombre] ?? TRAZOS.nube}
-    </svg>
-  );
-}
+const LUNA = "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z";
+const NUBE = "M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 10.5 3.75 3.75 0 0 1 17.5 18z";
 
+export function Icono({ nombre, tam = 24, ancho = 2 }: { nombre: string; tam?: number; ancho?: number }) {
+  const comun = { width: tam, height: tam, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: ancho, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true, focusable: "false" as const };
+  // Luna con nubes: la medialuna queda atrás y la nube adelante (la nube "borra" lo que la medialuna tendría detrás)
+  if (nombre === "lunanube") {
+    const luna = "translate(-1 -1.4) scale(0.84)", nube = "translate(4.4 7.8) scale(0.78)";
+    return (
+      <svg {...comun}>
+        <defs>
+          <mask id="mascara-luna-nube" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+            <rect width="24" height="24" fill="white" />
+            <path d={NUBE} transform={nube} fill="black" stroke="black" strokeWidth={ancho / 0.78 + 3.4} />
+          </mask>
+        </defs>
+        <g mask="url(#mascara-luna-nube)"><path d={LUNA} transform={luna} strokeWidth={ancho / 0.84} /></g>
+        <path d={NUBE} transform={nube} strokeWidth={ancho / 0.78} />
+      </svg>
+    );
+  }
+  return <svg {...comun}>{TRAZOS[nombre] ?? TRAZOS.nube}</svg>;
+}
