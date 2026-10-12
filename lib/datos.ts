@@ -1,4 +1,6 @@
 import { vigente, type AvisoPublico } from "@/lib/avisos";
+import { vigenteMascota, type MascotaPublica } from "@/lib/mascotas-comun";
+import type { PagoAnses } from "@/lib/anses";
 export type Fila<T> = { clave: string; contenido: T | null; ok_en: string | null; intento_en: string | null; error: string | null };
 export type AvisoTren = {
   ramal: string; motivo: string; disrupcion: boolean; grave: boolean;
@@ -35,6 +37,8 @@ export type Todo = { tren?: Fila<Tren>; luz?: Fila<Luz>; clima?: Fila<Clima>; co
 const CLAVE_CACHE = "lomas-hoy:datos";
 const CLAVE_LUGARES = "lomas-hoy:lugares";
 const CLAVE_AVISOS = "lomas-hoy:avisos";
+const CLAVE_MASCOTAS = "lomas-hoy:mascotas";
+const CLAVE_ANSES = "lomas-hoy:anses";
 
 const leerCache = <T,>(clave: string, vacio: T): T => {
   try { return JSON.parse(localStorage.getItem(clave) ?? "null") ?? vacio; } catch { return vacio; }
@@ -44,13 +48,16 @@ const guardarCache = (clave: string, valor: unknown) => {
 };
 
 // Lee del sitio (que lee la base); si no hay internet, devuelve lo último que se guardó en el celu.
-export async function cargarDatos(): Promise<{ datos: Todo; lugares: Lugar[]; avisos: AvisoPublico[]; sinConexion: boolean }> {
-  const [d, l, v] = await Promise.allSettled([
+export type Anses = { entradas: PagoAnses[]; actualizado: string | null };
+export async function cargarDatos(): Promise<{ datos: Todo; lugares: Lugar[]; avisos: AvisoPublico[]; mascotas: MascotaPublica[]; anses: Anses; sinConexion: boolean }> {
+  const [d, l, v, m, a] = await Promise.allSettled([
     fetch("/api/datos").then((r) => { if (!r.ok) throw new Error(); return r.json() as Promise<Fila<unknown>[]>; }),
     fetch("/api/lugares").then((r) => { if (!r.ok) throw new Error(); return r.json() as Promise<Lugar[]>; }),
     fetch("/api/avisos").then((r) => { if (!r.ok) throw new Error(); return r.json() as Promise<AvisoPublico[]>; }),
+    fetch("/api/mascotas").then((r) => { if (!r.ok) throw new Error(); return r.json() as Promise<MascotaPublica[]>; }),
+    fetch("/api/anses").then((r) => { if (!r.ok) throw new Error(); return r.json() as Promise<Anses>; }),
   ]);
-  let datos: Todo, lugares: Lugar[], avisos: AvisoPublico[];
+  let datos: Todo, lugares: Lugar[], avisos: AvisoPublico[], mascotas: MascotaPublica[], anses: Anses;
   if (d.status === "fulfilled") {
     datos = Object.fromEntries(d.value.map((f) => [f.clave, f])) as Todo;
     guardarCache(CLAVE_CACHE, datos);
@@ -64,7 +71,16 @@ export async function cargarDatos(): Promise<{ datos: Todo; lugares: Lugar[]; av
     guardarCache(CLAVE_AVISOS, avisos);
   } else avisos = leerCache<AvisoPublico[]>(CLAVE_AVISOS, []);
   avisos = avisos.filter((a) => vigente(a)); // lo guardado en el celu puede estar vencido
-  return { datos, lugares, avisos, sinConexion: d.status === "rejected" && l.status === "rejected" };
+  if (m.status === "fulfilled") {
+    mascotas = m.value;
+    guardarCache(CLAVE_MASCOTAS, mascotas);
+  } else mascotas = leerCache<MascotaPublica[]>(CLAVE_MASCOTAS, []);
+  mascotas = mascotas.filter((x) => vigenteMascota(x));
+  if (a.status === "fulfilled") {
+    anses = a.value;
+    guardarCache(CLAVE_ANSES, anses);
+  } else anses = leerCache<Anses>(CLAVE_ANSES, { entradas: [], actualizado: null });
+  return { datos, lugares, avisos, mascotas, anses, sinConexion: d.status === "rejected" && l.status === "rejected" };
 }
 
 export const ZONA = "America/Argentina/Buenos_Aires";

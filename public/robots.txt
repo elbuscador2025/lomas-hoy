@@ -5,3 +5,4 @@ Disallow: /municipio
 Disallow: /entrar
 Disallow: /invitacion
 Disallow: /restablecer
+Disallow: /mascota

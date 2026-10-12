@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { after } from "next/server";
+import { mantener } from "@/lib/mascotas";
 import { evaluarTren, evaluarLuz, evaluarProgramados, evaluarColectivos } from "@/lib/eventos";
 import { redis } from "@/lib/servidor";
 
@@ -11,7 +12,7 @@ export async function POST(req: Request) {
     return Response.json({ ok: false }, { status: 401 });
   }
   const { clave, contenido, error } = await req.json().catch(() => ({}));
-  if (!["tren", "luz", "colectivos", "programados", "pronostico"].includes(clave)) return Response.json({ ok: false }, { status: 400 });
+  if (!["tren", "luz", "colectivos", "programados", "pronostico", "mascotas"].includes(clave)) return Response.json({ ok: false }, { status: 400 });
 
   const ahora = new Date().toISOString();
   const llave = `datos:${clave}`;
@@ -20,6 +21,7 @@ export async function POST(req: Request) {
     // Las notificaciones salen después de responder: si fallan, el dato ya quedó guardado.
     if (clave === "tren") after(() => evaluarTren(contenido).catch((e) => console.error("push tren", e)));
     if (clave === "programados") after(() => evaluarProgramados(contenido).catch((e) => console.error("push programados", e)));
+    if (clave === "mascotas") after(() => mantener().catch((e) => console.error("mascotas", e)));
     if (clave === "colectivos") after(() => evaluarColectivos(contenido).catch((e) => console.error("push colectivos", e)));
     if (clave === "luz") after(() => evaluarLuz(contenido).catch((e) => console.error("push luz", e)));
   } else {

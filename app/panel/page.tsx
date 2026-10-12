@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { CATEGORIAS, type Lugar } from "@/lib/datos";
 import PanelMunicipio from "./PanelMunicipio";
 import PanelPush from "./PanelPush";
+import PanelMascotas from "./PanelMascotas";
+import PanelAnses from "./PanelAnses";
 import MiCuenta from "./MiCuenta";
 import { post, salir } from "./api";
 
@@ -18,7 +20,7 @@ const fecha = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone:
 export default function Panel() {
   const [datos, setDatos] = useState<Datos | null>(null);
   const [lugares, setLugares] = useState<Lugar[]>([]);
-  const [pestana, setPestana] = useState<"stats" | "lugares" | "muni" | "push">("stats");
+  const [pestana, setPestana] = useState<"stats" | "lugares" | "muni" | "push" | "mascotas" | "anses">("stats");
   const [editando, setEditando] = useState<(Lugar & { tels: string; direccionOriginal?: string }) | null>(null);
   const [mensaje, setMensaje] = useState("");
 
@@ -26,6 +28,7 @@ export default function Panel() {
 
   // Al abrir el panel: si no hay sesión, la primera llamada manda a la pantalla de entrada.
   useEffect(() => {
+    if (location.hash === "#mascotas") setPestana("mascotas");
     post("/api/panel").then(async (r) => { if (r.ok) { setDatos(await r.json()); cargarLugares(); } });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -73,10 +76,14 @@ export default function Panel() {
         <button className={`btn ${pestana === "lugares" ? "" : "claro"}`} onClick={() => setPestana("lugares")}>Lugares ({lugares.length})</button>
         <button className={`btn ${pestana === "muni" ? "" : "claro"}`} onClick={() => setPestana("muni")}>Municipio</button>
         <button className={`btn ${pestana === "push" ? "" : "claro"}`} onClick={() => setPestana("push")}>Avisos push</button>
+        <button className={`btn ${pestana === "mascotas" ? "" : "claro"}`} onClick={() => setPestana("mascotas")}>Mascotas</button>
+        <button className={`btn ${pestana === "anses" ? "" : "claro"}`} onClick={() => setPestana("anses")}>ANSES</button>
       </div>
 
       {pestana === "muni" && <PanelMunicipio />}
       {pestana === "push" && <PanelPush />}
+      {pestana === "mascotas" && <PanelMascotas />}
+      {pestana === "anses" && <PanelAnses />}
 
       {pestana === "stats" && (
         <>

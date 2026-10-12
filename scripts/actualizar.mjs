@@ -26,6 +26,8 @@ async function guardar(clave, cuerpo) {
 }
 
 const tareas = {
+  // Mascotas: no trae datos; avisa al sitio para que baje lo vencido (y borre sus fotos) y mande el resumen de las 19 hs
+  mascotas: async () => ({ ok: true }),
   // Pronóstico de Open-Meteo: una sola consulta cada ~20 min para todos (la pantalla lee lo guardado)
   pronostico: async () => ({ ...leerPronostico(await traer(urlOpenMeteo(cfg), "json")), consultadoEn: new Date().toISOString() }),
   tren: async () => leerTren(await traer(cfg.tren.url, "text"), cfg),

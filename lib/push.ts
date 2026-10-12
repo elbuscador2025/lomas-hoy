@@ -6,8 +6,8 @@ import { config } from "@/lomas.config.mjs";
 import { redis, hoyArgentina } from "@/lib/servidor";
 import { ahoraAR } from "@/lib/avisos";
 
-export type Tipo = "tren" | "luz" | "tormenta" | "municipio" | "colectivos";
-export const TIPOS: Tipo[] = ["tren", "luz", "tormenta", "municipio", "colectivos"];
+export type Tipo = "tren" | "luz" | "tormenta" | "municipio" | "colectivos" | "mascotas";
+export const TIPOS: Tipo[] = ["tren", "luz", "tormenta", "municipio", "colectivos", "mascotas"];
 export type Suscripcion = {
   endpoint: string; keys: { p256dh: string; auth: string };
   tipos: Partial<Record<Tipo, boolean>>; creado: string; // sin barrio, nombre, teléfono, ni nada personal
@@ -107,7 +107,8 @@ export async function notificar(ev: Evento) {
   }
   prepararVapid();
   // 3) Quiénes la reciben: todos los que tienen ese tipo prendido (si todavía no eligieron, está prendido)
-  const interesadas = (await todasLasSuscripciones()).filter((s) => s.tipos?.[ev.tipo] !== false);
+  // (mascotas es opcional: solo le llega a quien lo prendió)
+  const interesadas = (await todasLasSuscripciones()).filter((s) => (ev.tipo === "mascotas" ? s.tipos?.mascotas === true : s.tipos?.[ev.tipo] !== false));
   // 4) Máximo por día y por celular
   const dia = hoyArgentina();
   const [filas] = await redis([["HGETALL", `push:cuenta:${dia}`]]);
@@ -152,4 +153,27 @@ export async function enviarPrueba(endpoint: string) {
   if (r.borrar) await borrarSuscripcion(endpoint);
   await registrar({ tipo: "prueba", evento: "prueba", enviadas: r.ok ? 1 : 0, fallidas: r.ok ? 0 : 1, errores: r.ok ? [] : [`${r.estado ?? "?"}: ${r.mensaje}`] }, r.ok ? 1 : 0, r.ok ? 0 : 1);
   return r;
+}
+
+// ---- Avisos solo para mí (administrador): celulares que activé desde mi panel ----
+export async function guardarSuscripcionAdmin(d: Record<string, unknown>) {
+  const s = validarSuscripcion({ subscription: d.subscription, tipos: {} });
+  if (typeof s === "string") return s;
+  await redis([["HSET", "push:admin", idDe(s.endpoint), JSON.stringify(s)]]);
+  return null;
+}
+// No pasa por el silencio ni por el tope: es un aviso de trabajo para mí. Nunca tira error.
+export async function notificarAdmin(titulo: string, cuerpo: string, url: string) {
+  try {
+    prepararVapid();
+    const [x] = await redis([["HVALS", "push:admin"]]);
+    const subs = (x as string[]).map((j) => JSON.parse(j) as Suscripcion);
+    const res = await Promise.all(subs.map((s) => enviarUna(s, { titulo: corto(titulo, 60), cuerpo: corto(cuerpo, 160), url, tag: `admin:${Date.now()}` })));
+    const aBorrar = subs.filter((_, i) => res[i].borrar);
+    if (aBorrar.length) await redis(aBorrar.map((s) => ["HDEL", "push:admin", idDe(s.endpoint)]));
+    await registrar({ tipo: "admin", evento: titulo, enviadas: res.filter((r) => r.ok).length, fallidas: res.filter((r) => !r.ok).length, errores: [...new Set(res.filter((r) => !r.ok).map((r) => `${r.estado ?? "?"}: ${r.mensaje}`))].slice(0, 3) },
+      res.filter((r) => r.ok).length, res.filter((r) => !r.ok).length);
+  } catch (e) {
+    console.error("push admin:", e);
+  }
 }

@@ -10,7 +10,7 @@ const PUBLICA = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "").trim();
 const json = { "Content-Type": "application/json" };
 
 export const prefsIniciales = (): Prefs => ({
-  tipos: Object.fromEntries(Object.entries(config.push.tipos).map(([k, v]) => [k, v.activa])),
+  tipos: Object.fromEntries(Object.entries(config.push.tipos).map(([k, v]) => [k, (v as { porDefecto?: boolean }).porDefecto ?? v.activa])),
 });
 
 const aBytes = (base64: string) => {

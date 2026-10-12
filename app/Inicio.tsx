@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { config } from "@/lomas.config.mjs";
 import {
-  cargarDatos, armarNovedades, clasificarTren, fechaLarga, hora, hoyMMDD, nombreLindo, proximasHoras,
+  cargarDatos, armarNovedades, type Anses, clasificarTren, fechaLarga, hora, hoyMMDD, nombreLindo, proximasHoras,
   CATEGORIAS, ordenarLugares, distanciaKm, distanciaTexto, normalizar, mapaBusqueda, ZONA,
   type Todo, type Lugar, type Novedad,
 } from "@/lib/datos";
@@ -11,6 +11,10 @@ import { Icono } from "./Iconos";
 import Pie from "./Pie";
 import LugarCard from "./LugarCard";
 import Notificaciones, { CartelInstalar, CartelAvisos } from "./Notificaciones";
+import { MascotaCard, ListaMascotas, FormularioMascota } from "./Mascotas";
+import { avisosDeFeriado } from "@/lib/feriados";
+import { resumenAnses, terminaciones, fechaPago, URL_ANSES } from "@/lib/anses";
+import { esNueva, type MascotaPublica } from "@/lib/mascotas-comun";
 import { usePush } from "./usePush";
 
 type Coord = { lat: number; lng: number };
@@ -63,6 +67,8 @@ export default function Inicio() {
   const [datos, setDatos] = useState<Todo | null>(null);
   const [lugares, setLugares] = useState<Lugar[]>([]);
   const [avisos, setAvisos] = useState<AvisoPublico[]>([]);
+  const [mascotas, setMascotas] = useState<MascotaPublica[]>([]);
+  const [anses, setAnses] = useState<Anses>({ entradas: [], actualizado: null });
   const [sinConexion, setSinConexion] = useState(false);
   const [yo, setYo] = useState<Coord | null>(null);
   const [errorUbicacion, setErrorUbicacion] = useState(false);
@@ -73,7 +79,7 @@ export default function Inicio() {
   const s = config.secciones;
 
   useEffect(() => {
-    cargarDatos().then((r) => { setDatos(r.datos); setLugares(r.lugares); setAvisos(r.avisos); setSinConexion(r.sinConexion); });
+    cargarDatos().then((r) => { setDatos(r.datos); setLugares(r.lugares); setAvisos(r.avisos); setMascotas(r.mascotas); setAnses(r.anses); setSinConexion(r.sinConexion); });
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
     // Visita anónima: un número al azar guardado en el celu, avisado una vez por día.
     try {
@@ -91,7 +97,7 @@ export default function Inicio() {
     const alVolverAVer = () => {
       if (document.visibilityState === "visible" && Date.now() - ultima > 3 * 60_000) {
         ultima = Date.now();
-        cargarDatos().then((r) => { setDatos(r.datos); setLugares(r.lugares); setAvisos(r.avisos); setSinConexion(r.sinConexion); });
+        cargarDatos().then((r) => { setDatos(r.datos); setLugares(r.lugares); setAvisos(r.avisos); setMascotas(r.mascotas); setAnses(r.anses); setSinConexion(r.sinConexion); });
       }
     };
     document.addEventListener("visibilitychange", alVolverAVer);
@@ -138,6 +144,9 @@ export default function Inicio() {
   const diaCorto = (f: string) => capitalizar(new Date(`${f}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "long", day: "numeric", month: "long" }).replace(",", ""));
   const horaCorte = (f: string) => f.slice(11, 16);
   const filaHoras = clima ? proximasHoras(clima, ahora) : [];
+  const hoyStr = ahora.slice(0, 10);
+  const nuevasMascotas = mascotas.filter((m) => esNueva(m, config.mascotas.diasNuevas)).length;
+  const rAnses = resumenAnses(anses.entradas, hoyStr);
   const avisosOrdenados = [...avisos].sort((a, b) => Number(esDeHoy(b, ahora)) - Number(esDeHoy(a, ahora)) || (a.actividad ?? a.creado).localeCompare(b.actividad ?? b.creado));
   const lugaresDe = (vistaId: string) => lugares.filter((l) => CATEGORIAS_DE[vistaId].includes(l.categoria));
 
@@ -184,11 +193,13 @@ export default function Inicio() {
       paros: s.colectivos.activa ? paros.filter((p) => coincide(`colectivo colectivos paro uta ${p.titular}`)) : [],
       programados: s.luz.activa ? programados.filter((c) => coincide(`corte programado luz edesur ${c.localidad} ${c.motivo}`)) : [],
       luz: s.luz.activa ? cortes.filter((c) => coincide(`${s.luz.titulo} luz corte edesur ${nombreLindo(c.localidad ?? "")}`)) : [],
+      mascotas: s.mascotas.activa ? mascotas.filter((m) => coincide(`mascota mascotas perdida perdido encontrada encontrado ${m.especie} ${m.barrio} ${m.descripcion}`)) : [],
+      anses: s.anses.activa && coincide("anses cobran cobro hoy cobran jubilacion jubilaciones jubilados pension auh asignacion"),
       farmacias: s.farmacias.activa && coincide("farmacia farmacias turno turnos de turno remedios medicamentos"),
       clima: s.clima.activa && clima && coincide(`clima tiempo temperatura lluvia ${clima.ahora.etiqueta} ${clima.dias.map((d) => d.etiqueta).join(" ")}`) ? clima : null,
     };
-  }, [busqueda, lugares, avisos, d.tren, paros, cortes, programados, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
-  const hayResultados = resultados && (resultados.lugares.length || resultados.avisos.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.farmacias || resultados.clima);
+  }, [busqueda, lugares, avisos, mascotas, rAnses.texto, d.tren, paros, cortes, programados, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
+  const hayResultados = resultados && (resultados.lugares.length || resultados.avisos.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.anses || resultados.farmacias || resultados.clima);
 
   // ---- Estado de cada cuadradito ----
   const hayGrave = (v: Novedad["vista"]) => novedades.some((n) => n.vista === v && n.gravedad === "grave");
@@ -352,11 +363,48 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "mascotas")
+    return (
+      <Detalle titulo={s.mascotas.titulo} onVolver={volver}>
+        <ListaMascotas mascotas={mascotas} onPublicar={() => abrir("mascotas-publicar")} />
+      </Detalle>
+    );
+
+  if (vista === "mascotas-publicar")
+    return (
+      <Detalle titulo="Publicar" onVolver={volver}>
+        <FormularioMascota onListo={volver} />
+      </Detalle>
+    );
+
+  if (vista === "anses") {
+    const porPrestacion = [...new Set(rAnses.delMes.map((p) => p.prestacion))];
+    return (
+      <Detalle titulo={s.anses.titulo} onVolver={volver}>
+        <p className="frase">{rAnses.texto}</p>
+        {rAnses.sinDatos ? null : porPrestacion.map((pr) => (
+          <div key={pr}>
+            <h2>{pr}</h2>
+            <ul className="lista">
+              {rAnses.delMes.filter((p) => p.prestacion === pr).map((p) => (
+                <li key={p.id} className="pago"><b>DNI terminado en {terminaciones(p.dnis)}</b><br />{capitalizar(fechaPago(p.fecha))}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+        <a className="btn claro ancho" target="_blank" rel="noreferrer" href={URL_ANSES}>Ver el calendario oficial en ANSES</a>
+        <Pie seccion="anses" fuente="ANSES" url={URL_ANSES} minutosViejo={60 * 24 * 60}
+          fila={anses.actualizado ? { clave: "anses", contenido: null, ok_en: anses.actualizado, intento_en: null, error: null } : undefined} />
+      </Detalle>
+    );
+  }
+
   if (vista === "farmacias")
     return (
       <Detalle titulo={s.farmacias.titulo} onVolver={volver}>
         <p>Todavía no tenemos el cronograma oficial de turnos.</p>
         <a className="btn grande-btn" target="_blank" rel="noreferrer" href={mapaFarmacias}>Ver farmacias abiertas ahora</a>
+        <small className="chico">En feriados y de noche, llamá antes de ir.</small>
         <p className="vacio">Se abre Google Maps y busca las farmacias abiertas {yo ? "cerca de tu ubicación" : `en ${config.ciudad}`}.</p>
       </Detalle>
     );
@@ -501,6 +549,9 @@ export default function Inicio() {
           <input type="search" placeholder="¿Qué buscás? Farmacia, veterinaria…" aria-label="Buscar" value={q} onChange={(e) => setQ(e.target.value)} />
           <button className="buscar-btn" type="submit" aria-label="Buscar"><Icono nombre="lupa" tam={24} ancho={2.5} /></button>
         </form>
+        {avisosDeFeriado(hoyStr).length > 0 && (
+          <div className="franja" role="status">{avisosDeFeriado(hoyStr).map((t) => <p key={t}>{t}</p>)}</div>
+        )}
         {!resultados && <><CartelInstalar /><CartelAvisos push={push} /></>}
         {sinConexion && <p className="offline">Sin conexión: se muestra lo último que se cargó.</p>}
 
@@ -529,10 +580,19 @@ export default function Inicio() {
               <div className="grupo"><h2>Cortes programados</h2>
                 {resultados.programados.map((c) => <p key={c.id + c.inicio} className="tarjeta aviso"><b>{c.localidad}</b><span>{diaCorto(c.inicio.slice(0, 10))}, de {horaCorte(c.inicio)} a {horaCorte(c.fin)} hs</span><small>Horario estimado, según Edesur</small></p>)}
               </div>)}
+            {resultados.anses && (
+              <div className="grupo"><h2>{s.anses.titulo}</h2>
+                <button className="tarjeta muni" onClick={() => abrir("anses")}><b>{rAnses.texto}</b><small>Ver el calendario del mes</small></button>
+              </div>)}
+            {resultados.mascotas.length > 0 && (
+              <div className="grupo"><h2>{s.mascotas.titulo}</h2>
+                <ul className="lista">{resultados.mascotas.map((m) => <MascotaCard key={m.id} m={m} />)}</ul>
+              </div>)}
             {resultados.farmacias && (
               <div className="grupo"><h2>{s.farmacias.titulo}</h2>
                 <p>Todavía no tenemos el cronograma oficial de turnos.</p>
                 <a className="btn grande-btn" target="_blank" rel="noreferrer" href={mapaFarmacias}>Ver farmacias abiertas ahora</a>
+                <small className="chico">En feriados y de noche, llamá antes de ir.</small>
               </div>)}
             {resultados.clima && (
               <div className="grupo"><h2>Clima</h2><p className="tarjeta ok"><b>{Math.round(resultados.clima.ahora.temp)}° · {resultados.clima.ahora.etiqueta}</b></p></div>)}
@@ -594,6 +654,15 @@ export default function Inicio() {
               {s.farmacias.activa && (
                 <Tile icono="farmacia" titulo={s.farmacias.titulo} estado="Mapa" tono="neutro" onClick={() => abrir("farmacias")}
                   resumen="Farmacias abiertas ahora, cerca tuyo" />
+              )}
+              {s.mascotas.activa && (
+                <Tile icono="patita" titulo={s.mascotas.titulo} onClick={() => abrir("mascotas")}
+                  estado={nuevasMascotas ? plural(nuevasMascotas, "nueva", "nuevas") : "Ver"} tono={nuevasMascotas ? "aviso" : "neutro"}
+                  resumen={mascotas.length ? `${plural(mascotas.length, "publicación", "publicaciones")} de vecinos` : "Perdidos y encontrados"} />
+              )}
+              {s.anses.activa && (
+                <Tile icono="dinero" titulo={s.anses.titulo} onClick={() => abrir("anses")}
+                  estado={rAnses.hayHoy ? "Hoy" : rAnses.sinDatos ? "Sin datos" : "Mes"} tono={rAnses.hayHoy ? "ok" : "neutro"} resumen={rAnses.texto} />
               )}
               {s.avisos.activa && (
                 <Tile icono="megafono" titulo="Avisos del municipio" estado={avisos.length ? String(avisos.length) : "Sin avisos"} tono={avisos.length ? "ok" : "neutro"}
