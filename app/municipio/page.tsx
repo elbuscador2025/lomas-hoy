@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 
-type Aviso = { id: string; titulo: string; texto: string; zona: string; actividad: string | null; direccion: string; firma: string; creado: string };
+type Aviso = { id: string; titulo: string; texto: string; zona: string; actividad: string | null; direccion: string; firma: string; creado: string; propio: boolean };
 type Estado = { usuario: { nombre: string; firma: string }; avisos: Aviso[]; zonas: string[]; cupo: { publicadosHoy: number; tope: number } };
 const vacio = { id: "", titulo: "", texto: "", zona: "Todo Lomas", actividad: "", direccion: "" };
 const cuando = (a: string) => new Date(a + ":00-03:00").toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", dateStyle: "medium", timeStyle: "short" });
@@ -14,6 +14,7 @@ export default function Municipio() {
   const [clave, setClave] = useState("");
   const [form, setForm] = useState(vacio);
   const [msg, setMsg] = useState("");
+  const [filtro, setFiltro] = useState("");
   const [error, setError] = useState("");
 
   const cargar = useCallback(async () => {
@@ -83,7 +84,7 @@ export default function Municipio() {
         <h2>{form.id ? "Editar aviso" : "Nuevo aviso"}</h2>
         <label>Título<input maxLength={100} required value={form.titulo} onChange={(e) => set("titulo", e.target.value)} /></label>
         <label>Texto (solo texto, sin fotos ni enlaces)<textarea maxLength={1000} required rows={5} value={form.texto} onChange={(e) => set("texto", e.target.value)} /></label>
-        <label>Zona
+        <label>Barrio (va al principio del título; “Todo Lomas” va sin etiqueta)
           <select value={form.zona} onChange={(e) => set("zona", e.target.value)}>
             {estado.zonas.map((z) => <option key={z}>{z}</option>)}
           </select>
@@ -101,18 +102,26 @@ export default function Municipio() {
         {msg && <p className="normal">{msg}</p>}
       </form>
 
-      <h2>Mis avisos</h2>
-      {estado.avisos.length === 0 && <p className="vacio">Todavía no publicaste avisos.</p>}
+      <h2>Historial de avisos</h2>
+      <label className="campo">Filtrar por barrio
+        <select value={filtro} onChange={(e) => setFiltro(e.target.value)}>
+          <option value="">Todos los barrios</option>
+          {estado.zonas.map((z) => <option key={z}>{z}</option>)}
+        </select>
+      </label>
+      {estado.avisos.filter((a) => !filtro || a.zona === filtro).length === 0 && <p className="vacio">No hay avisos para mostrar.</p>}
       <ul className="lista">
-        {estado.avisos.map((a) => (
+        {estado.avisos.filter((a) => !filtro || a.zona === filtro).map((a) => (
           <li key={a.id} className="lugar">
             <b>{a.titulo}</b>
-            <span>{a.zona}{a.actividad ? ` · ${cuando(a.actividad)}` : ""}</span>
-            <small>Publicado {new Date(a.creado).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", dateStyle: "medium", timeStyle: "short" })}</small>
-            <div className="acciones">
-              <button className="btn claro" onClick={() => { setMsg(""); setForm({ id: a.id, titulo: a.titulo, texto: a.texto, zona: a.zona, actividad: a.actividad ?? "", direccion: a.direccion }); window.scrollTo({ top: 0 }); }}>Editar</button>
-              <button className="btn claro" onClick={() => borrar(a)}>Borrar</button>
-            </div>
+            <span>{a.zona}{a.actividad ? ` · actividad ${cuando(a.actividad)}` : ""}</span>
+            <small>Publicado {new Date(a.creado).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", dateStyle: "medium", timeStyle: "short" })} · {a.firma}{a.propio ? " (tuyo)" : ""}</small>
+            {a.propio && (
+              <div className="acciones">
+                <button className="btn claro" onClick={() => { setMsg(""); setForm({ id: a.id, titulo: a.titulo, texto: a.texto, zona: a.zona, actividad: a.actividad ?? "", direccion: a.direccion }); window.scrollTo({ top: 0 }); }}>Editar</button>
+                <button className="btn claro" onClick={() => borrar(a)}>Borrar</button>
+              </div>
+            )}
           </li>
         ))}
       </ul>

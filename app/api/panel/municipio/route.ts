@@ -1,6 +1,6 @@
 import { redis, claveDelPanelOk } from "@/lib/servidor";
 import {
-  hashear, claveValida, usuarioValido, leerUsuario, todosLosAvisos, topeDiario, publicadosHoy, FIRMA_POR_DEFECTO, type UsuarioMuni,
+  hashear, claveValida, usuarioValido, leerUsuario, todosLosAvisos, topeDiario, publicadosHoy, barriosActuales, guardarBarrios, FIRMA_POR_DEFECTO, type UsuarioMuni,
 } from "@/lib/municipio";
 
 const limpio = (v: unknown, max: number) => String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, max);
@@ -19,6 +19,7 @@ export async function POST(req: Request) {
         usuarios: (us as string[]).map((j) => sinSecretos(JSON.parse(j))),
         avisos: await todosLosAvisos(),
         tope: await topeDiario(),
+        barrios: (await barriosActuales()).filter((b) => b !== "Todo Lomas"),
         publicadosHoy: await publicadosHoy(),
       });
     }
@@ -46,6 +47,30 @@ export async function POST(req: Request) {
     }
     case "borrarAviso": {
       await redis([["HDEL", "avisos", limpio(c.id, 40)]]);
+      return Response.json({ ok: true });
+    }
+    // Barrios: agregar, renombrar y quitar ("Todo Lomas" siempre está y no se toca)
+    case "agregarBarrio": {
+      const nombre = limpio(c.nombre, 40);
+      const lista = (await barriosActuales()).filter((b) => b !== "Todo Lomas");
+      if (!nombre || nombre.toLowerCase() === "todo lomas") return Response.json({ ok: false, error: "Poné un nombre." }, { status: 400 });
+      if (lista.some((b) => b.toLowerCase() === nombre.toLowerCase())) return Response.json({ ok: false, error: "Ese barrio ya está." }, { status: 409 });
+      await guardarBarrios([...lista, nombre]);
+      return Response.json({ ok: true });
+    }
+    case "renombrarBarrio": {
+      const viejo = limpio(c.viejo, 40), nuevo = limpio(c.nuevo, 40);
+      const lista = (await barriosActuales()).filter((b) => b !== "Todo Lomas");
+      if (!lista.includes(viejo) || !nuevo || nuevo.toLowerCase() === "todo lomas") return Response.json({ ok: false, error: "No se pudo renombrar." }, { status: 400 });
+      if (lista.some((b) => b !== viejo && b.toLowerCase() === nuevo.toLowerCase())) return Response.json({ ok: false, error: "Ese nombre ya existe." }, { status: 409 });
+      await guardarBarrios(lista.map((b) => (b === viejo ? nuevo : b)));
+      // los avisos que tenían el nombre viejo pasan al nuevo
+      for (const a of await todosLosAvisos()) if (a.zona === viejo) await redis([["HSET", "avisos", a.id, JSON.stringify({ ...a, zona: nuevo })]]);
+      return Response.json({ ok: true });
+    }
+    case "quitarBarrio": {
+      const nombre = limpio(c.nombre, 40);
+      await guardarBarrios((await barriosActuales()).filter((b) => b !== "Todo Lomas" && b !== nombre));
       return Response.json({ ok: true });
     }
     case "tope": {

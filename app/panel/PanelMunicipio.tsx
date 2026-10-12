@@ -11,6 +11,8 @@ export default function PanelMunicipio({ password }: { password: string }) {
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [tope, setTope] = useState(3);
   const [hoy, setHoy] = useState(0);
+  const [barrios, setBarrios] = useState<string[]>([]);
+  const [barrioNuevo, setBarrioNuevo] = useState("");
   const [nuevo, setNuevo] = useState({ usuario: "", nombre: "", firma: "", clave: "" });
   const [msg, setMsg] = useState("");
 
@@ -21,7 +23,7 @@ export default function PanelMunicipio({ password }: { password: string }) {
 
   const cargar = useCallback(async () => {
     const { ok, datos } = await llamar({ accion: "listar" });
-    if (ok) { setUsuarios(datos.usuarios); setAvisos(datos.avisos); setTope(datos.tope); setHoy(datos.publicadosHoy); }
+    if (ok) { setUsuarios(datos.usuarios); setAvisos(datos.avisos); setTope(datos.tope); setHoy(datos.publicadosHoy); setBarrios(datos.barrios); }
   }, [llamar]);
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -42,6 +44,22 @@ export default function PanelMunicipio({ password }: { password: string }) {
         <input type="number" min={0} max={100} value={tope} onChange={(e) => setTope(Number(e.target.value))} />
         <button className="btn chico" onClick={() => accion({ accion: "tope", tope }, "Tope guardado.")}>Guardar</button>
       </div>
+
+      <h2>Barrios</h2>
+      <p className="vacio">Son los que el municipio puede poner al principio del título de un aviso. “Todo Lomas” siempre está.</p>
+      {barrios.map((b) => (
+        <div key={b} className="fila-panel">
+          <b>{b}</b>
+          <span className="acciones">
+            <button className="btn claro chico" onClick={() => { const nuevo = prompt(`Nuevo nombre para "${b}":`, b); if (nuevo && nuevo !== b) accion({ accion: "renombrarBarrio", viejo: b, nuevo }, "Barrio renombrado."); }}>Renombrar</button>
+            <button className="btn claro chico" onClick={() => confirm(`¿Quitar "${b}" de la lista?`) && accion({ accion: "quitarBarrio", nombre: b }, "Barrio quitado.")}>Quitar</button>
+          </span>
+        </div>
+      ))}
+      <form className="avisar" onSubmit={async (e) => { e.preventDefault(); if (await accion({ accion: "agregarBarrio", nombre: barrioNuevo }, "Barrio agregado.")) setBarrioNuevo(""); }}>
+        <input placeholder="Barrio nuevo" value={barrioNuevo} onChange={(e) => setBarrioNuevo(e.target.value)} />
+        <button className="btn chico">Agregar</button>
+      </form>
 
       <h2>Usuarios del municipio</h2>
       {usuarios.length === 0 && <p className="vacio">Todavía no hay usuarios.</p>}

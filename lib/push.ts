@@ -4,21 +4,20 @@ import webpush from "web-push";
 import { createHash } from "node:crypto";
 import { config } from "@/lomas.config.mjs";
 import { redis, hoyArgentina } from "@/lib/servidor";
-import { ahoraAR, ZONAS } from "@/lib/avisos";
+import { ahoraAR } from "@/lib/avisos";
 
-export type Tipo = "tren" | "luz" | "tormenta" | "municipio";
-export const TIPOS: Tipo[] = ["tren", "luz", "tormenta", "municipio"];
+export type Tipo = "tren" | "luz" | "tormenta" | "municipio" | "colectivos";
+export const TIPOS: Tipo[] = ["tren", "luz", "tormenta", "municipio", "colectivos"];
 export type Suscripcion = {
   endpoint: string; keys: { p256dh: string; auth: string };
-  barrio: string; tipos: Record<Tipo, boolean>; creado: string; // sin nombre, ni teléfono, ni nada personal
+  tipos: Partial<Record<Tipo, boolean>>; creado: string; // sin barrio, nombre, teléfono, ni nada personal
 };
 export type Evento = {
   tipo: Tipo; clave: string; ttl: number; refrescar?: boolean; // clave = identifica la novedad para no repetirla
-  titulo: string; cuerpo: string; url: string; zona?: string; nocturna?: boolean;
+  titulo: string; cuerpo: string; url: string; nocturna?: boolean;
 };
 
 export const idDe = (endpoint: string) => createHash("sha256").update(endpoint).digest("base64url").slice(0, 22);
-const sinTildes = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const corto = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s);
 
 // ---- Claves VAPID: se limpian por si quedó algún espacio o salto de línea invisible ----
@@ -40,11 +39,9 @@ export function validarSuscripcion(d: Record<string, unknown>): Suscripcion | st
   const endpoint = String(s?.endpoint ?? ""), p256dh = String(s?.keys?.p256dh ?? ""), auth = String(s?.keys?.auth ?? "");
   if (!/^https:\/\/[^\s]{10,500}$/.test(endpoint)) return "Suscripción inválida.";
   if (!/^[A-Za-z0-9_-]{20,200}$/.test(p256dh) || !/^[A-Za-z0-9_-]{8,100}$/.test(auth)) return "Suscripción inválida.";
-  const barrio = String(d.barrio ?? "");
-  if (!ZONAS.includes(barrio)) return "El barrio no es válido.";
   const t = (d.tipos ?? {}) as Record<string, unknown>;
   const tipos = Object.fromEntries(TIPOS.map((k) => [k, !!t[k] && config.push.tipos[k].activa])) as Record<Tipo, boolean>;
-  return { endpoint, keys: { p256dh, auth }, barrio, tipos, creado: new Date().toISOString() };
+  return { endpoint, keys: { p256dh, auth }, tipos, creado: new Date().toISOString() };
 }
 
 export async function guardarSuscripcion(s: Suscripcion) {
@@ -109,11 +106,8 @@ export async function notificar(ev: Evento) {
     return;
   }
   prepararVapid();
-  // 3) Quiénes la reciben: tipo prendido y (si tiene zona) su barrio o "Todo Lomas"
-  const zona = ev.zona && ev.zona !== "Todo Lomas" ? sinTildes(ev.zona) : null;
-  const interesadas = (await todasLasSuscripciones()).filter(
-    (s) => s.tipos[ev.tipo] && (!zona || s.barrio === "Todo Lomas" || sinTildes(s.barrio) === zona),
-  );
+  // 3) Quiénes la reciben: todos los que tienen ese tipo prendido (si todavía no eligieron, está prendido)
+  const interesadas = (await todasLasSuscripciones()).filter((s) => s.tipos?.[ev.tipo] !== false);
   // 4) Máximo por día y por celular
   const dia = hoyArgentina();
   const [filas] = await redis([["HGETALL", `push:cuenta:${dia}`]]);
@@ -122,7 +116,7 @@ export async function notificar(ev: Evento) {
   for (let i = 0; i < plano.length; i += 2) cuenta.set(plano[i], Number(plano[i + 1]));
   const destino = interesadas.filter((s) => (cuenta.get(idDe(s.endpoint)) ?? 0) < config.push.maximoPorDia);
 
-  const carga = { titulo: corto(ev.titulo, 60), cuerpo: corto(ev.cuerpo, 160), url: ev.url, tag: ev.clave };
+  const carga = { titulo: corto(ev.titulo, 60), cuerpo: corto(ev.cuerpo, 240), url: ev.url, tag: ev.clave };
   const res = await enviarATodas(destino, carga);
 
   const ok = destino.filter((_, i) => res[i].ok), mal = res.filter((r) => !r.ok);

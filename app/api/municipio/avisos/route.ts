@@ -3,16 +3,16 @@ import { after } from "next/server";
 import { notificarAviso } from "@/lib/eventos";
 import { redis } from "@/lib/servidor";
 import {
-  usuarioDeSesion, todosLosAvisos, validarAviso, reservarCupo, topeDiario, publicadosHoy, ZONAS, FIRMA_POR_DEFECTO, type Aviso,
+  usuarioDeSesion, todosLosAvisos, validarAviso, reservarCupo, topeDiario, publicadosHoy, barriosActuales, FIRMA_POR_DEFECTO, type Aviso,
 } from "@/lib/municipio";
 
-// Cada usuario ve y maneja solo SUS avisos.
+// Historial: se ven todos los avisos (con fecha), pero cada usuario edita o borra solo los suyos.
 export async function GET(req: Request) {
   const u = await usuarioDeSesion(req);
   if (!u) return Response.json({ ok: false }, { status: 401 });
-  const avisos = (await todosLosAvisos()).filter((a) => a.autor === u.usuario);
+  const avisos = (await todosLosAvisos()).map(({ autor, ...a }) => ({ ...a, propio: autor === u.usuario }));
   return Response.json({
-    ok: true, usuario: { nombre: u.nombre, firma: u.firma || FIRMA_POR_DEFECTO }, avisos, zonas: ZONAS,
+    ok: true, usuario: { nombre: u.nombre, firma: u.firma || FIRMA_POR_DEFECTO }, avisos, zonas: await barriosActuales(),
     cupo: { publicadosHoy: await publicadosHoy(), tope: await topeDiario() },
   });
 }
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
   }
 
   if (cuerpo.accion === "guardar") {
-    const v = validarAviso(cuerpo);
+    const v = validarAviso(cuerpo, await barriosActuales());
     if ("error" in v) return Response.json({ ok: false, error: v.error }, { status: 400 });
     let aviso: Aviso;
     if (typeof cuerpo.id === "string" && cuerpo.id) {

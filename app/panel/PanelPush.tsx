@@ -1,9 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { config } from "@/lomas.config.mjs";
 
 type Resumen = {
-  total: number; porBarrio: [string, number][]; porTipo: Record<string, number>;
+  total: number;
   dias: { dia: string; enviados: number; fallidos: number }[];
   registro: { t: string; tipo: string; titulo?: string; evento?: string; interesadas?: number; enviadas?: number; fallidas?: number; omitida?: string; error?: string; errores?: string[]; borradas?: number }[];
 };
@@ -42,10 +41,6 @@ export default function PanelPush({ password }: { password: string }) {
 
       <h2>Celulares con avisos activados</h2>
       <p><b>{r.total}</b> en total</p>
-      {r.porBarrio.length > 0 && <ul className="lista">{r.porBarrio.map(([b, n]) => <li key={b}>{b}: <b>{n}</b></li>)}</ul>}
-      <p className="vacio">
-        Por tipo: {(Object.entries(config.push.tipos) as [string, { titulo: string }][]).map(([k, t]) => `${t.titulo} ${r.porTipo[k] ?? 0}`).join(" · ")}
-      </p>
 
       <h2>Notificaciones por día</h2>
       {r.dias.length === 0 ? <p className="vacio">Todavía no se mandó ninguna.</p> : (

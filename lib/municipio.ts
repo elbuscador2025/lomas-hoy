@@ -7,8 +7,8 @@ import { redis, hoyArgentina } from "@/lib/servidor";
 const scrypt = promisify(scryptCb) as (p: string, s: Buffer, n: number) => Promise<Buffer>;
 
 export type UsuarioMuni = { usuario: string; nombre: string; firma: string; activo: boolean; sal: string; hash: string };
-import { ZONAS, FIRMA_POR_DEFECTO, ahoraAR, vigente, type Aviso } from "@/lib/avisos";
-export { ZONAS, FIRMA_POR_DEFECTO, ahoraAR, vigente };
+import { FIRMA_POR_DEFECTO, ahoraAR, vigente, type Aviso } from "@/lib/avisos";
+export { FIRMA_POR_DEFECTO, ahoraAR, vigente };
 export type { Aviso };
 const HORAS_SESION = 12;
 
@@ -65,12 +65,12 @@ const limpiar = (v: unknown, max: number) =>
   String(v ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "").trim().slice(0, max);
 
 // Devuelve el aviso limpio o un texto con el error.
-export function validarAviso(d: Record<string, unknown>): { ok: Pick<Aviso, "titulo" | "texto" | "zona" | "actividad" | "direccion"> } | { error: string } {
+export function validarAviso(d: Record<string, unknown>, zonas: string[]): { ok: Pick<Aviso, "titulo" | "texto" | "zona" | "actividad" | "direccion"> } | { error: string } {
   const titulo = limpiar(d.titulo, 100), texto = limpiar(d.texto, 1000), direccion = limpiar(d.direccion, 150);
   const zona = limpiar(d.zona, 40), actividad = limpiar(d.actividad, 16) || null;
   if (!titulo) return { error: "Falta el título." };
   if (!texto) return { error: "Falta el texto." };
-  if (!ZONAS.includes(zona)) return { error: "La zona no es válida." };
+  if (!zonas.includes(zona)) return { error: "La zona no es válida." };
   if (actividad && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(actividad)) return { error: "La fecha y hora no son válidas." };
   return { ok: { titulo, texto, zona, actividad, direccion } };
 }
@@ -101,4 +101,16 @@ export async function reservarCupo() {
     return false;
   }
   return true;
+}
+
+// ---- Barrios (la lista que usa el municipio para etiquetar avisos; la administro desde mi panel) ----
+export async function barriosActuales(): Promise<string[]> {
+  const [x] = await redis([["GET", "muni:barrios"]]);
+  let lista: unknown = null;
+  try { lista = JSON.parse(String(x)); } catch {}
+  const base = Array.isArray(lista) && lista.length ? (lista as string[]) : config.localidades;
+  return ["Todo Lomas", ...base.filter((b) => b !== "Todo Lomas")];
+}
+export async function guardarBarrios(lista: string[]) {
+  await redis([["SET", "muni:barrios", JSON.stringify(lista.filter((b) => b !== "Todo Lomas"))]]);
 }

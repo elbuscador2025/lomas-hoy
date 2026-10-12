@@ -6,7 +6,7 @@ import {
   CATEGORIAS, ordenarLugares, distanciaKm, distanciaTexto, normalizar, mapaBusqueda, ZONA,
   type Todo, type Lugar, type Novedad,
 } from "@/lib/datos";
-import { ahoraAR, esDeHoy, type AvisoPublico } from "@/lib/avisos";
+import { ahoraAR, esDeHoy, tituloConBarrio, type AvisoPublico } from "@/lib/avisos";
 import { Icono } from "./Iconos";
 import Pie from "./Pie";
 import LugarCard from "./LugarCard";
@@ -152,7 +152,7 @@ export default function Inicio() {
   }
   function compartirDia() {
     const lineas = [`*Lomas Hoy* – ${capitalizar(fechaLarga())}`];
-    avisosHoy.forEach((a) => lineas.push(`📢 ${a.titulo} (${a.firma})`));
+    avisosHoy.forEach((a) => lineas.push(`📢 ${tituloConBarrio(a)} (${a.firma})`));
     novedades.forEach((n) => lineas.push(`${n.gravedad === "grave" ? "🔴" : "🟡"} ${n.titulo}: ${n.detalle}`));
     if (!totalAlertas) lineas.push("✅ Sin alertas hoy");
     if (clima) lineas.push(`🌡️ ${Math.round(clima.ahora.temp)}° – ${clima.ahora.etiqueta}`);
@@ -160,7 +160,7 @@ export default function Inicio() {
     wsp(lineas.join("\n"));
   }
   function compartirAviso(a: AvisoPublico) {
-    wsp([`*${a.titulo}*`, a.firma, a.zona + (a.actividad ? ` · ${cuando(a.actividad)}` : ""), "", a.texto, a.direccion, "", location.origin].filter((x) => x !== undefined).join("\n"));
+    wsp([`*${tituloConBarrio(a)}*`, a.firma, a.zona + (a.actividad ? ` · ${cuando(a.actividad)}` : ""), "", a.texto, a.direccion, "", location.origin].filter((x) => x !== undefined).join("\n"));
   }
 
   const km = (l: Lugar) => (yo && l.lat != null && l.lng != null ? distanciaKm(yo, { lat: l.lat, lng: l.lng }) : undefined);
@@ -210,6 +210,7 @@ export default function Inicio() {
           <>
             <div className="clima-detalle"><Icono nombre={a.icono} tam={64} />
               <div><span className="temp-chica">{Math.round(a.temp)}°</span><br />{a.etiqueta}</div></div>
+            {clima.frase && <p className="frase">{clima.frase}</p>}
             <p className="vacio">
               {a.medidoEn ? `Medido en ${a.estacion} a las ${a.medidoEn} · SMN` : "Estimado por Open-Meteo (no hay una medición reciente del SMN)"}
             </p>
@@ -217,27 +218,30 @@ export default function Inicio() {
               {[a.sensacion != null && `Sensación ${Math.round(a.sensacion)}°`, a.humedad != null && `Humedad ${a.humedad}%`, a.viento != null && `Viento ${Math.round(a.viento)} km/h`]
                 .filter(Boolean).join(" · ")}
             </p>
-            <h2>Pronóstico</h2>
-            <h3>Próximas 24 horas</h3>
+            <h2>Próximas 24 horas</h2>
             <ul className="lista">
               {filaHoras.map((h) => (
                 <li key={h.hora} className="fila-hora">
                   <b>{h.hora === "Ahora" ? "Ahora" : h.hora.slice(11, 16)}</b><Icono nombre={h.icono} tam={22} />
-                  <span>{h.etiqueta}</span><small>{h.lluvia != null ? `${h.lluvia}%` : ""}</small><b>{Math.round(h.temp)}°</b>
+                  <span>{h.etiqueta}</span><b>{Math.round(h.temp)}°</b>
+                  <small className="detalle-hora">
+                    {[h.lluvia != null ? `Lluvia ${h.lluvia}%` : null, h.viento != null ? `Viento ${Math.round(h.viento)} km/h` : null, h.sensacion != null ? `Sensación ${Math.round(h.sensacion)}°` : null]
+                      .filter(Boolean).join(" · ")}
+                  </small>
                 </li>
               ))}
             </ul>
-            <h3>Próximos 5 días</h3>
+            <h2>Próximos 5 días</h2>
             <ul className="lista">
               {clima.dias.map((x) => (
                 <li key={x.fecha} className="fila-dia">
                   <b>{capitalizar(new Date(`${x.fecha}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "long", day: "numeric" }).replace(",", ""))}</b>
-                  <Icono nombre={x.icono} tam={22} /><span>{x.etiqueta}</span>
-                  <small>{x.lluvia != null ? `${x.lluvia}%` : ""}</small><b>{Math.round(x.min)}° / {Math.round(x.max)}°</b>
+                  <Icono nombre={x.icono} tam={22} /><span>{x.palabra}</span>
+                  <b>{Math.round(x.max)}° / {Math.round(x.min)}°</b>
                 </li>
               ))}
             </ul>
-            <p className="vacio">La hora actual es una medición; las horas y los días que siguen son pronóstico de Open-Meteo.</p>
+            <p className="vacio">Pronóstico para {config.ciudad}. Fuente: SMN y Open-Meteo.</p>
           </>
         )}
         <Pie seccion="clima" fuente={config.clima.fuente} url={config.clima.url} fila={d.clima} minutosViejo={config.clima.minutosParaAvisarViejo} />
@@ -414,7 +418,7 @@ export default function Inicio() {
             {avisosOrdenados.map((a) => (
               <li key={a.id}>
                 <button className="tarjeta muni" onClick={() => abrir(`aviso:${a.id}`)}>
-                  <b>{a.titulo}</b>
+                  <b>{tituloConBarrio(a)}</b>
                   <span>{a.zona}{a.actividad ? ` · ${capitalizar(cuando(a.actividad))} hs` : ""}</span>
                   <small>{a.firma}</small>
                 </button>
@@ -428,7 +432,7 @@ export default function Inicio() {
   if (vista?.startsWith("aviso:")) {
     const a = avisos.find((x) => x.id === vista.slice(6));
     return (
-      <Detalle titulo={a?.titulo ?? "Aviso"} onVolver={volver}>
+      <Detalle titulo={a ? tituloConBarrio(a) : "Aviso"} onVolver={volver}>
         {!a ? <p>{datos ? "Este aviso ya no está vigente." : "Cargando…"}</p> : (
           <>
             <p className="firma">{a.firma}</p>
@@ -466,6 +470,7 @@ export default function Inicio() {
             <span className="temp">{clima ? `${Math.round(clima.ahora.temp)}°` : "--°"}</span>
             <span className="clima-icono"><Icono nombre={clima ? clima.ahora.icono : "nube"} tam={84} ancho={1.6} /></span>
           </span>
+          {clima?.frase && <span className="frase-azul">{clima.frase}</span>}
           <span className="estado">{clima ? clima.ahora.etiqueta : datos ? "Sin datos del clima" : "Cargando…"}</span>
           {clima && (
             <span className="origen-azul">
@@ -490,12 +495,12 @@ export default function Inicio() {
       </header>
 
       <section className="hoja">
-        <CartelInstalar />
-        <CartelAvisos push={push} />
-        <label className="buscador">
-          <Icono nombre="lupa" tam={22} />
+        <form className="buscador" role="search" onSubmit={(e) => { e.preventDefault(); (document.activeElement as HTMLElement | null)?.blur(); }}>
+          <Icono nombre="lupa" tam={28} ancho={2.5} />
           <input type="search" placeholder="Buscar: veterinaria, Banfield, tren…" aria-label="Buscar" value={q} onChange={(e) => setQ(e.target.value)} />
-        </label>
+          <button className="buscar-btn" type="submit" aria-label="Buscar"><Icono nombre="lupa" tam={24} ancho={2.5} /></button>
+        </form>
+        {!resultados && <><CartelInstalar /><CartelAvisos push={push} /></>}
         {sinConexion && <p className="offline">Sin conexión: se muestra lo último que se cargó.</p>}
 
         {resultados ? (
@@ -504,7 +509,7 @@ export default function Inicio() {
             {resultados.avisos.length > 0 && (
               <div className="grupo"><h2>Avisos del municipio</h2>
                 {resultados.avisos.map((a) => (
-                  <button key={a.id} className="tarjeta muni" onClick={() => abrir(`aviso:${a.id}`)}><b>{a.titulo}</b><small>{a.firma}</small></button>
+                  <button key={a.id} className="tarjeta muni" onClick={() => abrir(`aviso:${a.id}`)}><b>{tituloConBarrio(a)}</b><small>{a.firma}</small></button>
                 ))}
               </div>)}
             {resultados.tren.length > 0 && (
@@ -548,7 +553,7 @@ export default function Inicio() {
                 <h2>{plural(totalAlertas, "alerta", "alertas")} hoy</h2>
                 {avisosHoy.map((a) => (
                   <button key={a.id} className="tarjeta muni" onClick={() => abrir(`aviso:${a.id}`)}>
-                    <b>{a.titulo}</b>
+                    <b>{tituloConBarrio(a)}</b>
                     <span>{a.zona}{a.actividad ? ` · ${capitalizar(cuando(a.actividad))} hs` : ""}</span>
                     <small>{a.firma}</small>
                   </button>

@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { config } from "@/lomas.config.mjs";
 
-export type Prefs = { barrio: string; tipos: Record<string, boolean> };
+export type Prefs = { tipos: Record<string, boolean> };
 export type EstadoPush = "cargando" | "noSoportado" | "iosSinInstalar" | "inactivo" | "denegado" | "activo";
 
 const CLAVE = "lomas-hoy:push";
@@ -10,7 +10,6 @@ const PUBLICA = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "").trim();
 const json = { "Content-Type": "application/json" };
 
 export const prefsIniciales = (): Prefs => ({
-  barrio: "Todo Lomas",
   tipos: Object.fromEntries(Object.entries(config.push.tipos).map(([k, v]) => [k, v.activa])),
 });
 
@@ -26,7 +25,7 @@ export const estaInstalada = () =>
 function leerPrefs(): Prefs {
   try {
     const p = JSON.parse(localStorage.getItem(CLAVE) ?? "null");
-    if (p?.barrio && p?.tipos) return { ...prefsIniciales(), ...p, tipos: { ...prefsIniciales().tipos, ...p.tipos } };
+    if (p?.tipos) return { ...prefsIniciales(), ...p, tipos: { ...prefsIniciales().tipos, ...p.tipos } };
   } catch {}
   return prefsIniciales();
 }

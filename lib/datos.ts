@@ -9,13 +9,17 @@ export type Luz = {
   cortes: { tension: "media" | "baja" | "otra"; localidad: string | null; usuarios: number; normalizacion: string | null }[];
 };
 export type EstadoClima = { icono: string; etiqueta: string };
+export type HoraClima = { hora: string; temp: number; sensacion: number | null; viento: number | null; lluvia: number | null } & EstadoClima;
+export type DiaClima = { fecha: string; min: number; max: number; lluvia: number | null; palabra: string } & EstadoClima;
 export type Clima = {
   ahora: {
     temp: number; sensacion: number | null; humedad: number | null; viento: number | null;
     medidoEn: string | null; estacion: string | null; // si vino del SMN: "HH:MM" y estación
   } & EstadoClima;
-  horas: ({ hora: string; temp: number; lluvia: number | null } & EstadoClima)[]; // desde la hora actual
-  dias: ({ fecha: string; min: number; max: number; lluvia: number | null } & EstadoClima)[];
+  frase: string | null; // "Llueve a la tarde, llevá paraguas"
+  horas: HoraClima[]; // desde la hora actual, hasta 48
+  dias: DiaClima[];
+  pronosticoEn: string;
 };
 export type Colectivos = {
   paros: { titular: string; medio: string; link: string; fecha: string }[];
@@ -161,9 +165,10 @@ export function ordenarLugares(ls: Lugar[], yo: { lat: number; lng: number } | n
 export const normalizar = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 // Fila de horas: "Ahora" y las 24 horas siguientes a la hora actual de Argentina.
-export function proximasHoras(c: Clima, ahoraAR: string) {
+export function proximasHoras(c: Clima, ahoraAR: string): HoraClima[] {
+  const actual = c.horas.find((h) => h.hora.slice(0, 13) === ahoraAR.slice(0, 13));
   const siguientes = c.horas.filter((h) => h.hora.slice(0, 13) > ahoraAR.slice(0, 13)).slice(0, 24);
-  return [{ hora: "Ahora", temp: c.ahora.temp, icono: c.ahora.icono, etiqueta: c.ahora.etiqueta, lluvia: c.horas.find((h) => h.hora.slice(0, 13) === ahoraAR.slice(0, 13))?.lluvia ?? null }, ...siguientes];
+  return [{ hora: "Ahora", temp: c.ahora.temp, sensacion: c.ahora.sensacion, viento: c.ahora.viento, icono: c.ahora.icono, etiqueta: c.ahora.etiqueta, lluvia: actual?.lluvia ?? null }, ...siguientes];
 }
 
 // Búsqueda en Google Maps siempre con zona: centrada en la persona si dio permiso de ubicación;

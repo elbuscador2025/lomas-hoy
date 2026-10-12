@@ -36,8 +36,10 @@ h2 { font-size:17px; margin:20px 0 8px; }
 .horas-azul b { font-size:18px; }
 
 .hoja { background:#fff; border-radius:28px 28px 0 0; margin-top:-28px; padding:18px 16px 40px; min-height:60vh; position:relative; }
-.buscador { display:flex; align-items:center; gap:10px; background:var(--gris-azul); border-radius:999px; padding:0 18px; min-height:48px; color:var(--suave); }
-.buscador input { flex:1; min-width:0; border:0; outline:0; font-size:16px; min-height:44px; background:transparent; color:var(--texto); font-family:inherit; }
+.buscador { display:flex; align-items:center; gap:10px; background:#fff; border:2px solid #0E2A5E; border-radius:999px; padding:0 6px 0 16px; min-height:60px; color:#0E2A5E; margin-bottom:14px; }
+.buscador input { flex:1; min-width:0; border:0; outline:0; font-size:17px; min-height:52px; background:transparent; color:var(--texto); font-family:inherit; }
+.buscador input::placeholder { color:#44567A; opacity:1; }
+.buscar-btn { flex:none; width:48px; height:48px; border-radius:50%; border:0; background:#1F5AD6; color:#fff; display:grid; place-items:center; cursor:pointer; }
 .offline { background:var(--celeste); padding:8px 12px; border-radius:12px; }
 
 .alertas h2 { margin:18px 0 6px; }
@@ -145,3 +147,10 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 .dato svg { flex:none; color:var(--azul); }
 .etiqueta { align-self:flex-start; }
 .btn.grande-btn { min-height:56px; font-size:18px; }
+
+/* ---------- Clima: frase y detalle ---------- */
+.frase-azul { display:block; font-size:20px; font-weight:800; line-height:1.25; margin-top:6px; }
+.frase { font-size:20px; font-weight:800; color:var(--azul); margin:8px 0; }
+.fila-hora { grid-template-columns:52px 28px 1fr auto; row-gap:2px; }
+.fila-hora .detalle-hora { grid-column:2 / -1; color:var(--suave); }
+.fila-dia { grid-template-columns:96px 28px 1fr auto; }

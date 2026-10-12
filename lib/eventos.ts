@@ -4,7 +4,7 @@ import { config } from "@/lomas.config.mjs";
 import { clasificarTren, hoyMMDD, nombreLindo, type Tren, type Luz } from "@/lib/datos";
 import { notificarSeguro } from "@/lib/push";
 import { redis } from "@/lib/servidor";
-import { ahoraAR, type Aviso } from "@/lib/avisos";
+import { ahoraAR, tituloConBarrio, type Aviso } from "@/lib/avisos";
 
 const hash = (s: string) => createHash("sha1").update(s).digest("hex").slice(0, 12);
 
@@ -31,19 +31,19 @@ export async function evaluarLuz(l: Luz) {
   for (const [loc, a] of porLocalidad) {
     if (a.usuarios < config.luz.alertaDesdeUsuarios) continue;
     await notificarSeguro({
-      tipo: "luz", clave: `luz:${hash(loc)}`, ttl: 6 * 3600, refrescar: true, zona: loc,
-      titulo: `Corte de luz en ${loc}`,
+      tipo: "luz", clave: `luz:${hash(loc)}`, ttl: 6 * 3600, refrescar: true,
+      titulo: `${loc}: corte de luz`,
       cuerpo: `${a.usuarios} usuarios sin luz${a.hasta ? ` · hasta las ${a.hasta.slice(11, 16)} hs` : ""}`,
       url: "/?v=luz",
     });
   }
 }
 
-// Municipio: al publicar. Va al barrio del aviso, o a todos si es "Todo Lomas". Va firmado.
+// Municipio: al publicar, a todos. El barrio es solo una etiqueta al principio del título. Va firmado.
 export async function notificarAviso(a: Aviso) {
   await notificarSeguro({
-    tipo: "municipio", clave: `muni:${a.id}`, ttl: 30 * 86400, zona: a.zona,
-    titulo: a.titulo, cuerpo: `${a.firma}: ${a.texto}`, url: `/?v=aviso:${a.id}`,
+    tipo: "municipio", clave: `muni:${a.id}`, ttl: 30 * 86400,
+    titulo: tituloConBarrio(a), cuerpo: `${a.firma}: ${a.texto}`, url: `/?v=aviso:${a.id}`,
   });
 }
 
@@ -83,19 +83,19 @@ export async function evaluarProgramados(p: { cortes: CorteProgramado[] }) {
     if ((c.clientes ?? 0) < cfg.avisarDesdeClientes) continue; // corte chico: sin notificación
     const antes = estados.get(c.id);
     let avisado = antes?.avisado ?? false;
-    const base = { tipo: "luz" as const, ttl: 10 * 86400, zona: c.localidad };
+    const base = { tipo: "luz" as const, ttl: 10 * 86400 };
     const clave = `prog:${c.id}:${c.inicio}`;
 
     if (antes?.avisado && (antes.inicio !== c.inicio || antes.fin !== c.fin)) {
-      await notificarSeguro({ ...base, clave: `${clave}:${c.fin}:corr`, titulo: "Cambió un corte programado",
-        cuerpo: `Cambió el corte programado en parte de ${c.localidad}: ahora ${dia(c.inicio.slice(0, 10))}, ${cuando(c)}${clientes(c.clientes)}. Tocá para ver la zona. Horario estimado, según Edesur.`, url: "/?v=luz" });
+      await notificarSeguro({ ...base, clave: `${clave}:${c.fin}:corr`, titulo: `${c.localidad}: cambió un corte programado`,
+        cuerpo: `Cambió el corte programado en parte de ${c.localidad}: ahora ${dia(c.inicio.slice(0, 10))}, ${cuando(c)}${clientes(c.clientes)}. Tocá para ver la zona en el mapa. Horario estimado, según Edesur.`, url: "/?v=luz" });
     } else if (c.inicio.slice(0, 10) === manana && hm >= cfg.avisoAnterior.desde && hm < cfg.avisoAnterior.hasta) {
-      await notificarSeguro({ ...base, clave: `${clave}:ant`, titulo: `Mañana hay un corte programado`,
-        cuerpo: `Mañana hay un corte programado en parte de ${c.localidad}, ${cuando(c)}${clientes(c.clientes)}. Tocá para ver la zona. Horario estimado, según Edesur.`, url: "/?v=luz" });
+      await notificarSeguro({ ...base, clave: `${clave}:ant`, titulo: `${c.localidad}: corte programado mañana`,
+        cuerpo: `Mañana hay un corte programado en parte de ${c.localidad}, ${cuando(c)}${clientes(c.clientes)}. Tocá para ver la zona en el mapa. Horario estimado, según Edesur.`, url: "/?v=luz" });
       avisado = true;
     } else if (c.inicio.slice(0, 10) === hoy && hm >= cfg.recordatorio.desde && hm < cfg.recordatorio.hasta && c.inicio > ahora) {
-      await notificarSeguro({ ...base, clave: `${clave}:rec`, titulo: `Hoy hay un corte programado`,
-        cuerpo: `Hoy hay un corte programado en parte de ${c.localidad}, ${cuando(c)}${clientes(c.clientes)}. Tocá para ver la zona. Horario estimado, según Edesur.`, url: "/?v=luz" });
+      await notificarSeguro({ ...base, clave: `${clave}:rec`, titulo: `${c.localidad}: corte programado hoy`,
+        cuerpo: `Hoy hay un corte programado en parte de ${c.localidad}, ${cuando(c)}${clientes(c.clientes)}. Tocá para ver la zona en el mapa. Horario estimado, según Edesur.`, url: "/?v=luz" });
       avisado = true;
     }
     if (!antes || antes.inicio !== c.inicio || antes.fin !== c.fin || antes.avisado !== avisado) {
@@ -105,4 +105,15 @@ export async function evaluarProgramados(p: { cortes: CorteProgramado[] }) {
   // Se olvidan los cortes que ya no figuran en la lista de Edesur
   const vencidos = [...estados.keys()].filter((id) => !primero.has(id));
   if (vencidos.length) await redis([["HDEL", "prog:estado", ...vencidos]]);
+}
+
+// Colectivos: un paro anunciado en los diarios. Una sola notificación por paro: mientras los diarios sigan publicando
+// titulares del mismo paro (quedan 3 días en la lista), no se repite. Solo titulares de las últimas 24 horas.
+export async function evaluarColectivos(c: { paros: { titular: string; medio: string; link: string; fecha: string }[] }) {
+  const reciente = c.paros.filter((p) => Date.now() - new Date(p.fecha).getTime() <= 86400_000).sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
+  if (!reciente) return;
+  await notificarSeguro({
+    tipo: "colectivos", clave: "colectivos:paro", ttl: 86400, refrescar: true,
+    titulo: "Paro de colectivos", cuerpo: `${reciente.titular} (${reciente.medio})`, url: "/?v=colectivos",
+  });
 }

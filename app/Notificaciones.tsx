@@ -1,19 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { config } from "@/lomas.config.mjs";
-import { ZONAS } from "@/lib/avisos";
 import { Icono } from "./Iconos";
 import { useInstalar, type Push } from "./usePush";
-
-function Selector({ valor, onCambio, etiqueta = "Mi barrio" }: { valor: string; onCambio: (v: string) => void; etiqueta?: string }) {
-  return (
-    <label className="campo">{etiqueta}
-      <select value={valor} onChange={(e) => onCambio(e.target.value)}>
-        {ZONAS.map((z) => <option key={z}>{z}</option>)}
-      </select>
-    </label>
-  );
-}
 
 function PasosIPhone() {
   return (
@@ -56,6 +45,7 @@ const AVISOS_QUE_LLEGAN: { icono: string; texto: string; activo: boolean }[] = [
   { icono: "tren", texto: "Se corta o se demora el tren Roca", activo: config.push.tipos.tren.activa },
   { icono: "reloj", texto: "Va a haber un corte de luz programado", activo: config.push.tipos.luz.activa && config.programados.activa },
   { icono: "luz", texto: "Hay un corte de luz ahora", activo: config.push.tipos.luz.activa },
+  { icono: "colectivo", texto: "Hay paro de colectivos", activo: config.push.tipos.colectivos.activa },
   { icono: "tormenta", texto: "Hay alerta de tormenta", activo: config.push.tipos.tormenta.activa },
   { icono: "megafono", texto: "El municipio publica algo", activo: config.push.tipos.municipio.activa },
 ];
@@ -63,13 +53,12 @@ const AVISOS_QUE_LLEGAN: { icono: string; texto: string; activo: boolean }[] = [
 // Cartel para activar los avisos. Pide el permiso del navegador solo al tocar "Activar avisos".
 export function CartelAvisos({ push }: { push: Push }) {
   const [cerrado, setCerrado] = useState(true);
-  const [barrio, setBarrio] = useState("Todo Lomas");
   useEffect(() => setCerrado(estaCerrado("lomas-hoy:bienvenida")), []);
   if (cerrado || (push.estado !== "inactivo" && push.estado !== "iosSinInstalar")) return null;
   return (
     <section className="cartel" aria-label="Activar los avisos">
       <b>Activá los avisos</b>
-      <p>Te suena el celular cuando pasa algo en tu barrio:</p>
+      <p>Te suena el celular cuando pasa algo en Lomas:</p>
       <ul className="que-llega">
         {AVISOS_QUE_LLEGAN.filter((a) => a.activo).map((a) => (
           <li key={a.texto}><span className="icono-aviso"><Icono nombre={a.icono} tam={22} /></span>{a.texto}</li>
@@ -79,8 +68,7 @@ export function CartelAvisos({ push }: { push: Push }) {
         <p>En iPhone los avisos solo funcionan si abrís la app desde el ícono de la pantalla de inicio. Primero instalala con los pasos de arriba y abrila desde ahí.</p>
       ) : (
         <>
-          <Selector valor={barrio} onCambio={setBarrio} etiqueta="Elegí tu barrio" />
-          <button className="btn ancho grande-btn" disabled={push.ocupado} onClick={() => push.activar({ ...push.prefs, barrio })}>Activar avisos</button>
+          <button className="btn ancho grande-btn" disabled={push.ocupado} onClick={() => push.activar(push.prefs)}>Activar avisos</button>
           <small className="chico">Los podés apagar cuando quieras.</small>
           {push.error && <p className="error">{push.error}</p>}
         </>
@@ -104,8 +92,6 @@ function Interruptor({ activo, deshabilitado, onCambio, titulo, nota }: {
 
 // Pantalla "Avisos"
 export default function Notificaciones({ push }: { push: Push }) {
-  const [barrio, setBarrio] = useState(push.prefs.barrio);
-  useEffect(() => setBarrio(push.prefs.barrio), [push.prefs.barrio]);
   const { estado, prefs } = push;
 
   if (estado === "cargando") return <p className="vacio">Cargando…</p>;
@@ -123,21 +109,19 @@ export default function Notificaciones({ push }: { push: Push }) {
   if (estado === "inactivo")
     return (
       <>
-        <p>Recibí un aviso en el celular cuando pase algo importante. Elegí tu barrio y listo: no hace falta registrarse ni dar datos personales.</p>
-        <Selector valor={barrio} onCambio={setBarrio} />
-        <button className="btn ancho" disabled={push.ocupado} onClick={() => push.activar({ ...prefs, barrio })}>Activar avisos</button>
+        <p>Recibí un aviso en el celular cuando pase algo importante. Con un toque: no hace falta registrarse ni dar datos personales.</p>
+        <button className="btn ancho grande-btn" disabled={push.ocupado} onClick={() => push.activar(prefs)}>Activar avisos</button>
         {push.error && <p className="error">{push.error}</p>}
       </>
     );
 
   return (
     <>
-      <Selector valor={barrio} onCambio={(v) => { setBarrio(v); push.guardar({ ...prefs, barrio: v }); }} />
       <h2>Qué querés recibir</h2>
       {(Object.entries(config.push.tipos) as [string, { activa: boolean; titulo: string }][]).map(([k, t]) => (
         <Interruptor key={k} titulo={t.titulo} activo={t.activa && !!prefs.tipos[k]} deshabilitado={!t.activa}
           nota={!t.activa ? "No disponible por ahora: no hay una fuente oficial confiable." : undefined}
-          onCambio={(v) => push.guardar({ ...prefs, barrio, tipos: { ...prefs.tipos, [k]: v } })} />
+          onCambio={(v) => push.guardar({ ...prefs, tipos: { ...prefs.tipos, [k]: v } })} />
       ))}
       <p className="vacio">De 23:00 a 7:00 no te mandamos nada. Todo se sigue viendo dentro de la app. Máximo {config.push.maximoPorDia} avisos por día.</p>
       <button className="btn claro ancho" disabled={push.ocupado} onClick={push.desactivar}>Desactivar todos</button>

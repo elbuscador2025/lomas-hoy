@@ -46,3 +46,15 @@ test("cortes programados: toma solo el partido (aunque Edesur escriba mal la loc
   const r = leerProgramados(json, cfg, new Date("2026-10-09T23:00:00Z"));
   assert.deepEqual(r.cortes.map((c) => [c.localidad, c.inicio, c.fin]), [["Banfield", "2026-10-10T08:00", "2026-10-10T16:00"]]);
 });
+
+import { armarFrase } from "./clima.mjs";
+test("clima: la frase pone primero la lluvia, y sino lo más importante", () => {
+  const h = (hora, o = {}) => ({ hora: `2026-10-11T${hora}:00`, lluvia: 0, mm: 0, codigo: 3, sensacion: 18, viento: 10, ...o });
+  const dia = [h("10"), h("13", { lluvia: 90, mm: 1.5, codigo: 63 }), h("21", { lluvia: 50 })];
+  const nublado = { icono: "nube" };
+  assert.equal(armarFrase({ horas: dia, ahora: "2026-10-11T10:30", ahoraEstado: nublado }), "Llueve a la tarde, llevá paraguas");
+  assert.equal(armarFrase({ horas: dia, ahora: "2026-10-11T10:30", ahoraEstado: { icono: "lluvia" } }), "Está lloviendo ahora, llevá paraguas");
+  const frio = [h("10", { sensacion: 9 }), h("15", { sensacion: 11 })];
+  assert.equal(armarFrase({ horas: frio, ahora: "2026-10-11T10:30", ahoraEstado: nublado }), "Hoy hace fresco, salí abrigado");
+  assert.equal(armarFrase({ horas: [h("10")], ahora: "2026-10-11T10:30", ahoraEstado: nublado }), "Hoy no llueve");
+});

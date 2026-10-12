@@ -65,10 +65,11 @@ export const config = {
     diasMaximos: 3,
   },
 
-  // Localidades del partido (para elegir la zona de un aviso del municipio).
+  // Localidades del partido: lista inicial de barrios para los avisos del municipio (después se administra desde el panel) y filtro de Edesur.
+  // Fuentes: las localidades que reconocen la enciclopedia (Wikipedia) y las guías oficiales de salud; no hay una lista única oficial.
   localidades: [
     "Lomas de Zamora", "Banfield", "Temperley", "Turdera", "Llavallol", "Villa Fiorito", "Ingeniero Budge", "Villa Centenario",
-    "San José", "Villa Albertina", "Santa Catalina", "Santa Marta", "Parque Barón", "General Lamadrid",
+    "San José", "Villa Albertina", "Santa Catalina", "Santa Marta", "Parque Barón", "Villa Lamadrid",
   ],
   // Avisos del municipio: cuántos por día (para todo el municipio) si no se cambió desde el panel, y cuánto duran sin fecha.
   avisos: { topePorDia: 3, diasDeVigenciaSinFecha: 7 },
@@ -89,10 +90,11 @@ export const config = {
   push: {
     tipos: {
       tren: { activa: true, titulo: "Tren Roca" },
-      luz: { activa: true, titulo: "Cortes de luz en mi barrio" },
+      luz: { activa: true, titulo: "Cortes de luz" },
       // Apagado: el archivo abierto de alertas del SMN llegó vacío aunque había alertas vigentes en el país, así que no es confiable.
       tormenta: { activa: false, titulo: "Alertas de tormenta" },
       municipio: { activa: true, titulo: "Avisos del municipio" },
+      colectivos: { activa: true, titulo: "Paros de colectivos" },
     },
     maximoPorDia: 6, // por celular, sumando todos los tipos
     silencioDesde: 23, // de 23:00 a 7:00 no se manda nada (salvo tormenta naranja o roja)

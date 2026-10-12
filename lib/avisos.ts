@@ -9,7 +9,8 @@ export type Aviso = {
 export type AvisoPublico = Omit<Aviso, "autor">;
 
 export const FIRMA_POR_DEFECTO = "Municipio de Lomas de Zamora";
-export const ZONAS = ["Todo Lomas", ...config.localidades];
+// Etiqueta de barrio al principio del título: "Villa Albertina: Castración gratuita". "Todo Lomas" va sin etiqueta.
+export const tituloConBarrio = (a: { zona: string; titulo: string }) => (a.zona && a.zona !== "Todo Lomas" ? `${a.zona}: ${a.titulo}` : a.titulo);
 
 // "YYYY-MM-DDTHH:mm" en hora de Argentina
 export function ahoraAR(fecha = new Date()) {

@@ -2,6 +2,7 @@
 // Si una fuente falla, el sitio NO pisa el último dato bueno: solo anota el error.
 import { config as cfg } from "../lomas.config.mjs";
 import { leerTren, leerLuz, leerRss, buscarParos, leerProgramados } from "./fuentes.mjs";
+import { leerPronostico, urlOpenMeteo } from "./clima.mjs";
 
 const { SITIO_URL, INGEST_SECRET } = process.env;
 if (!SITIO_URL || !INGEST_SECRET) {
@@ -25,6 +26,8 @@ async function guardar(clave, cuerpo) {
 }
 
 const tareas = {
+  // Pronóstico de Open-Meteo: una sola consulta cada ~20 min para todos (la pantalla lee lo guardado)
+  pronostico: async () => ({ ...leerPronostico(await traer(urlOpenMeteo(cfg), "json")), consultadoEn: new Date().toISOString() }),
   tren: async () => leerTren(await traer(cfg.tren.url, "text"), cfg),
   luz: async () => leerLuz(await traer(cfg.luz.url, "text"), cfg),
   programados: async () => leerProgramados(await traer(cfg.programados.url, "json"), cfg),
@@ -40,7 +43,7 @@ const tareas = {
 
 let fallos = 0;
 for (const [clave, tarea] of Object.entries(tareas)) {
-  if (!(cfg.secciones[clave] ?? cfg[clave])?.activa) continue;
+  if (!(cfg.secciones[clave === "pronostico" ? "clima" : clave] ?? cfg[clave])?.activa) continue;
   try {
     await guardar(clave, { contenido: await tarea() });
     console.log(`${clave}: ok`);
