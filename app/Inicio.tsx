@@ -497,7 +497,7 @@ export default function Inicio() {
 
       <section className="hoja">
         <form className="buscador" role="search" onSubmit={(e) => { e.preventDefault(); (document.activeElement as HTMLElement | null)?.blur(); }}>
-          <Icono nombre="lupa" tam={28} ancho={2.5} />
+          <Icono nombre="lupa" tam={24} ancho={2.5} />
           <input type="search" placeholder="¿Qué buscás? Farmacia, veterinaria…" aria-label="Buscar" value={q} onChange={(e) => setQ(e.target.value)} />
           <button className="buscar-btn" type="submit" aria-label="Buscar"><Icono nombre="lupa" tam={24} ancho={2.5} /></button>
         </form>
