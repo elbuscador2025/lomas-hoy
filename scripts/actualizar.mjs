@@ -1,7 +1,7 @@
 // Proceso automático: lee tren, luz y colectivos (el clima se pide al abrir la app, ver lib/clima.ts) y se los manda al sitio (/api/ingest), que los guarda.
 // Si una fuente falla, el sitio NO pisa el último dato bueno: solo anota el error.
 import { config as cfg } from "../lomas.config.mjs";
-import { leerTren, leerLuz, leerRss, buscarParos, leerProgramados } from "./fuentes.mjs";
+import { leerTren, leerLuz, leerRss, buscarParos, buscarAgua, leerProgramados } from "./fuentes.mjs";
 import { leerPronostico, urlOpenMeteo } from "./clima.mjs";
 
 const { SITIO_URL, INGEST_SECRET } = process.env;
@@ -25,6 +25,19 @@ async function guardar(clave, cuerpo) {
   if (!r.ok) throw new Error(`Sitio ${r.status}`);
 }
 
+// Los diarios se leen una sola vez por corrida: de ahí salen los paros de colectivos y las notas de cortes de agua.
+let diariosLeidos;
+async function leerDiarios() {
+  diariosLeidos ??= (async () => {
+    const diarios = cfg.colectivos.diarios;
+    const lecturas = await Promise.allSettled(diarios.map(async (d) => leerRss(await traer(d.url, "text"), d.medio)));
+    const ok = lecturas.flatMap((l, i) => (l.status === "fulfilled" && l.value.length ? [diarios[i].medio] : []));
+    if (ok.length === 0) throw new Error("No se pudo leer ningún diario");
+    return { notas: lecturas.flatMap((l) => (l.status === "fulfilled" ? l.value : [])), diariosLeidos: ok, diariosSinLeer: diarios.map((d) => d.medio).filter((m) => !ok.includes(m)) };
+  })();
+  return diariosLeidos;
+}
+
 const tareas = {
   // Mascotas: no trae datos; avisa al sitio para que baje lo vencido (y borre sus fotos) y mande el resumen de las 19 hs
   mascotas: async () => ({ ok: true }),
@@ -34,12 +47,12 @@ const tareas = {
   luz: async () => leerLuz(await traer(cfg.luz.url, "text"), cfg),
   programados: async () => leerProgramados(await traer(cfg.programados.url, "json"), cfg),
   colectivos: async () => {
-    const diarios = cfg.colectivos.diarios;
-    const lecturas = await Promise.allSettled(diarios.map(async (d) => leerRss(await traer(d.url, "text"), d.medio)));
-    const ok = lecturas.flatMap((l, i) => (l.status === "fulfilled" && l.value.length ? [diarios[i].medio] : []));
-    if (ok.length === 0) throw new Error("No se pudo leer ningún diario");
-    const notas = lecturas.flatMap((l) => (l.status === "fulfilled" ? l.value : []));
-    return { paros: buscarParos(notas, cfg), diariosLeidos: ok, diariosSinLeer: diarios.map((d) => d.medio).filter((m) => !ok.includes(m)) };
+    const d = await leerDiarios();
+    return { paros: buscarParos(d.notas, cfg), diariosLeidos: d.diariosLeidos, diariosSinLeer: d.diariosSinLeer };
+  },
+  agua: async () => {
+    const d = await leerDiarios();
+    return { noticias: buscarAgua(d.notas, cfg), diariosSinLeer: d.diariosSinLeer };
   },
 };
 

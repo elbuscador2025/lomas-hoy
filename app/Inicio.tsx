@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { config } from "@/lomas.config.mjs";
 import {
   cargarDatos, armarNovedades, type Anses, clasificarTren, fechaLarga, hora, hoyMMDD, nombreLindo, proximasHoras,
-  CATEGORIAS, ordenarLugares, distanciaKm, distanciaTexto, normalizar, mapaBusqueda, ZONA,
+  CATEGORIAS, ordenarLugares, distanciaKm, distanciaTexto, normalizar, mapaBusqueda, mapaBuscador, ZONA,
   type Todo, type Lugar, type Novedad,
 } from "@/lib/datos";
 import { ahoraAR, esDeHoy, tituloConBarrio, type AvisoPublico } from "@/lib/avisos";
@@ -31,7 +31,7 @@ const TITULO_DE: Record<string, string> = {
 };
 
 function Tile({ icono, titulo, resumen, estado, tono, onClick }: {
-  icono: string; titulo: string; resumen: string; estado: string; tono: Tono; onClick: () => void;
+  icono: string; titulo: string; resumen: React.ReactNode; estado: string; tono: Tono; onClick: () => void;
 }) {
   return (
     <button className="tile" onClick={onClick}>
@@ -58,6 +58,8 @@ function Detalle({ titulo, onVolver, children }: { titulo: string; onVolver: () 
     </main>
   );
 }
+
+const TEXTO_FARMACIAS = "En feriados y de noche, llamá antes de ir: en el mapa tocá la farmacia y después “Llamar”.";
 
 const SinDatos = ({ error }: { error?: string | null }) => (
   <p className="vacio">Sin datos por ahora.{error ? " La fuente no respondió." : ""}</p>
@@ -113,8 +115,12 @@ export default function Inicio() {
     navigator.permissions?.query({ name: "geolocation" }).then((p) => {
       if (p.state === "granted") navigator.geolocation.getCurrentPosition((g) => setYo({ lat: g.coords.latitude, lng: g.coords.longitude }), () => {});
     }).catch(() => {});
-    // "Volver" del celular cierra el detalle en vez de salir de la app.
-    const alVolver = (e: PopStateEvent) => setVista(e.state?.lomasHoy ?? null);
+    // "Volver" del celular cierra el detalle (o la búsqueda) en vez de salir de la app.
+    const alVolver = (e: PopStateEvent) => {
+      const v = e.state?.lomasHoy;
+      if (v === "buscar") setVista(null); // de una sección a los resultados de la búsqueda
+      else { setVista(v ?? null); if (!v) setQ(""); } // de la búsqueda (o de una sección) a la pantalla principal
+    };
     window.addEventListener("popstate", alVolver);
     return () => { window.removeEventListener("popstate", alVolver); document.removeEventListener("visibilitychange", alVolverAVer); };
   }, []);
@@ -130,7 +136,20 @@ export default function Inicio() {
   }, []);
   useEffect(() => { window.scrollTo({ top: 0 }); }, [vista]);
 
+  // Al empezar a escribir se anota un paso en el historial: el "atrás" del celular cierra la búsqueda en vez de salir de la app.
+  const cambiarBusqueda = (texto: string) => {
+    if (!q.trim() && texto.trim() && history.state?.lomasHoy !== "buscar") history.pushState({ lomasHoy: "buscar" }, "");
+    setQ(texto);
+    if (q.trim() && !texto.trim() && history.state?.lomasHoy === "buscar") history.back();
+  };
+  const cerrarBusqueda = () => {
+    if (history.state?.lomasHoy === "buscar") history.back(); // el aviso del historial vuelve a poner el texto en blanco
+    else setQ("");
+    window.scrollTo({ top: 0 });
+  };
+
   const d: Todo = datos ?? {};
+  const botonVolverInicio = <button className="btn claro ancho" onClick={cerrarBusqueda}>Volver al inicio</button>;
   const { novedades } = armarNovedades(d, config.luz, { tren: s.tren.activa, luz: s.luz.activa });
   const ahora = ahoraAR();
   const avisosHoy = avisos.filter((a) => esDeHoy(a, ahora));
@@ -143,6 +162,16 @@ export default function Inicio() {
   const programados = (d.programados?.contenido?.cortes ?? []).filter((c) => c.fin >= ahora).sort((a, b) => a.inicio.localeCompare(b.inicio));
   const diaCorto = (f: string) => capitalizar(new Date(`${f}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "long", day: "numeric", month: "long" }).replace(",", ""));
   const horaCorte = (f: string) => f.slice(11, 16);
+  // Agua: cortes en curso (cargados a mano), próximos y notas de diarios (sin horario) de los últimos días
+  const aguaTodos = (d.agua?.contenido?.cortes ?? []).filter((c) => (c.hasta ? c.hasta >= ahora : Date.now() - new Date(c.fecha).getTime() <= config.agua.diasMaximos * 86400_000));
+  const aguaAhora = aguaTodos.filter((c) => c.desde && c.desde <= ahora).sort((a, b) => (a.hasta ?? "").localeCompare(b.hasta ?? ""));
+  const aguaProx = aguaTodos.filter((c) => c.desde && c.desde > ahora).sort((a, b) => (a.desde ?? "").localeCompare(b.desde ?? ""));
+  const aguaNotas = aguaTodos.filter((c) => !c.desde);
+  const [aguaEstado, aguaTono, aguaResumen]: [string, Tono, string] = !d.agua?.contenido ? ["Sin datos", "neutro", "Sin cortes informados"]
+    : aguaAhora.length ? [plural(aguaAhora.length, "corte", "cortes"), "aviso", `Corte en ${aguaAhora[0].localidad}${aguaAhora[0].hasta ? ` hasta las ${horaCorte(aguaAhora[0].hasta)} hs` : ""}${aguaAhora.length > 1 ? ` y ${aguaAhora.length - 1} más` : ""}`]
+    : aguaProx.length ? ["Programado", "aviso", `Corte en ${aguaProx[0].localidad}: ${diaCorto((aguaProx[0].desde ?? "").slice(0, 10))}, desde las ${horaCorte(aguaProx[0].desde ?? "")} hs`]
+    : aguaNotas.length ? ["Aviso", "aviso", `Nota de ${aguaNotas[0].fuente}: corte en ${aguaNotas[0].localidad}`]
+    : ["Normal", "ok", "Sin cortes informados"];
   const filaHoras = clima ? proximasHoras(clima, ahora) : [];
   const hoyStr = ahora.slice(0, 10);
   const nuevasMascotas = mascotas.filter((m) => esNueva(m, config.mascotas.diasNuevas)).length;
@@ -194,12 +223,13 @@ export default function Inicio() {
       programados: s.luz.activa ? programados.filter((c) => coincide(`corte programado luz edesur ${c.localidad} ${c.motivo}`)) : [],
       luz: s.luz.activa ? cortes.filter((c) => coincide(`${s.luz.titulo} luz corte edesur ${nombreLindo(c.localidad ?? "")}`)) : [],
       mascotas: s.mascotas.activa ? mascotas.filter((m) => coincide(`mascota mascotas perdida perdido encontrada encontrado ${m.especie} ${m.barrio} ${m.descripcion}`)) : [],
+      agua: s.agua.activa && coincide("agua aysa corte cortes de agua"),
       anses: s.anses.activa && coincide("anses cobran cobro hoy cobran jubilacion jubilaciones jubilados pension auh asignacion"),
       farmacias: s.farmacias.activa && coincide("farmacia farmacias turno turnos de turno remedios medicamentos"),
       clima: s.clima.activa && clima && coincide(`clima tiempo temperatura lluvia ${clima.ahora.etiqueta} ${clima.dias.map((d) => d.etiqueta).join(" ")}`) ? clima : null,
     };
   }, [busqueda, lugares, avisos, mascotas, rAnses.texto, d.tren, paros, cortes, programados, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
-  const hayResultados = resultados && (resultados.lugares.length || resultados.avisos.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.anses || resultados.farmacias || resultados.clima);
+  const hayResultados = resultados && (resultados.lugares.length || resultados.avisos.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
 
   // ---- Estado de cada cuadradito ----
   const hayGrave = (v: Novedad["vista"]) => novedades.some((n) => n.vista === v && n.gravedad === "grave");
@@ -363,6 +393,39 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "agua") {
+    const cuandoAgua = (c: { desde: string | null; hasta: string | null }) => !c.desde || !c.hasta ? "Sin horario informado"
+      : c.desde.slice(0, 10) === c.hasta.slice(0, 10)
+        ? `${diaCorto(c.desde.slice(0, 10))}, de ${horaCorte(c.desde)} a ${horaCorte(c.hasta)} hs`
+        : `Desde el ${diaCorto(c.desde.slice(0, 10))} a las ${horaCorte(c.desde)} hasta el ${diaCorto(c.hasta.slice(0, 10))} a las ${horaCorte(c.hasta)} hs`;
+    const fechaCarga = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone: ZONA, day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", hour12: false });
+    return (
+      <Detalle titulo={s.agua.titulo} onVolver={volver}>
+        {!d.agua?.contenido ? <SinDatos error={d.agua?.error} /> : aguaTodos.length === 0 ? (
+          <p>Sin cortes informados.</p>
+        ) : (
+          <ul className="lista">
+            {[...aguaAhora, ...aguaProx, ...aguaNotas].map((c) => (
+              <li key={c.id} className="lugar">
+                <b>{c.localidad}</b>
+                <span>{c.desde ? c.zona : `“${c.zona}”`}</span>
+                <small>{cuandoAgua(c)}{c.motivo ? ` · ${c.motivo}` : ""}</small>
+                <small>Fuente: {c.fuente} · {c.desde ? "Cargado" : "Publicado"} el {fechaCarga(c.fecha)} hs</small>
+                {c.link && <a className="btn claro" href={c.link} target="_blank" rel="noreferrer">Leer la nota en {c.fuente}</a>}
+              </li>
+            ))}
+          </ul>
+        )}
+        {d.agua?.contenido && d.agua.contenido.diariosSinLeer.length > 0 && (
+          <p className="aviso-pie">No se pudo leer: {d.agua.contenido.diariosSinLeer.join(", ")}.</p>
+        )}
+        <p className="vacio">AySA no publica los cortes en una fuente que se pueda leer sola. Acá se muestran los que cargamos a mano y las notas de diarios que nombran un corte de agua en Lomas o sus localidades. Para saber si tu domicilio está afectado, consultá en AySA.</p>
+        <a className="btn claro ancho" target="_blank" rel="noreferrer" href={config.agua.paginaPublica}>Consultar en AySA</a>
+        <Pie seccion="agua" fuente={config.agua.fuente} fila={d.agua} />
+      </Detalle>
+    );
+  }
+
   if (vista === "mascotas")
     return (
       <Detalle titulo={s.mascotas.titulo} onVolver={volver}>
@@ -404,7 +467,7 @@ export default function Inicio() {
       <Detalle titulo={s.farmacias.titulo} onVolver={volver}>
         <p>Todavía no tenemos el cronograma oficial de turnos.</p>
         <a className="btn grande-btn" target="_blank" rel="noreferrer" href={mapaFarmacias}>Ver farmacias abiertas ahora</a>
-        <small className="chico">En feriados y de noche, llamá antes de ir.</small>
+        <small className="chico">{TEXTO_FARMACIAS}</small>
         <p className="vacio">Se abre Google Maps y busca las farmacias abiertas {yo ? "cerca de tu ubicación" : `en ${config.ciudad}`}.</p>
       </Detalle>
     );
@@ -546,7 +609,8 @@ export default function Inicio() {
       <section className="hoja">
         <form className="buscador" role="search" onSubmit={(e) => { e.preventDefault(); (document.activeElement as HTMLElement | null)?.blur(); }}>
           <Icono nombre="lupa" tam={24} ancho={2.5} />
-          <input type="search" placeholder="¿Qué buscás? Farmacia, veterinaria…" aria-label="Buscar" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input type="search" placeholder="¿Qué buscás? Farmacia, veterinaria…" aria-label="Buscar" value={q} onChange={(e) => cambiarBusqueda(e.target.value)} />
+          {q && <button className="borrar-btn" type="button" aria-label="Borrar la búsqueda y volver al inicio" onClick={cerrarBusqueda}><Icono nombre="cerrar" tam={20} ancho={2.8} /></button>}
           <button className="buscar-btn" type="submit" aria-label="Buscar"><Icono nombre="lupa" tam={24} ancho={2.5} /></button>
         </form>
         {avisosDeFeriado(hoyStr).length > 0 && (
@@ -580,6 +644,10 @@ export default function Inicio() {
               <div className="grupo"><h2>Cortes programados</h2>
                 {resultados.programados.map((c) => <p key={c.id + c.inicio} className="tarjeta aviso"><b>{c.localidad}</b><span>{diaCorto(c.inicio.slice(0, 10))}, de {horaCorte(c.inicio)} a {horaCorte(c.fin)} hs</span><small>Horario estimado, según Edesur</small></p>)}
               </div>)}
+            {resultados.agua && (
+              <div className="grupo"><h2>{s.agua.titulo}</h2>
+                <button className="tarjeta muni" onClick={() => abrir("agua")}><b>{aguaResumen}</b><small>Ver los cortes de agua</small></button>
+              </div>)}
             {resultados.anses && (
               <div className="grupo"><h2>{s.anses.titulo}</h2>
                 <button className="tarjeta muni" onClick={() => abrir("anses")}><b>{rAnses.texto}</b><small>Ver el calendario del mes</small></button>
@@ -592,7 +660,7 @@ export default function Inicio() {
               <div className="grupo"><h2>{s.farmacias.titulo}</h2>
                 <p>Todavía no tenemos el cronograma oficial de turnos.</p>
                 <a className="btn grande-btn" target="_blank" rel="noreferrer" href={mapaFarmacias}>Ver farmacias abiertas ahora</a>
-                <small className="chico">En feriados y de noche, llamá antes de ir.</small>
+                <small className="chico">{TEXTO_FARMACIAS}</small>
               </div>)}
             {resultados.clima && (
               <div className="grupo"><h2>Clima</h2><p className="tarjeta ok"><b>{Math.round(resultados.clima.ahora.temp)}° · {resultados.clima.ahora.etiqueta}</b></p></div>)}
@@ -602,10 +670,11 @@ export default function Inicio() {
               </div>)}
             {!hayResultados && (
               <a className="btn grande-btn" target="_blank" rel="noreferrer"
-                href={mapaBusqueda(q.trim(), yo, centroLomas, config.ciudad)}>
+                href={mapaBuscador(q.trim(), yo, centroLomas, config.ciudad)}>
                 Buscar “{q.trim()}” en Google Maps
               </a>
             )}
+            {botonVolverInicio}
           </section>
         ) : (
           <>
@@ -643,6 +712,9 @@ export default function Inicio() {
                 <Tile icono="luz" titulo="Luz" estado={luzEstado} tono={luzTono} onClick={() => abrir("luz")}
                   resumen={(!d.luz?.contenido ? "Sin datos por ahora" : cortes.length === 0 ? "Sin cortes" : `${plural(cortes.length, "corte", "cortes")} · ${plural(usuariosSinLuz, "usuario", "usuarios")}`) + (programados.length ? ` · ${plural(programados.length, "programado", "programados")}` : "")} />
               )}
+              {s.agua.activa && (
+                <Tile icono="gota" titulo="Agua" estado={aguaEstado} tono={aguaTono} onClick={() => abrir("agua")} resumen={aguaResumen} />
+              )}
               {s.urgencias.activa && (
                 <>
                   <Tile icono="guardia" titulo="Guardias y salitas" estado={plural(lugaresDe("guardias").length, "lugar", "lugares")} tono="neutro" onClick={() => abrir("guardias")}
@@ -662,7 +734,8 @@ export default function Inicio() {
               )}
               {s.anses.activa && (
                 <Tile icono="dinero" titulo={s.anses.titulo} onClick={() => abrir("anses")}
-                  estado={rAnses.hayHoy ? "Hoy" : rAnses.sinDatos ? "Sin datos" : "Mes"} tono={rAnses.hayHoy ? "ok" : "neutro"} resumen={rAnses.texto} />
+                  estado={rAnses.hayHoy ? "Hoy" : rAnses.sinDatos ? "Sin datos" : "Mes"} tono={rAnses.hayHoy ? "ok" : "neutro"}
+                  resumen={rAnses.hayHoy ? rAnses.lineasHoy.map((l) => <span key={l} className="linea-tile">{l}</span>) : rAnses.texto} />
               )}
               {s.avisos.activa && (
                 <Tile icono="megafono" titulo="Avisos del municipio" estado={avisos.length ? String(avisos.length) : "Sin avisos"} tono={avisos.length ? "ok" : "neutro"}

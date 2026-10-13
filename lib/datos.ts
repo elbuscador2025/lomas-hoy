@@ -28,11 +28,14 @@ export type Colectivos = {
   diariosLeidos: string[]; diariosSinLeer: string[];
 };
 export type Programados = { cortes: { id: string; localidad: string; lat?: number; lng?: number; inicio: string; fin: string; clientes: number | null; motivo: string }[] };
+// Cortes de agua: cargados a mano (con desde y hasta) o notas de diarios (sin horario: desde y hasta vacíos).
+export type CorteAgua = { id: string; localidad: string; zona: string; desde: string | null; hasta: string | null; motivo: string; fuente: string; fecha: string; link?: string };
+export type Agua = { cortes: CorteAgua[]; diariosSinLeer: string[] };
 export type Lugar = {
   id: string; categoria: string; nombre: string; direccion: string; localidad: string;
   telefonos: string[]; horario: string; etiqueta?: string; fuente: string; fuenteUrl: string; lat?: number; lng?: number;
 };
-export type Todo = { tren?: Fila<Tren>; luz?: Fila<Luz>; clima?: Fila<Clima>; colectivos?: Fila<Colectivos>; programados?: Fila<Programados> };
+export type Todo = { tren?: Fila<Tren>; luz?: Fila<Luz>; clima?: Fila<Clima>; colectivos?: Fila<Colectivos>; programados?: Fila<Programados>; agua?: Fila<Agua> };
 
 const CLAVE_CACHE = "lomas-hoy:datos";
 const CLAVE_LUGARES = "lomas-hoy:lugares";
@@ -185,6 +188,13 @@ export function proximasHoras(c: Clima, ahoraAR: string): HoraClima[] {
   const actual = c.horas.find((h) => h.hora.slice(0, 13) === ahoraAR.slice(0, 13));
   const siguientes = c.horas.filter((h) => h.hora.slice(0, 13) > ahoraAR.slice(0, 13)).slice(0, 24);
   return [{ hora: "Ahora", temp: c.ahora.temp, sensacion: c.ahora.sensacion, viento: c.ahora.viento, icono: c.ahora.icono, etiqueta: c.ahora.etiqueta, lluvia: actual?.lluvia ?? null }, ...siguientes];
+}
+
+// Búsqueda del buscador en Google Maps: se agrega "en Lomas de Zamora" salvo que la persona ya lo haya escrito.
+export function mapaBuscador(texto: string, yo: { lat: number; lng: number } | null, centro: { lat: number; lng: number }, ciudad: string) {
+  const q = normalizar(texto).includes(normalizar(ciudad)) ? texto : `${texto} en ${ciudad}`;
+  const c = yo ?? centro;
+  return `https://www.google.com/maps/search/${encodeURIComponent(q)}/@${c.lat.toFixed(5)},${c.lng.toFixed(5)},${yo ? 15 : 13}z`;
 }
 
 // Búsqueda en Google Maps siempre con zona: centrada en la persona si dio permiso de ubicación;

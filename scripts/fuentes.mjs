@@ -142,3 +142,20 @@ export function leerProgramados(json, cfg, ahora = new Date()) {
   }
   return { cortes: [...salida.values()].sort((a, b) => a.inicio.localeCompare(b.inicio)) };
 }
+
+// ---- Cortes de agua: titulares de diarios (AySA no tiene una fuente que se pueda leer sola) ----
+// El titular tiene que hablar de un corte de agua (o de AySA) y nombrar Lomas o una localidad del partido. Nada más: no se inventa horario ni zona.
+export function buscarAgua(notas, cfg, ahora = new Date()) {
+  const c = cfg.agua;
+  const corte = palabras(c.palabrasCorte);
+  const lugares = [...cfg.localidades.map((n) => ({ canon: n, re: palabras([n]) })), ...c.palabrasLugar.map((n) => ({ canon: cfg.ciudad, re: palabras([n]) }))];
+  const vistos = new Set();
+  return notas
+    .filter((n) => n.titular && n.link && !Number.isNaN(n.fecha.getTime()))
+    .filter((n) => ahora - n.fecha <= c.diasMaximos * 86400_000 && n.fecha - ahora < 86400_000)
+    .map((n) => { const t = sinTildes(n.titular); return corte.test(t) ? { n, lugar: lugares.map((l) => ({ ...l, pos: t.search(l.re) })).filter((l) => l.pos >= 0).sort((x, y) => x.pos - y.pos)[0] } : null; })
+    .filter((x) => x && x.lugar)
+    .filter((x) => !vistos.has(x.n.link) && vistos.add(x.n.link))
+    .sort((a, b) => b.n.fecha - a.n.fecha)
+    .map(({ n, lugar }) => ({ titular: n.titular, medio: n.medio, link: n.link, fecha: n.fecha.toISOString(), localidad: lugar.canon }));
+}

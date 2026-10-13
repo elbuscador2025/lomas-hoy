@@ -5,6 +5,7 @@ import PanelMunicipio from "./PanelMunicipio";
 import PanelPush from "./PanelPush";
 import PanelMascotas from "./PanelMascotas";
 import PanelAnses from "./PanelAnses";
+import PanelAgua from "./PanelAgua";
 import MiCuenta from "./MiCuenta";
 import { post, salir } from "./api";
 
@@ -20,7 +21,7 @@ const fecha = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone:
 export default function Panel() {
   const [datos, setDatos] = useState<Datos | null>(null);
   const [lugares, setLugares] = useState<Lugar[]>([]);
-  const [pestana, setPestana] = useState<"stats" | "lugares" | "muni" | "push" | "mascotas" | "anses">("stats");
+  const [pestana, setPestana] = useState<"stats" | "lugares" | "muni" | "push" | "mascotas" | "anses" | "agua">("stats");
   const [editando, setEditando] = useState<(Lugar & { tels: string; direccionOriginal?: string }) | null>(null);
   const [mensaje, setMensaje] = useState("");
 
@@ -78,12 +79,14 @@ export default function Panel() {
         <button className={`btn ${pestana === "push" ? "" : "claro"}`} onClick={() => setPestana("push")}>Avisos push</button>
         <button className={`btn ${pestana === "mascotas" ? "" : "claro"}`} onClick={() => setPestana("mascotas")}>Mascotas</button>
         <button className={`btn ${pestana === "anses" ? "" : "claro"}`} onClick={() => setPestana("anses")}>ANSES</button>
+        <button className={`btn ${pestana === "agua" ? "" : "claro"}`} onClick={() => setPestana("agua")}>Agua</button>
       </div>
 
       {pestana === "muni" && <PanelMunicipio />}
       {pestana === "push" && <PanelPush />}
       {pestana === "mascotas" && <PanelMascotas />}
       {pestana === "anses" && <PanelAnses />}
+      {pestana === "agua" && <PanelAgua />}
 
       {pestana === "stats" && (
         <>

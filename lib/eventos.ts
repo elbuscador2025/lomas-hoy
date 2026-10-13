@@ -4,6 +4,7 @@ import { config } from "@/lomas.config.mjs";
 import { clasificarTren, hoyMMDD, nombreLindo, type Tren, type Luz } from "@/lib/datos";
 import { notificarSeguro } from "@/lib/push";
 import { redis } from "@/lib/servidor";
+import { filaAgua } from "@/lib/agua";
 import { ahoraAR, tituloConBarrio, type Aviso } from "@/lib/avisos";
 
 const hash = (s: string) => createHash("sha1").update(s).digest("hex").slice(0, 12);
@@ -116,4 +117,27 @@ export async function evaluarColectivos(c: { paros: { titular: string; medio: st
     tipo: "colectivos", clave: "colectivos:paro", ttl: 86400, refrescar: true,
     titulo: "Paro de colectivos", cuerpo: `${reciente.titular} (${reciente.medio})`, url: "/?v=colectivos",
   });
+}
+
+// Agua: un aviso por corte (cargado a mano o nota de diario de las últimas 24 horas), con la localidad al principio del título.
+// De 23 a 7 no se evalúa (así el corte no se "gasta" en silencio y sale apenas termina el horario de silencio).
+export async function evaluarAgua() {
+  const ahora = ahoraAR();
+  const hora = Number(ahora.slice(11, 13));
+  if (hora >= config.push.silencioDesde || hora < config.push.silencioHasta) return;
+  for (const c of (await filaAgua()).contenido?.cortes ?? []) {
+    if (c.desde && c.hasta) {
+      if (c.hasta < ahora) continue;
+      await notificarSeguro({
+        tipo: "agua", clave: `agua:${c.id}`, ttl: 10 * 86400,
+        titulo: `${c.localidad}: corte de agua`,
+        cuerpo: `Corte de agua en ${c.zona}, ${cuando({ inicio: c.desde, fin: c.hasta })}.${c.motivo ? ` ${c.motivo}.` : ""}`, url: "/?v=agua",
+      });
+    } else if (Date.now() - new Date(c.fecha).getTime() <= 86400_000) {
+      await notificarSeguro({
+        tipo: "agua", clave: `agua:${c.id}`, ttl: 4 * 86400,
+        titulo: `${c.localidad}: corte de agua`, cuerpo: `${c.zona} (${c.fuente})`, url: "/?v=agua",
+      });
+    }
+  }
 }

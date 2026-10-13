@@ -1,6 +1,7 @@
 // "Hoy cobran": el calendario de pagos de ANSES cargado desde mi panel. Si no hay datos del mes, se dice y no se inventa nada.
 export type PagoAnses = { id: string; prestacion: string; dnis: number[]; fecha: string }; // fecha: "YYYY-MM-DD"
-export const URL_ANSES = "https://www.anses.gob.ar/calendario-de-pagos";
+// La página del calendario cambió de dirección y la vieja daba "no existe": se usa la página principal de ANSES.
+export const URL_ANSES = "https://www.anses.gob.ar";
 
 // [4, 5] → "4 y 5"; [0, 1, 2] → "0, 1 y 2"
 export const terminaciones = (d: number[]) => (d.length > 1 ? `${d.slice(0, -1).join(", ")} y ${d[d.length - 1]}` : String(d[0]));

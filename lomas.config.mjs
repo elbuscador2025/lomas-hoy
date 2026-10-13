@@ -11,6 +11,7 @@ export const config = {
     tren: { activa: true, titulo: "Tren Roca" },
     colectivos: { activa: true, titulo: "Colectivos" },
     luz: { activa: true, titulo: "Cortes de luz" },
+    agua: { activa: true, titulo: "Cortes de agua" },
     clima: { activa: true, titulo: "Clima" },
     // Sin fuente oficial de turnos legible: la sección solo ofrece buscar farmacias abiertas en Google Maps.
     farmacias: { activa: true, titulo: "Farmacias" },
@@ -97,11 +98,23 @@ export const config = {
     recordatorio: { desde: "07:30", hasta: "09:00" }, // el mismo día, solo si el corte empieza después
   },
 
+  // Cortes de agua. AySA no publica los cortes en una fuente que se pueda leer sola (su consulta pide captcha y cuenta de cliente),
+  // así que se juntan dos cosas: titulares de diarios (RSS) que nombran el corte y una localidad del partido, y cortes cargados a mano desde el panel.
+  agua: {
+    fuente: "Notas de diarios y cortes cargados por Lomas Hoy",
+    paginaPublica: "https://cortes.web.aysa.com.ar/",
+    palabrasCorte: ["corte de agua", "cortes de agua", "sin agua", "falta de agua", "AySA"],
+    // Además de las localidades de arriba, "Lomas" a secas (por ejemplo "en Lomas hay corte de agua").
+    palabrasLugar: ["Lomas"],
+    diasMaximos: 2, // una nota de diario deja de mostrarse a los 2 días
+  },
+
   // Notificaciones al celular (web push).
   push: {
     tipos: {
       tren: { activa: true, titulo: "Tren Roca" },
       luz: { activa: true, titulo: "Cortes de luz" },
+      agua: { activa: true, titulo: "Cortes de agua" },
       // Apagado: el archivo abierto de alertas del SMN llegó vacío aunque había alertas vigentes en el país, así que no es confiable.
       tormenta: { activa: false, titulo: "Alertas de tormenta" },
       municipio: { activa: true, titulo: "Avisos del municipio" },

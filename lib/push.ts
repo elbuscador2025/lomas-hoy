@@ -6,8 +6,8 @@ import { config } from "@/lomas.config.mjs";
 import { redis, hoyArgentina } from "@/lib/servidor";
 import { ahoraAR } from "@/lib/avisos";
 
-export type Tipo = "tren" | "luz" | "tormenta" | "municipio" | "colectivos" | "mascotas";
-export const TIPOS: Tipo[] = ["tren", "luz", "tormenta", "municipio", "colectivos", "mascotas"];
+export type Tipo = "tren" | "luz" | "agua" | "tormenta" | "municipio" | "colectivos" | "mascotas";
+export const TIPOS: Tipo[] = ["tren", "luz", "agua", "tormenta", "municipio", "colectivos", "mascotas"];
 export type Suscripcion = {
   endpoint: string; keys: { p256dh: string; auth: string };
   tipos: Partial<Record<Tipo, boolean>>; creado: string; // sin barrio, nombre, teléfono, ni nada personal

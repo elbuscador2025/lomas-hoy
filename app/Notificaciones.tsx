@@ -45,6 +45,7 @@ const AVISOS_QUE_LLEGAN: { icono: string; texto: string; activo: boolean }[] = [
   { icono: "tren", texto: "Se corta o se demora el tren Roca", activo: config.push.tipos.tren.activa },
   { icono: "reloj", texto: "Va a haber un corte de luz programado", activo: config.push.tipos.luz.activa && config.programados.activa },
   { icono: "luz", texto: "Hay un corte de luz ahora", activo: config.push.tipos.luz.activa },
+  { icono: "gota", texto: "Hay un corte de agua", activo: config.push.tipos.agua.activa },
   { icono: "colectivo", texto: "Hay paro de colectivos", activo: config.push.tipos.colectivos.activa },
   { icono: "tormenta", texto: "Hay alerta de tormenta", activo: config.push.tipos.tormenta.activa },
   { icono: "megafono", texto: "El municipio publica algo", activo: config.push.tipos.municipio.activa },
