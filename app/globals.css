@@ -181,3 +181,4 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 .aviso-publicar { background:var(--amarillo-bg); border-radius:12px; padding:10px 12px; margin:0; font-weight:600; }
 .pago { padding:8px 0; border-top:1px solid var(--linea); }
 .pago:first-child { border-top:0; }
+.video-presentacion { width:100%; max-height:72vh; border-radius:20px; background:#0E2A5E; display:block; margin:12px 0 16px; }

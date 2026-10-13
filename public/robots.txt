@@ -6,3 +6,4 @@ Disallow: /entrar
 Disallow: /invitacion
 Disallow: /restablecer
 Disallow: /mascota
+Disallow: /presentacion
