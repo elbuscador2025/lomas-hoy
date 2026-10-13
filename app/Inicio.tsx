@@ -162,14 +162,15 @@ export default function Inicio() {
   const programados = (d.programados?.contenido?.cortes ?? []).filter((c) => c.fin >= ahora).sort((a, b) => a.inicio.localeCompare(b.inicio));
   const diaCorto = (f: string) => capitalizar(new Date(`${f}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "long", day: "numeric", month: "long" }).replace(",", ""));
   const horaCorte = (f: string) => f.slice(11, 16);
+  const horaCorta = (f: string) => { const [h, m] = f.slice(11, 16).split(":"); return m === "00" ? String(Number(h)) : `${Number(h)}:${m}`; }; // 18:00 → "18"
   // Agua: cortes en curso (cargados a mano), próximos y notas de diarios (sin horario) de los últimos días
   const aguaTodos = (d.agua?.contenido?.cortes ?? []).filter((c) => (c.hasta ? c.hasta >= ahora : Date.now() - new Date(c.fecha).getTime() <= config.agua.diasMaximos * 86400_000));
   const aguaAhora = aguaTodos.filter((c) => c.desde && c.desde <= ahora).sort((a, b) => (a.hasta ?? "").localeCompare(b.hasta ?? ""));
   const aguaProx = aguaTodos.filter((c) => c.desde && c.desde > ahora).sort((a, b) => (a.desde ?? "").localeCompare(b.desde ?? ""));
   const aguaNotas = aguaTodos.filter((c) => !c.desde);
   const [aguaEstado, aguaTono, aguaResumen]: [string, Tono, string] = !d.agua?.contenido ? ["Sin datos", "neutro", "Sin cortes informados"]
-    : aguaAhora.length ? [plural(aguaAhora.length, "corte", "cortes"), "aviso", `Corte en ${aguaAhora[0].localidad}${aguaAhora[0].hasta ? ` hasta las ${horaCorte(aguaAhora[0].hasta)} hs` : ""}${aguaAhora.length > 1 ? ` y ${aguaAhora.length - 1} más` : ""}`]
-    : aguaProx.length ? ["Programado", "aviso", `Corte en ${aguaProx[0].localidad}: ${diaCorto((aguaProx[0].desde ?? "").slice(0, 10))}, desde las ${horaCorte(aguaProx[0].desde ?? "")} hs`]
+    : aguaAhora.length ? [plural(aguaAhora.length, "corte", "cortes"), "aviso", `Corte en ${aguaAhora[0].localidad}${aguaAhora[0].hasta ? ` hasta las ${horaCorta(aguaAhora[0].hasta)} hs` : ""}${aguaAhora.length > 1 ? ` y ${aguaAhora.length - 1} más` : ""}`]
+    : aguaProx.length ? ["Programado", "aviso", `Corte en ${aguaProx[0].localidad}: ${diaCorto((aguaProx[0].desde ?? "").slice(0, 10))}, desde las ${horaCorta(aguaProx[0].desde ?? "")} hs`]
     : aguaNotas.length ? ["Aviso", "aviso", `Nota de ${aguaNotas[0].fuente}: corte en ${aguaNotas[0].localidad}`]
     : ["Normal", "ok", "Sin cortes informados"];
   const filaHoras = clima ? proximasHoras(clima, ahora) : [];
