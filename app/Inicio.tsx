@@ -149,6 +149,7 @@ export default function Inicio() {
   };
 
   const d: Todo = datos ?? {};
+  const aguaVisible = !!d.agua; // el servidor solo manda "agua" si el interruptor del panel está prendido
   const botonVolverInicio = <button className="btn claro ancho" onClick={cerrarBusqueda}>Volver al inicio</button>;
   const { novedades } = armarNovedades(d, config.luz, { tren: s.tren.activa, luz: s.luz.activa });
   const ahora = ahoraAR();
@@ -224,7 +225,7 @@ export default function Inicio() {
       programados: s.luz.activa ? programados.filter((c) => coincide(`corte programado luz edesur ${c.localidad} ${c.motivo}`)) : [],
       luz: s.luz.activa ? cortes.filter((c) => coincide(`${s.luz.titulo} luz corte edesur ${nombreLindo(c.localidad ?? "")}`)) : [],
       mascotas: s.mascotas.activa ? mascotas.filter((m) => coincide(`mascota mascotas perdida perdido encontrada encontrado ${m.especie} ${m.barrio} ${m.descripcion}`)) : [],
-      agua: s.agua.activa && coincide("agua aysa corte cortes de agua"),
+      agua: s.agua.activa && aguaVisible && coincide("agua aysa corte cortes de agua"),
       anses: s.anses.activa && coincide("anses cobran cobro hoy cobran jubilacion jubilaciones jubilados pension auh asignacion"),
       farmacias: s.farmacias.activa && coincide("farmacia farmacias turno turnos de turno remedios medicamentos"),
       clima: s.clima.activa && clima && coincide(`clima tiempo temperatura lluvia ${clima.ahora.etiqueta} ${clima.dias.map((d) => d.etiqueta).join(" ")}`) ? clima : null,
@@ -394,7 +395,7 @@ export default function Inicio() {
       </Detalle>
     );
 
-  if (vista === "agua") {
+  if (vista === "agua" && aguaVisible) {
     const cuandoAgua = (c: { desde: string | null; hasta: string | null }) => !c.desde || !c.hasta ? "Sin horario informado"
       : c.desde.slice(0, 10) === c.hasta.slice(0, 10)
         ? `${diaCorto(c.desde.slice(0, 10))}, de ${horaCorte(c.desde)} a ${horaCorte(c.hasta)} hs`
@@ -520,7 +521,7 @@ export default function Inicio() {
   if (vista === "notificaciones")
     return (
       <Detalle titulo="Avisos" onVolver={volver}>
-        <Notificaciones push={push} />
+        <Notificaciones push={push} agua={aguaVisible} />
       </Detalle>
     );
 
@@ -617,7 +618,7 @@ export default function Inicio() {
         {avisosDeFeriado(hoyStr).length > 0 && (
           <div className="franja" role="status">{avisosDeFeriado(hoyStr).map((t) => <p key={t}>{t}</p>)}</div>
         )}
-        {!resultados && <><CartelInstalar /><CartelAvisos push={push} /></>}
+        {!resultados && <><CartelInstalar /><CartelAvisos push={push} agua={aguaVisible} /></>}
         {sinConexion && <p className="offline">Sin conexión: se muestra lo último que se cargó.</p>}
 
         {resultados ? (
@@ -713,7 +714,7 @@ export default function Inicio() {
                 <Tile icono="luz" titulo="Luz" estado={luzEstado} tono={luzTono} onClick={() => abrir("luz")}
                   resumen={(!d.luz?.contenido ? "Sin datos por ahora" : cortes.length === 0 ? "Sin cortes" : `${plural(cortes.length, "corte", "cortes")} · ${plural(usuariosSinLuz, "usuario", "usuarios")}`) + (programados.length ? ` · ${plural(programados.length, "programado", "programados")}` : "")} />
               )}
-              {s.agua.activa && (
+              {s.agua.activa && aguaVisible && (
                 <Tile icono="gota" titulo="Agua" estado={aguaEstado} tono={aguaTono} onClick={() => abrir("agua")} resumen={aguaResumen} />
               )}
               {s.urgencias.activa && (

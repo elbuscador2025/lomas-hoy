@@ -9,6 +9,12 @@ type Noticia = { titular: string; medio: string; link: string; fecha: string; lo
 
 export const FUENTE_MANUAL = "Carga manual de Lomas Hoy";
 
+// Interruptor del panel "Mostrar Agua en la app": apagado de entrada. Apagado, el vecino no ve nada y no se mandan avisos.
+export async function aguaVisible() {
+  const [v] = await redis([["GET", "agua:visible"]]);
+  return v === "1";
+}
+
 export async function filaAgua(): Promise<Fila<Agua>> {
   const [n, m] = await redis([["GET", "datos:agua"], ["HVALS", "agua"]]);
   const lectura = n ? (JSON.parse(n as string) as Fila<{ noticias: Noticia[]; diariosSinLeer: string[] }>) : null;

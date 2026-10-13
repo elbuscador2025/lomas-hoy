@@ -16,10 +16,11 @@ export default function PanelAgua() {
   const [cortes, setCortes] = useState<CorteManual[]>([]);
   const [v, setV] = useState(vacio);
   const [msg, setMsg] = useState("");
+  const [visible, setVisible] = useState(false);
 
   const cargar = useCallback(async () => {
     const r = await post("/api/panel/agua", { accion: "listar" });
-    if (r.ok) setCortes((await r.json()).cortes);
+    if (r.ok) { const d = await r.json(); setCortes(d.cortes); setVisible(d.visible); }
   }, []);
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -34,6 +35,11 @@ export default function PanelAgua() {
   const campo = (k: keyof typeof vacio) => ({ value: v[k], onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setV({ ...v, [k]: e.target.value }) });
   return (
     <div>
+      <div className="interruptor-fila">
+        <span><b>Mostrar Agua en la app</b><small>Apagado: los vecinos no ven el cuadradito ni el aviso, y no se mandan notificaciones.</small></span>
+        <button role="switch" aria-checked={visible} aria-label="Mostrar Agua en la app" className={`interruptor ${visible ? "on" : ""}`}
+          onClick={async () => { const n = !visible; setVisible(n); await post("/api/panel/agua", { accion: "visible", valor: n }); }}><span /></button>
+      </div>
       <p className="vacio">AySA no publica los cortes en una fuente que se pueda leer sola. Cargá acá los que conozcas (por ejemplo del <a href={config.agua.paginaPublica} target="_blank" rel="noreferrer">sitio de AySA</a> o de un aviso oficial).</p>
       <form onSubmit={agregar} className="form">
         <label>Localidad

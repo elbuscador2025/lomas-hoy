@@ -5,7 +5,7 @@ import { redis } from "@/lib/servidor";
 import { esAdmin } from "@/lib/cuentas";
 import { ahoraAR } from "@/lib/avisos";
 import { evaluarAgua } from "@/lib/eventos";
-import type { CorteManual } from "@/lib/agua";
+import { aguaVisible, type CorteManual } from "@/lib/agua";
 
 // Mi panel → pestaña Agua: carga a mano de un corte (AySA no tiene una fuente pública que se pueda leer sola).
 const limpiar = (v: unknown, max: number) => String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
@@ -15,9 +15,14 @@ export async function POST(req: Request) {
   if (!req.headers.get("content-type")?.includes("application/json")) return Response.json({ ok: false }, { status: 415 });
   if (!(await esAdmin(req))) return Response.json({ ok: false }, { status: 401 });
   const c = await req.json().catch(() => ({}));
+  if (c.accion === "visible") {
+    await redis([["SET", "agua:visible", c.valor ? "1" : "0"]]);
+    if (c.valor) after(() => evaluarAgua().catch((e) => console.error("push agua", e)));
+    return Response.json({ ok: true });
+  }
   if (c.accion === "listar") {
     const [x] = await redis([["HVALS", "agua"]]);
-    return Response.json({ ok: true, cortes: (x as string[]).map((j) => JSON.parse(j) as CorteManual).sort((a, b) => b.desde.localeCompare(a.desde)) });
+    return Response.json({ ok: true, visible: await aguaVisible(), cortes: (x as string[]).map((j) => JSON.parse(j) as CorteManual).sort((a, b) => b.desde.localeCompare(a.desde)) });
   }
   if (c.accion === "borrar") {
     await redis([["HDEL", "agua", limpiar(c.id, 20)]]);

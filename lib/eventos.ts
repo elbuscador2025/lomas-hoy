@@ -4,7 +4,7 @@ import { config } from "@/lomas.config.mjs";
 import { clasificarTren, hoyMMDD, nombreLindo, type Tren, type Luz } from "@/lib/datos";
 import { notificarSeguro } from "@/lib/push";
 import { redis } from "@/lib/servidor";
-import { filaAgua } from "@/lib/agua";
+import { filaAgua, aguaVisible } from "@/lib/agua";
 import { ahoraAR, tituloConBarrio, type Aviso } from "@/lib/avisos";
 
 const hash = (s: string) => createHash("sha1").update(s).digest("hex").slice(0, 12);
@@ -122,6 +122,7 @@ export async function evaluarColectivos(c: { paros: { titular: string; medio: st
 // Agua: un aviso por corte (cargado a mano o nota de diario de las últimas 24 horas), con la localidad al principio del título.
 // De 23 a 7 no se evalúa (así el corte no se "gasta" en silencio y sale apenas termina el horario de silencio).
 export async function evaluarAgua() {
+  if (!(await aguaVisible())) return;
   const ahora = ahoraAR();
   const hora = Number(ahora.slice(11, 13));
   if (hora >= config.push.silencioDesde || hora < config.push.silencioHasta) return;

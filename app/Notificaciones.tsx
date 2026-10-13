@@ -52,7 +52,7 @@ const AVISOS_QUE_LLEGAN: { icono: string; texto: string; activo: boolean }[] = [
 ];
 
 // Cartel para activar los avisos. Pide el permiso del navegador solo al tocar "Activar avisos".
-export function CartelAvisos({ push }: { push: Push }) {
+export function CartelAvisos({ push, agua }: { push: Push; agua: boolean }) {
   const [cerrado, setCerrado] = useState(true);
   useEffect(() => setCerrado(estaCerrado("lomas-hoy:bienvenida")), []);
   if (cerrado || (push.estado !== "inactivo" && push.estado !== "iosSinInstalar")) return null;
@@ -61,7 +61,7 @@ export function CartelAvisos({ push }: { push: Push }) {
       <b>Activá los avisos</b>
       <p>Te suena el celular cuando pasa algo en Lomas:</p>
       <ul className="que-llega">
-        {AVISOS_QUE_LLEGAN.filter((a) => a.activo).map((a) => (
+        {AVISOS_QUE_LLEGAN.filter((a) => a.activo && (agua || a.icono !== "gota")).map((a) => (
           <li key={a.texto}><span className="icono-aviso"><Icono nombre={a.icono} tam={22} /></span>{a.texto}</li>
         ))}
       </ul>
@@ -92,7 +92,7 @@ function Interruptor({ activo, deshabilitado, onCambio, titulo, nota }: {
 }
 
 // Pantalla "Avisos"
-export default function Notificaciones({ push }: { push: Push }) {
+export default function Notificaciones({ push, agua }: { push: Push; agua: boolean }) {
   const { estado, prefs } = push;
 
   if (estado === "cargando") return <p className="vacio">Cargando…</p>;
@@ -119,7 +119,7 @@ export default function Notificaciones({ push }: { push: Push }) {
   return (
     <>
       <h2>Qué querés recibir</h2>
-      {(Object.entries(config.push.tipos) as [string, { activa: boolean; titulo: string }][]).map(([k, t]) => (
+      {(Object.entries(config.push.tipos) as [string, { activa: boolean; titulo: string }][]).filter(([k]) => k !== "agua" || agua).map(([k, t]) => (
         <Interruptor key={k} titulo={t.titulo} activo={t.activa && !!prefs.tipos[k]} deshabilitado={!t.activa}
           nota={!t.activa ? "No disponible por ahora: no hay una fuente oficial confiable." : undefined}
           onCambio={(v) => push.guardar({ ...prefs, tipos: { ...prefs.tipos, [k]: v } })} />
