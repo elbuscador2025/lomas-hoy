@@ -260,3 +260,7 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 .tile.coloreado .tile-resumen { color:#2B3A55; }
 .detalle.coloreado .barra { background:var(--c-bg); border-bottom:3px solid var(--c-fuerte); }
 .detalle.coloreado .titulo-detalle { background:var(--c-bg); border-left:6px solid var(--c-fuerte); border-radius:12px; padding:10px 12px; color:#10213F; }
+
+/* Denunciar una estafa */
+.btn.denuncia-estafa { width:100%; min-height:52px; margin:0 0 12px; background:#D32F2F; color:#fff; font-size:18px; }
+.modal-largo { max-height:90vh; overflow-y:auto; }

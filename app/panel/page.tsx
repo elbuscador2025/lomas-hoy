@@ -5,6 +5,8 @@ import PanelBarrios from "./PanelBarrios";
 import PanelTrueque from "./PanelTrueque";
 import PanelTrabajo from "./PanelTrabajo";
 import PanelBloqueados from "./PanelBloqueados";
+import PanelDenuncias from "./PanelDenuncias";
+import AvisarmeAqui from "./AvisarmeAqui";
 import PanelPush from "./PanelPush";
 import PanelMascotas from "./PanelMascotas";
 import PanelAnses from "./PanelAnses";
@@ -24,7 +26,7 @@ const fecha = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone:
 export default function Panel() {
   const [datos, setDatos] = useState<Datos | null>(null);
   const [lugares, setLugares] = useState<Lugar[]>([]);
-  const [pestana, setPestana] = useState<"stats" | "lugares" | "barrios" | "push" | "mascotas" | "anses" | "agua" | "trueque" | "trabajo" | "bloqueados">("stats");
+  const [pestana, setPestana] = useState<"stats" | "lugares" | "barrios" | "push" | "mascotas" | "anses" | "agua" | "trueque" | "trabajo" | "bloqueados" | "denuncias">("stats");
   const [editando, setEditando] = useState<(Lugar & { tels: string; direccionOriginal?: string }) | null>(null);
   const [mensaje, setMensaje] = useState("");
 
@@ -35,6 +37,7 @@ export default function Panel() {
     if (location.hash === "#mascotas") setPestana("mascotas");
     if (location.hash === "#trueque") setPestana("trueque");
     if (location.hash === "#trabajo") setPestana("trabajo");
+    if (location.hash === "#denuncias") setPestana("denuncias");
     post("/api/panel").then(async (r) => { if (r.ok) { setDatos(await r.json()); cargarLugares(); } });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -76,6 +79,7 @@ export default function Panel() {
         <h1>Panel</h1>
         <button className="btn claro chico" onClick={() => salir()}>Salir</button>
       </div>
+      <AvisarmeAqui />
       <MiCuenta />
       <div className="pestanas">
         <button className={`btn ${pestana === "stats" ? "" : "claro"}`} onClick={() => setPestana("stats")}>Visitas y reportes</button>
@@ -88,12 +92,14 @@ export default function Panel() {
         <button className={`btn ${pestana === "trueque" ? "" : "claro"}`} onClick={() => setPestana("trueque")}>Trueque</button>
         <button className={`btn ${pestana === "trabajo" ? "" : "claro"}`} onClick={() => setPestana("trabajo")}>Trabajo</button>
         <button className={`btn ${pestana === "bloqueados" ? "" : "claro"}`} onClick={() => setPestana("bloqueados")}>Bloqueados</button>
+        <button className={`btn ${pestana === "denuncias" ? "" : "claro"}`} onClick={() => setPestana("denuncias")}>Denuncias</button>
       </div>
 
       {pestana === "barrios" && <PanelBarrios />}
       {pestana === "trueque" && <PanelTrueque />}
       {pestana === "trabajo" && <PanelTrabajo />}
       {pestana === "bloqueados" && <PanelBloqueados />}
+      {pestana === "denuncias" && <PanelDenuncias />}
       {pestana === "push" && <PanelPush />}
       {pestana === "mascotas" && <PanelMascotas />}
       {pestana === "anses" && <PanelAnses />}

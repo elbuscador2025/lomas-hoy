@@ -5,6 +5,7 @@ import { CATEGORIAS_TRUEQUE, type PublicacionTrueque, type FeriaTrueque } from "
 import { Icono } from "./Iconos";
 import { achicar } from "./Mascotas";
 import Denunciar from "./Denunciar";
+import DenunciarEstafa from "./DenunciarEstafa";
 import { AVISO_TRUEQUE, datoProhibido } from "@/lib/estafas";
 
 const fechaCorta = (iso: string) => new Date(iso).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "numeric", month: "long" });
@@ -62,6 +63,7 @@ export function ListaTrueque({ publicaciones, ferias, onPublicar, onAvisarFeria 
   return (
     <>
       <p className="aviso-estafa" role="note">{AVISO_TRUEQUE}</p>
+      <DenunciarEstafa seccion="trueque" publicaciones={publicaciones.map((p) => p.ofrezco)} />
       <p className="aviso-publicar">Encontrate en un lugar público y de día.</p>
       <div className="filtros" role="tablist" aria-label="Trueque">
         {([["cambio", "Publicaciones"], ["ferias", "Ferias"]] as const).map(([id, t]) => (

@@ -65,7 +65,6 @@ export default function PanelTrueque() {
 
   return (
     <div>
-      <p className="vacio">Para recibir una notificación cada vez que alguien publica, usá “Avisarme en este celular…” de la pestaña Mascotas: sirve para las dos.</p>
       {msg && <p className="normal">{msg}</p>}
       <h2>Publicaciones para aprobar ({pendientes.length})</h2>
       {pendientes.length === 0 && <p className="vacio">No hay nada pendiente.</p>}

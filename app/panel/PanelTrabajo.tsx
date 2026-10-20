@@ -51,7 +51,6 @@ export default function PanelTrabajo() {
 
   return (
     <div>
-      <p className="vacio">Para recibir una notificación cuando alguien publica o denuncia, usá “Avisarme en este celular…” de la pestaña Mascotas: sirve para todas.</p>
       {msg && <p className="normal">{msg}</p>}
       <h2>Para aprobar ({pendientes.length})</h2>
       {pendientes.length === 0 && <p className="vacio">No hay nada pendiente.</p>}

@@ -3,8 +3,8 @@ import { createHash } from "node:crypto";
 import { redis } from "@/lib/servidor";
 import { notificarAdmin } from "@/lib/push";
 
-import { MOTIVOS } from "@/lib/moderacion-comun";
-export { MOTIVOS };
+import { MOTIVOS, MOTIVOS_ESTAFA } from "@/lib/moderacion-comun";
+export { MOTIVOS, MOTIVOS_ESTAFA };
 export const DENUNCIAS_PARA_OCULTAR = 3;
 export type Seccion = "trueque" | "trabajo";
 export type Denuncia = { motivo: string; disp: string; t: string };
@@ -54,4 +54,24 @@ export async function dejarPublicada(seccion: Seccion, id: string) {
   const { denuncias: _d, oculta: _o, ...r } = JSON.parse(j as string) as Registro;
   await redis([["HSET", seccion, id, JSON.stringify(r)]]);
   return true;
+}
+
+// ---- "Denunciar una estafa": denuncias libres que manda cualquier vecino (no ligadas a una publicación) ----
+export type DenunciaLibre = { id: string; seccion: Seccion; motivo: string; whatsapp: string; publicacion: string; texto: string; t: string; bloqueada?: boolean };
+
+export async function guardarDenunciaLibre(d: Omit<DenunciaLibre, "id" | "t">) {
+  const t = new Date().toISOString();
+  const id = huella(`${t}|${d.texto}|${Math.random()}`);
+  await redis([["HSET", "estafas", id, JSON.stringify({ ...d, id, t })], ["EXPIRE", "estafas", 400 * 86400]]);
+}
+export async function listarDenunciasLibres(): Promise<DenunciaLibre[]> {
+  const [x] = await redis([["HVALS", "estafas"]]);
+  return (x as string[]).map((j) => JSON.parse(j) as DenunciaLibre).sort((a, b) => b.t.localeCompare(a.t));
+}
+export async function marcarBloqueada(id: string) {
+  const [j] = await redis([["HGET", "estafas", id]]);
+  if (!j) return null;
+  const d = JSON.parse(j as string) as DenunciaLibre;
+  await redis([["HSET", "estafas", id, JSON.stringify({ ...d, bloqueada: true })]]);
+  return d;
 }

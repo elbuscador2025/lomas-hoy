@@ -7,6 +7,7 @@ import { Icono } from "./Iconos";
 import { achicar } from "./Mascotas";
 import { useBarrios, Cancelar } from "./Trueque";
 import Denunciar from "./Denunciar";
+import DenunciarEstafa from "./DenunciarEstafa";
 
 const fechaCorta = (iso: string) => new Date(iso).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "numeric", month: "long" });
 const dispositivo = () => { try { return localStorage.getItem("lomas-hoy:id") ?? ""; } catch { return ""; } };
@@ -38,6 +39,7 @@ export function ListaTrabajo({ publicaciones, onPublicar }: { publicaciones: Pub
   return (
     <>
       <p className="aviso-estafa" role="note">{AVISO_TRABAJO}</p>
+      <DenunciarEstafa seccion="trabajo" publicaciones={publicaciones.map((p) => p.texto)} />
       <div className="filtros" role="tablist" aria-label="Trabajo para mayores de 50 años">
         {([["ofrezco", "Ofrezco trabajo"], ["busco", "Busco trabajo"]] as const).map(([id, t]) => (
           <button key={id} role="tab" className={`filtro ${modo === id ? "activo" : ""}`} aria-selected={modo === id} onClick={() => setModo(id)}>{t}</button>
