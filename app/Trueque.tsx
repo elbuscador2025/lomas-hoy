@@ -32,7 +32,7 @@ export function PublicacionCard({ p }: { p: PublicacionTrueque }) {
 }
 
 export function FeriaCard({ f }: { f: FeriaTrueque }) {
-  const destino = `${f.direccion}, ${f.barrio}, Lomas de Zamora, Buenos Aires, Argentina`;
+  const destino = [f.direccion, f.barrio, ...(f.barrio === "Lomas de Zamora" ? [] : ["Lomas de Zamora"]), "Buenos Aires, Argentina"].join(", ");
   return (
     <li className="mascota">
       <div className="mascota-datos">
@@ -69,11 +69,11 @@ export function ListaTrueque({ publicaciones, ferias, onPublicar, onAvisarFeria 
           <button className="btn ancho grande-btn" onClick={onPublicar}>Publicar</button>
           <div className="filtros-doble">
             <select aria-label="Categoría" value={cat} onChange={(e) => setCat(e.target.value)}>
-              <option value="">Todas las categorías</option>
+              <option value="">Categorías</option>
               {CATEGORIAS_TRUEQUE.map((c) => <option key={c}>{c}</option>)}
             </select>
             <select aria-label="Barrio" value={barrio} onChange={(e) => setBarrio(e.target.value)}>
-              <option value="">Todos los barrios</option>
+              <option value="">Barrios</option>
               {barrios.map((b) => <option key={b}>{b}</option>)}
             </select>
           </div>
