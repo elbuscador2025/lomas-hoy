@@ -206,3 +206,14 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 .recuadro-foto { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; width:100%; min-height:180px; margin:8px 0; border:2px dashed var(--azul); border-radius:18px; background:var(--celeste); color:var(--azul); font-size:16px; font-weight:700; cursor:pointer; overflow:hidden; padding:0; }
 .recuadro-foto img { width:100%; max-height:320px; object-fit:cover; display:block; }
 .cancelar-form { align-self:flex-start; display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 14px; border:2px solid var(--linea); border-radius:999px; background:#fff; color:var(--suave); font-size:16px; font-weight:700; cursor:pointer; }
+
+/* Denunciar, avisos de estafa, llamar y WhatsApp */
+.denunciar { align-self:flex-start; background:none; border:0; padding:6px 0; color:var(--suave); text-decoration:underline; font-size:14px; cursor:pointer; }
+.modal-fondo { position:fixed; inset:0; z-index:1000; background:rgba(10,20,40,.55); display:flex; align-items:center; justify-content:center; padding:16px; }
+.modal { background:#fff; border-radius:20px; padding:20px; width:100%; max-width:360px; display:flex; flex-direction:column; gap:10px; font-size:18px; }
+.modal .btn { min-height:56px; font-size:18px; width:100%; }
+.btn.llamar, .modal .btn.llamar-si { background:#1fa855; color:#fff; }
+.btn.llamar { width:100%; min-height:56px; font-size:19px; margin:4px 0; }
+.btn.cancelar-rojo { background:#D32F2F; color:#fff; }
+.aviso-estafa { background:var(--rojo-bg); border-left:6px solid var(--rojo); border-radius:12px; padding:12px 14px; margin:0 0 12px; font-weight:700; }
+.rojo-texto { color:var(--rojo); }

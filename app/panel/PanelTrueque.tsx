@@ -1,24 +1,27 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { config } from "@/lomas.config.mjs";
-import { posibleVenta, type FeriaTrueque } from "@/lib/trueque-comun";
+import type { FeriaTrueque } from "@/lib/trueque-comun";
+import { posibleEstafa } from "@/lib/estafas";
 import { post } from "./api";
+import { Denuncias, AccionesModeracion, type DatosModeracion } from "./Moderar";
 
-type Reg = { id: string; ofrezco: string; busco: string; categoria: string; barrio: string; whatsapp: string; foto: { url: string }; creado: string; aprobada?: string; vence?: string; posibleVenta: boolean };
+type Reg = { id: string; ofrezco: string; busco: string; categoria: string; barrio: string; whatsapp: string; foto: { url: string }; creado: string; aprobada?: string; vence?: string; posibleEstafa?: boolean } & DatosModeracion;
 type Feria = FeriaTrueque & { creado: string };
 const fecha = (iso?: string) => (iso ? new Date(iso).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", dateStyle: "short", timeStyle: "short", hour12: false }) : "—");
 
-function Ficha({ r, children }: { r: Reg; children: React.ReactNode }) {
+function Ficha({ r, onHecho, children }: { r: Reg; onHecho: (m: string) => void; children: React.ReactNode }) {
   return (
     <li className="mascota">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="foto-mascota" src={r.foto.url} alt="Foto" loading="lazy" />
       <div className="mascota-datos">
-        {(r.posibleVenta || posibleVenta(`${r.ofrezco} ${r.busco}`)) && <span className="pildora grave">Posible venta</span>}
+        {(r.posibleEstafa || posibleEstafa(r.ofrezco, r.busco)) && <span className="pildora grave">Posible estafa</span>}
+        <Denuncias r={r} />
         <b>Ofrece: {r.ofrezco}</b>
         <span>Busca: {r.busco}</span>
         <small>{r.categoria} · {r.barrio} · WhatsApp: {r.whatsapp}<br />Enviada {fecha(r.creado)}{r.vence ? ` · Vence ${fecha(r.vence)}` : ""}</small>
-        <div className="acciones">{children}</div>
+        <div className="acciones">{children}<AccionesModeracion seccion="trueque" id={r.id} r={r} onHecho={onHecho} /></div>
       </div>
     </li>
   );
@@ -68,7 +71,7 @@ export default function PanelTrueque() {
       {pendientes.length === 0 && <p className="vacio">No hay nada pendiente.</p>}
       <ul className="lista">
         {pendientes.map((r) => (
-          <Ficha key={r.id} r={r}>
+          <Ficha key={r.id} r={r} onHecho={(m) => { setMsg(m); cargar(); }}>
             <button className="btn" onClick={() => accion({ accion: "aprobar", id: r.id }, "Aprobada: ya se ve en la app.")}>Aprobar</button>
             <button className="btn claro" onClick={() => confirm("¿Rechazar? Se borra la publicación y su foto.") && accion({ accion: "rechazar", id: r.id }, "Rechazada y foto borrada.")}>Rechazar</button>
           </Ficha>
@@ -88,7 +91,7 @@ export default function PanelTrueque() {
       <p className="vacio">Se bajan solas a los {config.trueque.diasVigencia} días.</p>
       <ul className="lista">
         {aprobadas.map((r) => (
-          <Ficha key={r.id} r={r}>
+          <Ficha key={r.id} r={r} onHecho={(m) => { setMsg(m); cargar(); }}>
             <button className="btn claro" onClick={() => confirm("¿Bajar esta publicación? Se borra también su foto.") && accion({ accion: "rechazar", id: r.id }, "Bajada y foto borrada.")}>Bajar</button>
           </Ficha>
         ))}

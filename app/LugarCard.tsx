@@ -1,5 +1,6 @@
 "use client";
-import { telLink, mapaLink, type Lugar } from "@/lib/datos";
+import { mapaLink, type Lugar } from "@/lib/datos";
+import BotonLlamar from "./BotonLlamar";
 import { Icono } from "./Iconos";
 import Pie from "./Pie";
 
@@ -16,9 +17,7 @@ export default function LugarCard({ lugar: l, km }: { lugar: Lugar; km?: number 
         : l.categoria === "veterinarias" && l.telefonos.length > 0 && <span className="dato"><Icono nombre="reloj" tam={18} /> Consultá el horario por teléfono</span>}
       {l.telefonos.length > 0 && <span className="dato"><Icono nombre="telefono" tam={18} /> {l.telefonos.join(" · ")}</span>}
       <div className="acciones">
-        {l.telefonos.map((t) => (
-          <a key={t} className="btn" href={telLink(t)}>{l.telefonos.length > 1 ? `Llamar ${t}` : "Llamar"}</a>
-        ))}
+        {l.telefonos.map((t) => <BotonLlamar key={t} nombre={l.nombre} numero={t} />)}
         {l.direccion && (
           <a className="btn claro" href={mapaLink(l)} target="_blank" rel="noreferrer">Cómo llegar</a>
         )}

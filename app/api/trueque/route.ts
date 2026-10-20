@@ -20,8 +20,8 @@ export async function POST(req: Request) {
   if (!(await limitePorDia(dispositivo, ipDe(req)))) {
     return Response.json({ ok: false, error: "Ya publicaste 3 veces hoy. Probá mañana." }, { status: 429 });
   }
-  const r = await crearPendiente(form);
+  const r = await crearPendiente(form, dispositivo);
   if (!r.ok) return Response.json(r, { status: 400 });
-  after(() => notificarAdmin("Nuevo trueque para aprobar", `${String(form.get("ofrezco") ?? "").slice(0, 80)}${r.posibleVenta ? " · Posible venta" : ""}`, "/panel#trueque"));
+  after(() => notificarAdmin("Nuevo trueque para aprobar", `${String(form.get("ofrezco") ?? "").slice(0, 80)}${r.posibleEstafa ? " · Posible estafa" : ""}`, "/panel#trueque"));
   return Response.json({ ok: true, enlace: `${new URL(req.url).origin}/trueque/${r.token}` });
 }

@@ -7,8 +7,8 @@ import { redis, hoyArgentina } from "@/lib/servidor";
 import { ahoraAR } from "@/lib/avisos";
 import { localidadValida, mismaLocalidad } from "@/lib/localidades";
 
-export type Tipo = "tren" | "luz" | "agua" | "tormenta" | "colectivos" | "mascotas" | "trueque" | "resumen";
-export const TIPOS: Tipo[] = ["tren", "luz", "agua", "tormenta", "colectivos", "mascotas", "trueque", "resumen"];
+export type Tipo = "tren" | "luz" | "agua" | "tormenta" | "colectivos" | "mascotas" | "trueque" | "trabajo" | "resumen";
+export const TIPOS: Tipo[] = ["tren", "luz", "agua", "tormenta", "colectivos", "mascotas", "trueque", "trabajo", "resumen"];
 export type Suscripcion = {
   endpoint: string; keys: { p256dh: string; auth: string };
   tipos: Partial<Record<Tipo, boolean>>; creado: string; // sin nombre, teléfono, ni nada personal
@@ -111,8 +111,8 @@ export async function notificar(ev: Evento) {
   }
   prepararVapid();
   // 3) Quiénes la reciben: todos los que tienen ese tipo prendido (si todavía no eligieron, está prendido)
-  // (mascotas y trueque son opcionales: solo le llega a quien lo prendió)
-  const interesadas = (await todasLasSuscripciones()).filter((s) => (ev.tipo === "mascotas" || ev.tipo === "trueque" ? s.tipos?.[ev.tipo] === true : s.tipos?.[ev.tipo] !== false))
+  // (mascotas, trueque y trabajo son opcionales: solo le llega a quien lo prendió)
+  const interesadas = (await todasLasSuscripciones()).filter((s) => (ev.tipo === "mascotas" || ev.tipo === "trueque" || ev.tipo === "trabajo" ? s.tipos?.[ev.tipo] === true : s.tipos?.[ev.tipo] !== false))
     .filter((s) => !ev.localidad || mismaLocalidad(s.localidad, ev.localidad)); // luz: solo a quien eligió esa localidad
   // 4) Máximo por día y por celular
   const dia = hoyArgentina();

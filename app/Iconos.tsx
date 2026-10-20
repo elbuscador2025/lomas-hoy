@@ -7,6 +7,8 @@ const TRAZOS: Record<string, React.ReactNode> = {
   patita: <><circle cx="6" cy="10" r="1.8" /><circle cx="10" cy="6" r="1.8" /><circle cx="14" cy="6" r="1.8" /><circle cx="18" cy="10" r="1.8" /><path d="M12 12c-3 0-5 3-5 5 0 2 2 2.5 3.5 2 1-.4 2.5-.4 3 0 1.5.5 3.5 0 3.5-2 0-2-2-5-5-5z" /></>,
   megafono: <><path d="M3 10v4a1 1 0 0 0 1 1h3l8 4V5L7 9H4a1 1 0 0 0-1 1z" /><path d="M19 9a4 4 0 0 1 0 6" /></>,
   trueque: <><path d="M4 8h14M14 4l4 4-4 4" /><path d="M20 16H6M10 12l-4 4 4 4" /></>,
+  whatsapp: <><path d="M3 21l1.6-4.6A8.5 8.5 0 1 1 8 19.5z" /><path d="M9 8.5c0 3 3 6 6.5 6.5l1.3-1.6-2.1-1-1 .8c-1.1-.5-2.1-1.5-2.6-2.6l.8-1-1-2.1z" /></>,
+  trabajo: <><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18" /></>,
   escudo: <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />,
   campana: <><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15z" /><path d="M10 21h4" /></>,
   lupa: <><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></>,

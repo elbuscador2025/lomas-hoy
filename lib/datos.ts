@@ -1,5 +1,6 @@
 import { vigenteMascota, type MascotaPublica } from "@/lib/mascotas-comun";
 import { vigenteTrueque, type TruequePublico } from "@/lib/trueque-comun";
+import { vigenteTrabajo, type PublicacionTrabajo } from "@/lib/trabajo-comun";
 import type { PagoAnses } from "@/lib/anses";
 export type Fila<T> = { clave: string; contenido: T | null; ok_en: string | null; intento_en: string | null; error: string | null };
 export type AvisoTren = {
@@ -41,6 +42,7 @@ const CLAVE_CACHE = "lomas-hoy:datos";
 const CLAVE_LUGARES = "lomas-hoy:lugares";
 const CLAVE_MASCOTAS = "lomas-hoy:mascotas";
 const CLAVE_TRUEQUE = "lomas-hoy:trueque";
+const CLAVE_TRABAJO = "lomas-hoy:trabajo";
 const CLAVE_ANSES = "lomas-hoy:anses";
 
 const leerCache = <T,>(clave: string, vacio: T): T => {
@@ -52,15 +54,16 @@ const guardarCache = (clave: string, valor: unknown) => {
 
 // Lee del sitio (que lee la base); si no hay internet, devuelve lo último que se guardó en el celu.
 export type Anses = { entradas: PagoAnses[]; actualizado: string | null };
-export async function cargarDatos(): Promise<{ datos: Todo; lugares: Lugar[]; mascotas: MascotaPublica[]; trueque: TruequePublico; anses: Anses; sinConexion: boolean }> {
-  const [d, l, m, t, a] = await Promise.allSettled([
+export async function cargarDatos(): Promise<{ datos: Todo; lugares: Lugar[]; mascotas: MascotaPublica[]; trueque: TruequePublico; trabajo: PublicacionTrabajo[]; anses: Anses; sinConexion: boolean }> {
+  const [d, l, m, t, tb, a] = await Promise.allSettled([
     fetch("/api/datos").then((r) => { if (!r.ok) throw new Error(); return r.json() as Promise<Fila<unknown>[]>; }),
     fetch("/api/lugares").then((r) => { if (!r.ok) throw new Error(); return r.json() as Promise<Lugar[]>; }),
     fetch("/api/mascotas").then((r) => { if (!r.ok) throw new Error(); return r.json() as Promise<MascotaPublica[]>; }),
     fetch("/api/trueque").then((r) => { if (!r.ok) throw new Error(); return r.json() as Promise<TruequePublico>; }),
+    fetch("/api/trabajo").then((r) => { if (!r.ok) throw new Error(); return r.json() as Promise<PublicacionTrabajo[]>; }),
     fetch("/api/anses").then((r) => { if (!r.ok) throw new Error(); return r.json() as Promise<Anses>; }),
   ]);
-  let datos: Todo, lugares: Lugar[], mascotas: MascotaPublica[], trueque: TruequePublico, anses: Anses;
+  let datos: Todo, lugares: Lugar[], mascotas: MascotaPublica[], trueque: TruequePublico, trabajo: PublicacionTrabajo[], anses: Anses;
   if (d.status === "fulfilled") {
     datos = Object.fromEntries(d.value.map((f) => [f.clave, f])) as Todo;
     guardarCache(CLAVE_CACHE, datos);
@@ -79,11 +82,16 @@ export async function cargarDatos(): Promise<{ datos: Todo; lugares: Lugar[]; ma
     guardarCache(CLAVE_TRUEQUE, trueque);
   } else trueque = leerCache<TruequePublico>(CLAVE_TRUEQUE, { publicaciones: [], ferias: [] });
   trueque = { ...trueque, publicaciones: trueque.publicaciones.filter((x) => vigenteTrueque(x)) };
+  if (tb.status === "fulfilled") {
+    trabajo = tb.value;
+    guardarCache(CLAVE_TRABAJO, trabajo);
+  } else trabajo = leerCache<PublicacionTrabajo[]>(CLAVE_TRABAJO, []);
+  trabajo = trabajo.filter((x) => vigenteTrabajo(x));
   if (a.status === "fulfilled") {
     anses = a.value;
     guardarCache(CLAVE_ANSES, anses);
   } else anses = leerCache<Anses>(CLAVE_ANSES, { entradas: [], actualizado: null });
-  return { datos, lugares, mascotas, trueque, anses, sinConexion: d.status === "rejected" && l.status === "rejected" };
+  return { datos, lugares, mascotas, trueque, trabajo, anses, sinConexion: d.status === "rejected" && l.status === "rejected" };
 }
 
 export const ZONA = "America/Argentina/Buenos_Aires";

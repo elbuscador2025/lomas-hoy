@@ -1,5 +1,6 @@
 import { esAdmin } from "@/lib/cuentas";
 import { paraModerar, aprobar, quitar, aprobarFeria, quitarFeria } from "@/lib/trueque";
+import { dejarPublicada } from "@/lib/moderacion";
 
 // Mi panel → pestaña Trueque: pendientes y publicadas (publicaciones y ferias), aprobar / rechazar / borrar.
 export async function POST(req: Request) {
@@ -11,6 +12,7 @@ export async function POST(req: Request) {
     case "listar": return Response.json({ ok: true, ...(await paraModerar()) });
     case "aprobar": return Response.json({ ok: await aprobar(id) });
     case "rechazar": return Response.json({ ok: await quitar(id) }); // borra la publicación y su foto
+    case "dejar": return Response.json({ ok: await dejarPublicada("trueque", id) });
     case "aprobarFeria": return Response.json({ ok: await aprobarFeria(id) });
     case "borrarFeria": return Response.json({ ok: await quitarFeria(id) });
   }

@@ -7,12 +7,14 @@ import { ahoraAR } from "@/lib/avisos";
 import { barriosActuales } from "@/lib/barrios";
 import { notificarSeguro } from "@/lib/push";
 import { normalizarWhatsapp } from "@/lib/mascotas-comun";
-import { posibleVenta, type PublicacionTrueque, type FeriaTrueque } from "@/lib/trueque-comun";
+import { posibleEstafa, datoProhibido } from "@/lib/estafas";
+import { estaBloqueado, huella } from "@/lib/moderacion";
+import type { PublicacionTrueque, FeriaTrueque } from "@/lib/trueque-comun";
 
 type Registro = {
   id: string; ofrezco: string; busco: string; categoria: string; barrio: string; whatsapp: string;
   foto: { url: string }; creado: string; situacion: "pendiente" | "aprobada";
-  aprobada?: string; vence?: string; posibleVenta: boolean; tokenHash: string; // el enlace propio se guarda solo como huella
+  aprobada?: string; vence?: string; posibleEstafa: boolean; disp: string; oculta?: boolean; denuncias?: { motivo: string; disp: string; t: string }[]; tokenHash: string; // el enlace propio se guarda solo como huella
 };
 type RegistroFeria = FeriaTrueque & { creado: string; situacion: "pendiente" | "aprobada" };
 
@@ -34,7 +36,7 @@ const borrarFoto = (r: Registro) => del(r.foto.url).catch(() => {});
 export async function publicas() {
   const ahora = Date.now();
   const publicaciones: PublicacionTrueque[] = (await todas())
-    .filter((r) => r.situacion === "aprobada" && r.vence && new Date(r.vence).getTime() > ahora)
+    .filter((r) => r.situacion === "aprobada" && !r.oculta && r.vence && new Date(r.vence).getTime() > ahora)
     .sort((a, b) => b.aprobada!.localeCompare(a.aprobada!))
     .map((r) => ({ id: r.id, ofrezco: r.ofrezco, busco: r.busco, categoria: r.categoria, barrio: r.barrio, whatsapp: r.whatsapp, foto: r.foto.url, creado: r.creado, aprobada: r.aprobada!, vence: r.vence! }));
   const ferias: FeriaTrueque[] = (await todasFerias())
@@ -53,7 +55,7 @@ export async function limitePorDia(dispositivo: string, ip: string) {
   return Number(d) <= config.trueque.maxPorDiaPorCelular && Number(i) <= config.trueque.maxPorDiaPorCelular * 3;
 }
 
-export async function crearPendiente(form: FormData): Promise<{ ok: true; token: string; id: string; posibleVenta: boolean } | { ok: false; error: string }> {
+export async function crearPendiente(form: FormData, dispositivo: string): Promise<{ ok: true; token: string; id: string; posibleEstafa: boolean } | { ok: false; error: string }> {
   const max = config.trueque.maxTexto;
   const ofrezco = limpio(form.get("ofrezco"), max + 1), busco = limpio(form.get("busco"), max + 1);
   const categoria = limpio(form.get("categoria"), 20), barrio = limpio(form.get("barrio"), 40);
@@ -62,8 +64,12 @@ export async function crearPendiente(form: FormData): Promise<{ ok: true; token:
   if (ofrezco.length > max || busco.length > max) return { ok: false, error: `Cada texto puede tener hasta ${max} caracteres.` };
   if (!config.trueque.categorias.includes(categoria)) return { ok: false, error: "Elegí la categoría." };
   if (!(await barriosActuales()).includes(barrio)) return { ok: false, error: "Elegí el barrio." };
+  const prohibido = datoProhibido(ofrezco, busco);
+  if (prohibido) return { ok: false, error: prohibido };
   const whatsapp = normalizarWhatsapp(limpio(form.get("whatsapp"), 30));
   if (!whatsapp) return { ok: false, error: "El WhatsApp no es válido. Ponelo con código de área, sin 0 ni 15 (ej. 11 5555-5555)." };
+  const disp = huella(dispositivo);
+  if (await estaBloqueado(whatsapp, disp)) return { ok: false, error: "No podés publicar desde este celular o con este número." };
 
   const foto = form.get("foto");
   if (!(foto instanceof File) || foto.size === 0) return { ok: false, error: "Falta la foto." };
@@ -79,13 +85,13 @@ export async function crearPendiente(form: FormData): Promise<{ ok: true; token:
     console.error("foto:", e);
     return { ok: false, error: "No se pudo subir la foto. Probá de nuevo en un rato." };
   }
-  const venta = posibleVenta(`${ofrezco} ${busco}`);
-  const r: Registro = { id, ofrezco, busco, categoria, barrio, whatsapp, foto: { url }, creado: new Date().toISOString(), situacion: "pendiente", posibleVenta: venta, tokenHash: sha(token) };
+  const venta = posibleEstafa(ofrezco, busco);
+  const r: Registro = { id, ofrezco, busco, categoria, barrio, whatsapp, foto: { url }, creado: new Date().toISOString(), situacion: "pendiente", posibleEstafa: venta, disp, tokenHash: sha(token) };
   await redis([["HSET", "trueque", id, JSON.stringify(r)], ["SET", `trueque:tok:${sha(token)}`, id, "EX", 40 * 86400]]);
-  return { ok: true, token, id, posibleVenta: venta };
+  return { ok: true, token, id, posibleEstafa: venta };
 }
 
-export async function crearFeria(c: Record<string, unknown>): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function crearFeria(c: Record<string, unknown>, dispositivo: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const lugar = limpio(c.lugar, 80), direccion = limpio(c.direccion, 100), barrio = limpio(c.barrio, 40);
   const dias = limpio(c.dias, 60), horario = limpio(c.horario, 40);
   if (lugar.length < 3) return { ok: false, error: "Escribí el nombre o lugar de la feria." };
@@ -96,6 +102,7 @@ export async function crearFeria(c: Record<string, unknown>): Promise<{ ok: true
   const crudo = limpio(c.whatsapp, 30);
   const whatsapp = crudo ? normalizarWhatsapp(crudo) : "";
   if (whatsapp === null) return { ok: false, error: "El WhatsApp no es válido. Ponelo con código de área, sin 0 ni 15 (ej. 11 5555-5555)." };
+  if (await estaBloqueado(whatsapp || null, huella(dispositivo))) return { ok: false, error: "No podés publicar desde este celular o con este número." };
   const id = randomUUID().slice(0, 10);
   const f: RegistroFeria = { id, lugar, direccion, barrio, dias, horario, whatsapp, creado: new Date().toISOString(), situacion: "pendiente" };
   await redis([["HSET", "trueque:ferias", id, JSON.stringify(f)]]);
@@ -173,4 +180,13 @@ export async function mantener() {
       });
     }
   }
+}
+
+// Datos para bloquear a quien publicó (y para bajar todo lo suyo)
+export async function deQuien(id: string) {
+  const [j] = await redis([["HGET", "trueque", id]]);
+  return j ? (() => { const r = JSON.parse(j as string) as Registro; return { whatsapp: r.whatsapp, disp: r.disp ?? "", nota: r.ofrezco }; })() : null;
+}
+export async function quitarDe(whatsapp: string, disp: string) {
+  for (const r of await todas()) if (r.whatsapp === whatsapp || (disp && r.disp === disp)) await quitar(r.id);
 }

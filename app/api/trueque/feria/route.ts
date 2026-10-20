@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   if (!(await limitePorDia(dispositivo, ipDe(req)))) {
     return Response.json({ ok: false, error: "Ya enviaste 3 veces hoy. Probá mañana." }, { status: 429 });
   }
-  const r = await crearFeria(c);
+  const r = await crearFeria(c, dispositivo);
   if (!r.ok) return Response.json(r, { status: 400 });
   after(() => notificarAdmin("Nueva feria de trueque para aprobar", String(c.lugar ?? "").slice(0, 80), "/panel#trueque"));
   return Response.json({ ok: true });

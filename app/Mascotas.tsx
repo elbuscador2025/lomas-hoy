@@ -19,7 +19,7 @@ export function MascotaCard({ m }: { m: MascotaPublica }) {
         <b>{tituloEspecie(m.especie)} · {m.barrio}</b>
         <span>{m.descripcion}</span>
         <small>Publicado el {fechaCorta(m.aprobada)}</small>
-        <a className="btn whatsapp-chico" target="_blank" rel="noreferrer" href={`https://wa.me/${m.whatsapp}?text=${encodeURIComponent(texto)}`}>Escribir por WhatsApp</a>
+        <a className="btn whatsapp-chico" target="_blank" rel="noreferrer" href={`https://wa.me/${m.whatsapp}?text=${encodeURIComponent(texto)}`}><Icono nombre="whatsapp" tam={22} /> Escribir por WhatsApp</a>
       </div>
     </li>
   );

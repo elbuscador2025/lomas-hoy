@@ -15,11 +15,14 @@ import MisAvisos, { useAvisos } from "./MisAvisos";
 import MapaLuz from "./MapaLuz";
 import { mismaLocalidad } from "@/lib/localidades";
 import { MascotaCard, ListaMascotas, FormularioMascota } from "./Mascotas";
+import { ListaTrabajo, FormularioTrabajo } from "./Trabajo";
+import { TrabajoCard } from "./Trabajo";
 import { ListaTrueque, FormularioTrueque, FormularioFeria, PublicacionCard, FeriaCard } from "./Trueque";
 import { avisosDeFeriado } from "@/lib/feriados";
 import { resumenAnses, terminaciones, fechaPago, URL_ANSES } from "@/lib/anses";
 import { esNueva, type MascotaPublica } from "@/lib/mascotas-comun";
 import { esNuevaTrueque, type TruequePublico } from "@/lib/trueque-comun";
+import { esNuevaTrabajo, type PublicacionTrabajo } from "@/lib/trabajo-comun";
 import { usePush } from "./usePush";
 
 type Coord = { lat: number; lng: number };
@@ -73,6 +76,7 @@ export default function Inicio() {
   const [lugares, setLugares] = useState<Lugar[]>([]);
   const [mascotas, setMascotas] = useState<MascotaPublica[]>([]);
   const [trueque, setTrueque] = useState<TruequePublico>({ publicaciones: [], ferias: [] });
+  const [trabajo, setTrabajo] = useState<PublicacionTrabajo[]>([]);
   const [anses, setAnses] = useState<Anses>({ entradas: [], actualizado: null });
   const [sinConexion, setSinConexion] = useState(false);
   const [yo, setYo] = useState<Coord | null>(null);
@@ -85,7 +89,7 @@ export default function Inicio() {
   const s = config.secciones;
 
   useEffect(() => {
-    cargarDatos().then((r) => { setDatos(r.datos); setLugares(r.lugares); setMascotas(r.mascotas); setTrueque(r.trueque); setAnses(r.anses); setSinConexion(r.sinConexion); });
+    cargarDatos().then((r) => { setDatos(r.datos); setLugares(r.lugares); setMascotas(r.mascotas); setTrueque(r.trueque); setTrabajo(r.trabajo); setAnses(r.anses); setSinConexion(r.sinConexion); });
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
     // Visita anónima: un número al azar guardado en el celu, avisado una vez por día.
     try {
@@ -103,7 +107,7 @@ export default function Inicio() {
     const alVolverAVer = () => {
       if (document.visibilityState === "visible" && Date.now() - ultima > 3 * 60_000) {
         ultima = Date.now();
-        cargarDatos().then((r) => { setDatos(r.datos); setLugares(r.lugares); setMascotas(r.mascotas); setTrueque(r.trueque); setAnses(r.anses); setSinConexion(r.sinConexion); });
+        cargarDatos().then((r) => { setDatos(r.datos); setLugares(r.lugares); setMascotas(r.mascotas); setTrueque(r.trueque); setTrabajo(r.trabajo); setAnses(r.anses); setSinConexion(r.sinConexion); });
       }
     };
     document.addEventListener("visibilitychange", alVolverAVer);
@@ -181,6 +185,7 @@ export default function Inicio() {
   const hoyStr = ahora.slice(0, 10);
   const nuevasMascotas = mascotas.filter((m) => esNueva(m, config.mascotas.diasNuevas)).length;
   const rAnses = resumenAnses(anses.entradas, hoyStr);
+  const nuevasTrabajo = trabajo.filter((p) => esNuevaTrabajo(p, config.trabajo.diasNuevas)).length;
   const nuevasTrueque = trueque.publicaciones.filter((p) => esNuevaTrueque(p, config.trueque.diasNuevas)).length;
   const lugaresDe = (vistaId: string) => lugares.filter((l) => CATEGORIAS_DE[vistaId].includes(l.categoria));
 
@@ -225,6 +230,7 @@ export default function Inicio() {
         yo,
       ),
       trueque: s.trueque.activa ? trueque.publicaciones.filter((p) => coincide(`trueque cambio ${p.ofrezco} ${p.busco} ${p.categoria} ${p.barrio}`)) : [],
+      trabajo: s.trabajo.activa ? trabajo.filter((p) => coincide(`trabajo empleo changa ofrezco busco ${p.texto} ${p.rubro} ${p.barrio} ${p.horario}`)) : [],
       ferias: s.trueque.activa ? trueque.ferias.filter((f) => coincide(`trueque feria ferias de trueque ${f.lugar} ${f.direccion} ${f.barrio} ${f.dias}`)) : [],
       tren: s.tren.activa ? (d.tren?.contenido?.novedades ?? []).filter((n) => coincide(`${s.tren.titulo} tren roca ${n.ramal} ${n.motivo}`)) : [],
       paros: s.colectivos.activa ? paros.filter((p) => coincide(`colectivo colectivos paro uta ${p.titular}`)) : [],
@@ -236,8 +242,8 @@ export default function Inicio() {
       farmacias: s.farmacias.activa && coincide("farmacia farmacias turno turnos de turno remedios medicamentos"),
       clima: s.clima.activa && clima && coincide(`clima tiempo temperatura lluvia ${clima.ahora.etiqueta} ${clima.dias.map((d) => d.etiqueta).join(" ")}`) ? clima : null,
     };
-  }, [busqueda, lugares, mascotas, trueque, rAnses.texto, d.tren, paros, cortes, programados, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
-  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
+  }, [busqueda, lugares, mascotas, trueque, trabajo, rAnses.texto, d.tren, paros, cortes, programados, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
+  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
 
   // ---- Estado de cada cuadradito ----
   const hayGrave = (v: Novedad["vista"]) => novedades.some((n) => n.vista === v && n.gravedad === "grave");
@@ -546,6 +552,20 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "trabajo")
+    return (
+      <Detalle titulo={s.trabajo.titulo} onVolver={volver}>
+        <ListaTrabajo publicaciones={trabajo} onPublicar={(m) => abrir(`trabajo-${m}`)} />
+      </Detalle>
+    );
+
+  if (vista === "trabajo-ofrezco" || vista === "trabajo-busco")
+    return (
+      <Detalle titulo={vista === "trabajo-ofrezco" ? "Ofrezco trabajo" : "Busco trabajo"} onVolver={volver}>
+        <FormularioTrabajo modo={vista === "trabajo-ofrezco" ? "ofrezco" : "busco"} onListo={volver} />
+      </Detalle>
+    );
+
   if (vista === "trueque")
     return (
       <Detalle titulo={s.trueque.titulo} onVolver={volver}>
@@ -626,6 +646,10 @@ export default function Inicio() {
             {resultados.trueque.length > 0 && (
               <div className="grupo"><h2>{s.trueque.titulo}</h2>
                 <ul className="lista">{resultados.trueque.map((p) => <PublicacionCard key={p.id} p={p} />)}</ul>
+              </div>)}
+            {resultados.trabajo.length > 0 && (
+              <div className="grupo"><h2>{s.trabajo.titulo}</h2>
+                <ul className="lista">{resultados.trabajo.map((p) => <TrabajoCard key={p.id} p={p} />)}</ul>
               </div>)}
             {resultados.ferias.length > 0 && (
               <div className="grupo"><h2>Ferias de trueque</h2>
@@ -737,6 +761,11 @@ export default function Inicio() {
                 <Tile icono="trueque" titulo={s.trueque.titulo} onClick={() => abrir("trueque")}
                   estado={nuevasTrueque ? plural(nuevasTrueque, "nueva", "nuevas") : "Ver"} tono={nuevasTrueque ? "aviso" : "neutro"}
                   resumen={trueque.publicaciones.length ? `${plural(trueque.publicaciones.length, "publicación", "publicaciones")} de vecinos` : "Cambios entre vecinos"} />
+              )}
+              {s.trabajo.activa && (
+                <Tile icono="trabajo" titulo={s.trabajo.titulo} onClick={() => abrir("trabajo")}
+                  estado={nuevasTrabajo ? plural(nuevasTrabajo, "nueva", "nuevas") : "Ver"} tono={nuevasTrabajo ? "aviso" : "neutro"}
+                  resumen="Trabajos y changas que aceptan gente de más de 50" />
               )}
               {s.urgencias.activa && (
                 <Tile icono="escudo" titulo="Emergencias y servicios" estado={plural(lugaresDe("otros").length, "número", "números")} tono="neutro" onClick={() => abrir("otros")}

@@ -4,11 +4,13 @@ import { config } from "@/lomas.config.mjs";
 import { CATEGORIAS_TRUEQUE, type PublicacionTrueque, type FeriaTrueque } from "@/lib/trueque-comun";
 import { Icono } from "./Iconos";
 import { achicar } from "./Mascotas";
+import Denunciar from "./Denunciar";
+import { AVISO_TRUEQUE, datoProhibido } from "@/lib/estafas";
 
 const fechaCorta = (iso: string) => new Date(iso).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "numeric", month: "long" });
 const dispositivo = () => { try { return localStorage.getItem("lomas-hoy:id") ?? ""; } catch { return ""; } };
 
-function useBarrios() {
+export function useBarrios() {
   const [barrios, setBarrios] = useState<string[]>([]);
   useEffect(() => { fetch("/api/barrios").then((r) => r.json()).then((l) => Array.isArray(l) && setBarrios(l)).catch(() => {}); }, []);
   return barrios;
@@ -25,7 +27,8 @@ export function PublicacionCard({ p }: { p: PublicacionTrueque }) {
         <b>Ofrezco: {p.ofrezco}</b>
         <span>Busco a cambio: {p.busco}</span>
         <small>{p.barrio} · Publicado el {fechaCorta(p.aprobada)}</small>
-        <a className="btn whatsapp-chico" target="_blank" rel="noreferrer" href={`https://wa.me/${p.whatsapp}?text=${encodeURIComponent(texto)}`}>Escribir por WhatsApp</a>
+        <a className="btn whatsapp-chico" target="_blank" rel="noreferrer" href={`https://wa.me/${p.whatsapp}?text=${encodeURIComponent(texto)}`}><Icono nombre="whatsapp" tam={22} /> Escribir por WhatsApp</a>
+        <Denunciar seccion="trueque" id={p.id} />
       </div>
     </li>
   );
@@ -41,7 +44,7 @@ export function FeriaCard({ f }: { f: FeriaTrueque }) {
         <span>{f.dias} · {f.horario}</span>
         <div className="acciones">
           <a className="btn claro" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destino)}`}>Cómo llegar</a>
-          {f.whatsapp && <a className="btn whatsapp-chico" target="_blank" rel="noreferrer" href={`https://wa.me/${f.whatsapp}?text=${encodeURIComponent(`Hola, te escribo por la feria de trueque "${f.lugar}" que vi en Lomas Hoy.`)}`}>Escribir por WhatsApp</a>}
+          {f.whatsapp && <a className="btn whatsapp-chico" target="_blank" rel="noreferrer" href={`https://wa.me/${f.whatsapp}?text=${encodeURIComponent(`Hola, te escribo por la feria de trueque "${f.lugar}" que vi en Lomas Hoy.`)}`}><Icono nombre="whatsapp" tam={22} /> Escribir por WhatsApp</a>}
         </div>
       </div>
     </li>
@@ -58,6 +61,7 @@ export function ListaTrueque({ publicaciones, ferias, onPublicar, onAvisarFeria 
   const lista = publicaciones.filter((p) => (!cat || p.categoria === cat) && (!barrio || p.barrio === barrio));
   return (
     <>
+      <p className="aviso-estafa" role="note">{AVISO_TRUEQUE}</p>
       <p className="aviso-publicar">Encontrate en un lugar público y de día.</p>
       <div className="filtros" role="tablist" aria-label="Trueque">
         {([["cambio", "Publicaciones"], ["ferias", "Ferias"]] as const).map(([id, t]) => (
@@ -89,7 +93,7 @@ export function ListaTrueque({ publicaciones, ferias, onPublicar, onAvisarFeria 
   );
 }
 
-function Cancelar({ onClick }: { onClick: () => void }) {
+export function Cancelar({ onClick }: { onClick: () => void }) {
   return <button type="button" className="cancelar-form" onClick={onClick}><Icono nombre="cerrar" tam={20} ancho={2.8} /> Cancelar</button>;
 }
 
@@ -126,6 +130,8 @@ export function FormularioTrueque({ onListo }: { onListo: () => void }) {
     if (!foto) return setError("Falta la foto.");
     if (!v.categoria) return setError("Elegí la categoría.");
     if (!v.barrio) return setError("Elegí el barrio.");
+    const prohibido = datoProhibido(v.ofrezco, v.busco);
+    if (prohibido) return setError(prohibido);
     setEnviando(true);
     try {
       const f = new FormData();
@@ -193,6 +199,7 @@ export function FormularioTrueque({ onListo }: { onListo: () => void }) {
         <input type="tel" inputMode="tel" autoComplete="tel" placeholder="11 5555-5555" value={v.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} />
       </label>
       <p className="aviso-publicar">
+        <b className="rojo-texto">{AVISO_TRUEQUE}</b><br />
         Tu WhatsApp queda a la vista de todos.<br />
         Es trueque: no se permite vender ni poner precio.<br />
         No se permiten medicamentos, comida casera, animales ni armas.

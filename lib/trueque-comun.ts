@@ -17,6 +17,3 @@ export type TruequePublico = { publicaciones: PublicacionTrueque[]; ferias: Feri
 export const vigenteTrueque = (p: { vence: string }, ahora = Date.now()) => new Date(p.vence).getTime() > ahora;
 export const esNuevaTrueque = (p: { aprobada: string }, dias: number, ahora = Date.now()) => ahora - new Date(p.aprobada).getTime() <= dias * 86400_000;
 
-// "Posible venta": el texto menciona vender, precio, $ o números que parecen plata
-export const posibleVenta = (texto: string) =>
-  /\$|\bvend(o|e|emos|er)\b|\bventa\b|\bprecio\b|\bpesos\b|\busd\b|\bd[oó]lar(es)?\b|\b\d{1,3}(\.\d{3})+\b|\b\d{4,}\b/i.test(texto);
