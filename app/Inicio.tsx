@@ -181,6 +181,7 @@ export default function Inicio() {
     : aguaProx.length ? ["Programado", "aviso", `Corte en ${aguaProx[0].localidad}: ${diaCorto((aguaProx[0].desde ?? "").slice(0, 10))}, desde las ${horaCorta(aguaProx[0].desde ?? "")} hs`]
     : aguaNotas.length ? ["Aviso", "aviso", `Nota de ${aguaNotas[0].fuente}: corte en ${aguaNotas[0].localidad}`]
     : ["Normal", "ok", "Sin cortes informados"];
+  const nombreDiaCorto = (f: string) => capitalizar(new Date(`${f}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "short", day: "numeric" }).replace(/[.,]/g, ""));
   const filaHoras = clima ? proximasHoras(clima, ahora) : [];
   const hoyStr = ahora.slice(0, 10);
   const nuevasMascotas = mascotas.filter((m) => esNueva(m, config.mascotas.diasNuevas)).length;
@@ -291,7 +292,7 @@ export default function Inicio() {
             <h2>Próximos 5 días</h2>
             <ul className="lista">
               {clima.dias.map((x) => (
-                <li key={x.fecha} className="fila-dia">
+                <li key={x.fecha} className="fila-dia tocable" role="button" tabIndex={0} onClick={() => abrir(`dia:${x.fecha}`)} onKeyDown={(e) => e.key === "Enter" && abrir(`dia:${x.fecha}`)}>
                   <b>{capitalizar(new Date(`${x.fecha}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "long", day: "numeric" }).replace(",", ""))}</b>
                   <Icono nombre={x.icono} tam={22} /><span>{x.palabra}</span>
                   <b>{Math.round(x.max)}° / {Math.round(x.min)}°</b>
@@ -302,6 +303,43 @@ export default function Inicio() {
           </>
         )}
         <Pie seccion="clima" fuente={config.clima.fuente} url={config.clima.url} fila={d.clima} minutosViejo={config.clima.minutosParaAvisarViejo} />
+      </Detalle>
+    );
+  }
+
+  if (vista?.startsWith("dia:")) {
+    const lista = clima?.porDia ?? [];
+    const i = lista.findIndex((x) => x.fecha === vista.slice(4));
+    const dia = lista[i];
+    if (!dia) return <Detalle titulo="Clima" onVolver={volver}><SinDatos error={d.clima?.error} /></Detalle>;
+    const irADia = (k: number) => { if (k < 0 || k >= lista.length) return; const v = `dia:${lista[k].fecha}`; history.replaceState({ lomasHoy: v }, ""); setVista(v); };
+    const esHoy = dia.fecha === hoyStr;
+    const horasDia = esHoy ? dia.horas.filter((h) => h.hora.slice(0, 13) >= ahora.slice(0, 13)) : dia.horas;
+    const frase = esHoy ? (clima?.frase ?? dia.frase) : dia.frase;
+    let x0 = 0, y0 = 0;
+    return (
+      <Detalle titulo={capitalizar(new Date(`${dia.fecha}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "long", day: "numeric", month: "long" }).replace(",", ""))} onVolver={volver}>
+        <div onTouchStart={(e) => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }}
+          onTouchEnd={(e) => { const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; if (Math.abs(dx) > 60 && Math.abs(dy) < 40) irADia(i + (dx < 0 ? 1 : -1)); }}>
+          <div className="navegar-dia">
+            <button className="btn claro" disabled={i === 0} onClick={() => irADia(i - 1)} aria-label="Día anterior">‹ Anterior</button>
+            <button className="btn claro" disabled={i === lista.length - 1} onClick={() => irADia(i + 1)} aria-label="Día siguiente">Siguiente ›</button>
+          </div>
+          <div className="clima-detalle"><Icono nombre={dia.icono} tam={64} />
+            <div><span className="temp-chica">{Math.round(dia.max)}°</span> <small>/ {Math.round(dia.min)}°</small><br />Máxima y mínima</div></div>
+          {frase && <p className="frase">{frase}</p>}
+          <h2>Hora por hora</h2>
+          <ul className="lista">
+            {horasDia.map((h) => (
+              <li key={h.hora} className="fila-hora">
+                <b>{h.hora.slice(11, 16)}</b><Icono nombre={h.icono} tam={22} />
+                <span>{h.lluvia != null ? `Lluvia ${h.lluvia}%` : "—"}</span><b>{h.temp}°</b>
+                <small className="detalle-hora">{[h.viento != null ? `Viento ${h.viento} km/h` : null, h.sensacion != null ? `Sensación ${h.sensacion}°` : null].filter(Boolean).join(" · ")}</small>
+              </li>
+            ))}
+          </ul>
+          <p className="vacio">Pronóstico para {config.ciudad}. Fuente: Open-Meteo.</p>
+        </div>
       </Detalle>
     );
   }
@@ -625,6 +663,21 @@ export default function Inicio() {
             </span>
           )}
         </button>
+        {clima?.porDia && clima.porDia.length > 0 && (
+          <>
+            <h2 className="titulo-dias">Próximos días</h2>
+            <div className="dias-azul">
+              {clima.porDia.slice(0, 5).map((x) => (
+                <button key={x.fecha} onClick={() => abrir(`dia:${x.fecha}`)} aria-label={`Clima del ${nombreDiaCorto(x.fecha)}`}>
+                  <small>{nombreDiaCorto(x.fecha)}</small>
+                  <Icono nombre={x.icono} tam={26} />
+                  <b>{Math.round(x.max)}°</b><small>{Math.round(x.min)}°</small>
+                  {(x.lluvia ?? 0) >= 30 ? <small className="lluvia"><Icono nombre="gota" tam={11} ancho={2.4} />{x.lluvia}%</small> : <small className="lluvia">&nbsp;</small>}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </header>
 
       <section className="hoja">

@@ -14,6 +14,8 @@ export type Luz = {
 export type EstadoClima = { icono: string; etiqueta: string };
 export type HoraClima = { hora: string; temp: number; sensacion: number | null; viento: number | null; lluvia: number | null } & EstadoClima;
 export type DiaClima = { fecha: string; min: number; max: number; lluvia: number | null; palabra: string } & EstadoClima;
+export type HoraDia = { hora: string; temp: number; sensacion: number | null; viento: number | null; lluvia: number | null; icono: string };
+export type DiaDetalle = { fecha: string; min: number; max: number; lluvia: number | null; palabra: string; icono: string; etiqueta: string; frase: string | null; horas: HoraDia[] };
 export type Clima = {
   ahora: {
     temp: number; sensacion: number | null; humedad: number | null; viento: number | null;
@@ -22,6 +24,7 @@ export type Clima = {
   frase: string | null; // "Llueve a la tarde, llevá paraguas"
   horas: HoraClima[]; // desde la hora actual, hasta 48
   dias: DiaClima[];
+  porDia?: DiaDetalle[]; // hoy y 5 días más, hora por hora (puede faltar hasta la próxima vuelta del proceso automático)
   pronosticoEn: string;
 };
 export type Colectivos = {

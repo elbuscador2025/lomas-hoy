@@ -104,6 +104,26 @@ export function esDeNoche(sol, hora) {
 // Palabra para un día: "Llueve", "Probable lluvia" o "No llueve"
 export const palabraDia = (prob, mm) => ((prob ?? 0) >= 70 && (mm ?? 0) >= 1 ? "Llueve" : (prob ?? 0) >= 40 ? "Probable lluvia" : "No llueve");
 
+// Frase de un día entero (hora por hora, de 0 a 23): primero la lluvia; si no, cómo está el día
+export function fraseDia(horas) {
+  const seguras = new Set(), probables = new Set();
+  for (const x of horas) {
+    const franja = franjaDe(Number(x.hora.slice(11, 13)));
+    if (x.codigo >= 95 || ((x.lluvia ?? 0) >= 70 && (x.mm ?? 0) >= 0.2)) seguras.add(franja);
+    else if ((x.lluvia ?? 0) >= 40) probables.add(franja);
+  }
+  if (seguras.size) return `Llueve ${unir([...seguras])}, llevá paraguas`;
+  if (probables.size) return `Probable lluvia ${unir([...probables])}`;
+  const dia = horas.filter((x) => Number(x.hora.slice(11, 13)) >= 8 && Number(x.hora.slice(11, 13)) <= 20);
+  const base = dia.length ? dia : horas;
+  const max = Math.max(...base.map((x) => x.temp));
+  const temp = max >= 30 ? "caluroso" : max >= 22 ? "templado" : max >= 16 ? "fresco" : "frío";
+  const nubes = base.reduce((t, x) => t + (x.codigo === 0 || x.codigo === 1 ? 0 : x.codigo === 2 ? 1 : 2), 0) / base.length;
+  const cielo = nubes < 0.5 ? "soleado" : nubes < 1.4 ? "parcialmente nublado" : "nublado";
+  const viento = Math.max(...base.map((x) => x.viento ?? 0)) >= 40 ? ", con mucho viento" : "";
+  return `Día ${temp} y ${cielo}${viento}`;
+}
+
 export function leerPronostico(json) {
   const c = json?.current, h = json?.hourly, d = json?.daily;
   if (!c || !h?.time?.length || !d?.time?.length) throw new Error("Respuesta de clima incompleta");
@@ -124,9 +144,24 @@ export function leerPronostico(json) {
     palabra: palabraDia(d.precipitation_probability_max[i + 1], d.precipitation_sum[i + 1]),
     ...(desdeCodigo(d.weather_code[i + 1]) ?? { icono: "nube", etiqueta: "—" }),
   }));
+  // Los 6 días (hoy y 5 más) hora por hora, de 0 a 23, para la pantalla de cada día
+  const porDia = d.time.slice(0, 6).map((fecha, i) => {
+    const horasDia = h.time.map((hora, k) => ({ hora, k })).filter((x) => x.hora.startsWith(fecha)).map(({ hora, k }) => ({
+      hora, temp: h.temperature_2m[k], sensacion: h.apparent_temperature[k], viento: h.wind_speed_10m[k],
+      lluvia: h.precipitation_probability[k], mm: h.precipitation[k], codigo: h.weather_code[k],
+      icono: (desdeCodigo(h.weather_code[k]) ?? { icono: "nube" }).icono,
+    }));
+    return {
+      fecha, min: d.temperature_2m_min[i], max: d.temperature_2m_max[i], lluvia: d.precipitation_probability_max[i],
+      palabra: palabraDia(d.precipitation_probability_max[i], d.precipitation_sum[i]),
+      ...(desdeCodigo(d.weather_code[i]) ?? { icono: "nube", etiqueta: "—" }),
+      frase: horasDia.length ? fraseDia(horasDia) : null,
+      horas: horasDia.map((x) => ({ hora: x.hora, temp: Math.round(x.temp), sensacion: x.sensacion == null ? null : Math.round(x.sensacion), viento: x.viento == null ? null : Math.round(x.viento), lluvia: x.lluvia, icono: esDeNoche(sol, x.hora) ? deNoche(x.icono) : x.icono })),
+    };
+  });
   const actual = ahoraDesdeOpenMeteo(c);
   if (!actual) throw new Error("No hay estado actual del tiempo");
-  return { actual, horas, dias, sol };
+  return { actual, horas, dias, porDia, sol };
 }
 
 // ---- La frase de arriba: reglas fijas, primero la lluvia ----
@@ -185,6 +220,7 @@ export function componerClima(pron, medido, ahoraAR) {
     frase: armarFrase({ horas: pron.horas, ahora: ahoraAR, ahoraEstado: ahora }),
     horas: pron.horas,
     dias: pron.dias,
+    porDia: pron.porDia,
     pronosticoEn: pron.consultadoEn,
   };
 }
