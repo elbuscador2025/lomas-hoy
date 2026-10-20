@@ -1,4 +1,4 @@
-import { barriosActuales } from "@/lib/municipio";
+import { barriosActuales } from "@/lib/barrios";
 
 // Público: los barrios (la lista que administro desde mi panel), "Todo Lomas" aparte.
 export async function GET() {

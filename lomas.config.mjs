@@ -16,9 +16,9 @@ export const config = {
     // Sin fuente oficial de turnos legible: la sección solo ofrece buscar farmacias abiertas en Google Maps.
     farmacias: { activa: true, titulo: "Farmacias" },
     urgencias: { activa: true, titulo: "Urgencias y guardias" },
-    avisos: { activa: true, titulo: "Avisos del municipio" },
     mascotas: { activa: true, titulo: "Mascotas perdidas" },
     anses: { activa: true, titulo: "Hoy cobran" },
+    trueque: { activa: true, titulo: "Trueque" },
   },
 
   tren: {
@@ -68,15 +68,12 @@ export const config = {
     diasMaximos: 3,
   },
 
-  // Localidades del partido: lista inicial de barrios para los avisos del municipio (después se administra desde el panel) y filtro de Edesur.
+  // Localidades del partido: lista inicial de barrios (después se administra desde el panel) y filtro de Edesur.
   // Fuentes: las localidades que reconocen la enciclopedia (Wikipedia) y las guías oficiales de salud; no hay una lista única oficial.
   localidades: [
     "Lomas de Zamora", "Banfield", "Temperley", "Turdera", "Llavallol", "Villa Fiorito", "Ingeniero Budge", "Villa Centenario",
     "San José", "Villa Albertina", "Santa Catalina", "Santa Marta", "Parque Barón", "Villa Lamadrid",
   ],
-  // Avisos del municipio: cuántos por día (para todo el municipio) si no se cambió desde el panel, y cuánto duran sin fecha.
-  avisos: { topePorDia: 3, diasDeVigenciaSinFecha: 7 },
-
   // Mascotas perdidas (publicaciones de vecinos, sin registro; nada se publica sin aprobación)
   mascotas: {
     diasVigencia: 15, // la publicación se baja sola a los 15 días de aprobada
@@ -84,6 +81,16 @@ export const config = {
     maxDescripcion: 200,
     diasNuevas: 2, // "2 nuevas" = aprobadas en los últimos 2 días
     horaResumen: { desde: "19:00", hasta: "20:00" }, // aviso diario para quienes lo prendieron
+  },
+
+  // Trueque entre vecinos (sin registro; nada se publica sin aprobación)
+  trueque: {
+    diasVigencia: 15, // la publicación se baja sola a los 15 días de aprobada
+    maxPorDiaPorCelular: 3,
+    maxTexto: 120,
+    diasNuevas: 2, // "3 nuevas" = aprobadas en los últimos 2 días
+    horaResumen: { desde: "19:00", hasta: "20:00" },
+    categorias: ["Ropa", "Chicos", "Hogar", "Herramientas", "Electrónica", "Otros"],
   },
 
   // Cortes de luz programados de Edesur (mapa público de cortes programados). La API no trae calles ni partido: se filtra por localidad.
@@ -117,10 +124,11 @@ export const config = {
       agua: { activa: true, titulo: "Cortes de agua" },
       // Apagado: el archivo abierto de alertas del SMN llegó vacío aunque había alertas vigentes en el país, así que no es confiable.
       tormenta: { activa: false, titulo: "Alertas de tormenta" },
-      municipio: { activa: true, titulo: "Avisos del municipio" },
       colectivos: { activa: true, titulo: "Paros de colectivos" },
       // Apagado de entrada: solo se prende si la persona lo elige. Como mucho un aviso por día, a las 19.
       mascotas: { activa: true, porDefecto: false, titulo: "Mascotas perdidas" },
+      // Apagado de entrada. Como mucho un aviso por día, a las 19, juntando los trueques nuevos.
+      trueque: { activa: true, porDefecto: false, titulo: "Trueque" },
     },
     maximoPorDia: 6, // por celular, sumando todos los tipos
     silencioDesde: 23, // de 23:00 a 7:00 no se manda nada (salvo tormenta naranja o roja)

@@ -5,7 +5,7 @@ import { clasificarTren, hoyMMDD, nombreLindo, type Tren, type Luz } from "@/lib
 import { notificarSeguro } from "@/lib/push";
 import { redis } from "@/lib/servidor";
 import { filaAgua, aguaVisible } from "@/lib/agua";
-import { ahoraAR, tituloConBarrio, type Aviso } from "@/lib/avisos";
+import { ahoraAR } from "@/lib/avisos";
 
 const hash = (s: string) => createHash("sha1").update(s).digest("hex").slice(0, 12);
 
@@ -38,14 +38,6 @@ export async function evaluarLuz(l: Luz) {
       url: "/?v=luz",
     });
   }
-}
-
-// Municipio: al publicar, a todos. El barrio es solo una etiqueta al principio del título. Va firmado.
-export async function notificarAviso(a: Aviso) {
-  await notificarSeguro({
-    tipo: "municipio", clave: `muni:${a.id}`, ttl: 30 * 86400,
-    titulo: tituloConBarrio(a), cuerpo: `${a.firma}: ${a.texto}`, url: `/?v=aviso:${a.id}`,
-  });
 }
 
 // ---- Cortes programados de Edesur ----

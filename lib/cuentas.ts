@@ -1,10 +1,17 @@
-// Entrada única para los dos paneles (el mío y el del municipio): correo + contraseña, sesión de 30 días.
+// Entrada a mi panel: correo + contraseña, sesión de 30 días.
 // Las contraseñas se guardan cifradas (scrypt). Nada secreto vive en el repositorio.
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
+import { promisify } from "node:util";
 import { redis } from "@/lib/servidor";
-import { hashear, leerUsuario, type UsuarioMuni } from "@/lib/municipio";
+const scrypt = promisify(scryptCb) as (p: string, s: Buffer, n: number) => Promise<Buffer>;
 
-export type Sesion = { tipo: "admin" | "muni"; id: string };
+export type Sesion = { tipo: "admin"; id: string };
+
+// Contraseñas cifradas con scrypt, nunca en texto plano
+export async function hashear(clave: string, salHex = randomBytes(16).toString("hex")) {
+  return { sal: salHex, hash: (await scrypt(clave, Buffer.from(salHex, "hex"), 64)).toString("hex") };
+}
+export const claveValida = (c: unknown) => typeof c === "string" && c.length >= 8 && c.length <= 100;
 
 const DIAS_SESION = 30;
 const MAX_FALLOS = 5, MAX_FALLOS_IP = 20, VENTANA = 15 * 60; // 5 intentos por celular y correo → 15 minutos de bloqueo
@@ -66,13 +73,6 @@ export async function cerrarSesionesDe(tipo: Sesion["tipo"], id: string) {
 export async function esAdmin(req: Request) {
   return (await sesionDe(req))?.tipo === "admin";
 }
-// Usuario del municipio con sesión abierta (y activo)
-export async function usuarioDeSesion(req: Request): Promise<UsuarioMuni | null> {
-  const s = await sesionDe(req);
-  if (s?.tipo !== "muni") return null;
-  const u = await leerUsuario(s.id);
-  return u?.activo ? u : null;
-}
 
 // ---- Entrar ----
 export async function entrar(entrada: unknown, clave: string, ip: string) {
@@ -82,17 +82,7 @@ export async function entrar(entrada: unknown, clave: string, ip: string) {
   if (Number(porPar) >= MAX_FALLOS || Number(porIp) >= MAX_FALLOS_IP) return { error: "bloqueado" as const };
 
   let sesion: Sesion | null = null;
-  if (correo && correo === correoAdmin()) {
-    if (await claveAdminOk(clave)) sesion = { tipo: "admin", id: "admin" };
-  } else {
-    // Los usuarios viejos entran con su usuario (sin @); los nuevos, con su correo.
-    const u = correo ? await leerUsuario(correo) : null;
-    const ok = u ? await hashCoincide(clave, u.sal, u.hash) : (await hashear(clave, "00".repeat(16)), false); // mismo trabajo si no existe
-    if (u && ok && u.activo) {
-      sesion = { tipo: "muni", id: u.usuario };
-      await redis([["HSET", "muni:usuarios", u.usuario, JSON.stringify({ ...u, ultimoIngreso: new Date().toISOString() })]]);
-    }
-  }
+  if (correo && correo === correoAdmin() && (await claveAdminOk(clave))) sesion = { tipo: "admin", id: "admin" };
   if (!sesion) {
     await redis([
       ["INCR", llave], ["EXPIRE", llave, VENTANA],
@@ -101,26 +91,6 @@ export async function entrar(entrada: unknown, clave: string, ip: string) {
     return { error: "datos" as const };
   }
   await redis([["DEL", llave]]);
-  return { sesion, cookie: await iniciarSesion(sesion), destino: sesion.tipo === "admin" ? "/panel" : "/municipio" };
+  return { sesion, cookie: await iniciarSesion(sesion), destino: "/panel" };
 }
 
-// ---- Enlaces de un solo uso (invitaciones y cambios de contraseña) ----
-export const nuevoToken = () => randomBytes(32).toString("hex");
-export const llaveToken = (tipo: "invitacion" | "reset", token: string) => `${tipo}:${sha(token)}`;
-export const tokenValido = (t: unknown): t is string => typeof t === "string" && /^[a-f0-9]{64}$/.test(t);
-export async function crearEnlace(tipo: "invitacion" | "reset", datos: object, segundos: number) {
-  const token = nuevoToken();
-  await redis([["SET", llaveToken(tipo, token), JSON.stringify(datos), "EX", segundos]]);
-  return token;
-}
-export async function enlaceVigente(tipo: "invitacion" | "reset", token: string) {
-  if (!tokenValido(token)) return false;
-  const [e] = await redis([["EXISTS", llaveToken(tipo, token)]]);
-  return Number(e) === 1;
-}
-// Usa el enlace: solo el primero que llega lo consigue (GETDEL es atómico)
-export async function consumirEnlace<T>(tipo: "invitacion" | "reset", token: string): Promise<T | null> {
-  if (!tokenValido(token)) return null;
-  const [j] = await redis([["GETDEL", llaveToken(tipo, token)]]);
-  return j ? (JSON.parse(j as string) as T) : null;
-}

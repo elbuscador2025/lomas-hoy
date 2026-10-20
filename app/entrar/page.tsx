@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-// Una sola pantalla de entrada para los dos paneles: según quién sea, lo manda a /panel o a /municipio.
+// Pantalla de entrada a mi panel: si ya hay sesión, lo manda a /panel.
 export default function Entrar() {
   const router = useRouter();
   const [correo, setCorreo] = useState("");

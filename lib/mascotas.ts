@@ -4,7 +4,7 @@ import { put, del } from "@vercel/blob";
 import { config } from "@/lomas.config.mjs";
 import { redis, hoyArgentina } from "@/lib/servidor";
 import { ahoraAR } from "@/lib/avisos";
-import { barriosActuales } from "@/lib/municipio";
+import { barriosActuales } from "@/lib/barrios";
 import { notificarSeguro } from "@/lib/push";
 import { normalizarWhatsapp, type Estado, type Especie, type MascotaPublica } from "@/lib/mascotas-comun";
 

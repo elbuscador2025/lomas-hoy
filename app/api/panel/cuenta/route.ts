@@ -1,5 +1,4 @@
-import { esAdmin, claveAdminOk, cambiarClaveAdmin } from "@/lib/cuentas";
-import { claveValida } from "@/lib/municipio";
+import { esAdmin, claveAdminOk, cambiarClaveAdmin, claveValida } from "@/lib/cuentas";
 
 // Cambiar mi contraseña: la actual y la nueva dos veces.
 export async function POST(req: Request) {

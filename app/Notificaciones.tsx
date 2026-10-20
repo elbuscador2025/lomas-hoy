@@ -48,7 +48,6 @@ const AVISOS_QUE_LLEGAN: { icono: string; texto: string; activo: boolean }[] = [
   { icono: "gota", texto: "Hay un corte de agua", activo: config.push.tipos.agua.activa },
   { icono: "colectivo", texto: "Hay paro de colectivos", activo: config.push.tipos.colectivos.activa },
   { icono: "tormenta", texto: "Hay alerta de tormenta", activo: config.push.tipos.tormenta.activa },
-  { icono: "megafono", texto: "El municipio publica algo", activo: config.push.tipos.municipio.activa },
 ];
 
 // Cartel para activar los avisos. Pide el permiso del navegador solo al tocar "Activar avisos".

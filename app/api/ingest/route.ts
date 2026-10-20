@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { after } from "next/server";
 import { mantener } from "@/lib/mascotas";
+import { mantener as mantenerTrueque } from "@/lib/trueque";
 import { evaluarTren, evaluarLuz, evaluarProgramados, evaluarColectivos, evaluarAgua } from "@/lib/eventos";
 import { redis } from "@/lib/servidor";
 
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
     // Las notificaciones salen después de responder: si fallan, el dato ya quedó guardado.
     if (clave === "tren") after(() => evaluarTren(contenido).catch((e) => console.error("push tren", e)));
     if (clave === "programados") after(() => evaluarProgramados(contenido).catch((e) => console.error("push programados", e)));
-    if (clave === "mascotas") after(() => mantener().catch((e) => console.error("mascotas", e)));
+    if (clave === "mascotas") after(() => Promise.all([mantener(), mantenerTrueque()]).catch((e) => console.error("mascotas", e)));
     if (clave === "colectivos") after(() => evaluarColectivos(contenido).catch((e) => console.error("push colectivos", e)));
     if (clave === "agua") after(() => evaluarAgua().catch((e) => console.error("push agua", e)));
     if (clave === "luz") after(() => evaluarLuz(contenido).catch((e) => console.error("push luz", e)));

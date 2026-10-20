@@ -42,7 +42,7 @@ export function ListaMascotas({ mascotas, onPublicar }: { mascotas: MascotaPubli
 }
 
 // Achica la foto en el celular antes de subirla: lado mayor 1280 px y liviana (JPG)
-async function achicar(archivo: File): Promise<Blob> {
+export async function achicar(archivo: File): Promise<Blob> {
   const url = URL.createObjectURL(archivo);
   try {
     const img = await new Promise<HTMLImageElement>((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => mal(new Error("foto")); i.src = url; });

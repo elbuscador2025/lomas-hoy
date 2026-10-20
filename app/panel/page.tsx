@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { CATEGORIAS, type Lugar } from "@/lib/datos";
-import PanelMunicipio from "./PanelMunicipio";
+import PanelBarrios from "./PanelBarrios";
+import PanelTrueque from "./PanelTrueque";
 import PanelPush from "./PanelPush";
 import PanelMascotas from "./PanelMascotas";
 import PanelAnses from "./PanelAnses";
@@ -21,7 +22,7 @@ const fecha = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone:
 export default function Panel() {
   const [datos, setDatos] = useState<Datos | null>(null);
   const [lugares, setLugares] = useState<Lugar[]>([]);
-  const [pestana, setPestana] = useState<"stats" | "lugares" | "muni" | "push" | "mascotas" | "anses" | "agua">("stats");
+  const [pestana, setPestana] = useState<"stats" | "lugares" | "barrios" | "push" | "mascotas" | "anses" | "agua" | "trueque">("stats");
   const [editando, setEditando] = useState<(Lugar & { tels: string; direccionOriginal?: string }) | null>(null);
   const [mensaje, setMensaje] = useState("");
 
@@ -30,6 +31,7 @@ export default function Panel() {
   // Al abrir el panel: si no hay sesión, la primera llamada manda a la pantalla de entrada.
   useEffect(() => {
     if (location.hash === "#mascotas") setPestana("mascotas");
+    if (location.hash === "#trueque") setPestana("trueque");
     post("/api/panel").then(async (r) => { if (r.ok) { setDatos(await r.json()); cargarLugares(); } });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -75,14 +77,16 @@ export default function Panel() {
       <div className="pestanas">
         <button className={`btn ${pestana === "stats" ? "" : "claro"}`} onClick={() => setPestana("stats")}>Visitas y reportes</button>
         <button className={`btn ${pestana === "lugares" ? "" : "claro"}`} onClick={() => setPestana("lugares")}>Lugares ({lugares.length})</button>
-        <button className={`btn ${pestana === "muni" ? "" : "claro"}`} onClick={() => setPestana("muni")}>Municipio</button>
+        <button className={`btn ${pestana === "barrios" ? "" : "claro"}`} onClick={() => setPestana("barrios")}>Barrios</button>
         <button className={`btn ${pestana === "push" ? "" : "claro"}`} onClick={() => setPestana("push")}>Avisos push</button>
         <button className={`btn ${pestana === "mascotas" ? "" : "claro"}`} onClick={() => setPestana("mascotas")}>Mascotas</button>
         <button className={`btn ${pestana === "anses" ? "" : "claro"}`} onClick={() => setPestana("anses")}>ANSES</button>
         <button className={`btn ${pestana === "agua" ? "" : "claro"}`} onClick={() => setPestana("agua")}>Agua</button>
+        <button className={`btn ${pestana === "trueque" ? "" : "claro"}`} onClick={() => setPestana("trueque")}>Trueque</button>
       </div>
 
-      {pestana === "muni" && <PanelMunicipio />}
+      {pestana === "barrios" && <PanelBarrios />}
+      {pestana === "trueque" && <PanelTrueque />}
       {pestana === "push" && <PanelPush />}
       {pestana === "mascotas" && <PanelMascotas />}
       {pestana === "anses" && <PanelAnses />}
