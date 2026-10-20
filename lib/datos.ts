@@ -8,7 +8,7 @@ export type AvisoTren = {
 };
 export type Tren = { novedades: AvisoTren[] };
 export type Luz = {
-  cortes: { tension: "media" | "baja" | "otra"; localidad: string | null; usuarios: number; normalizacion: string | null }[];
+  cortes: { tension: "media" | "baja" | "otra"; localidad: string | null; usuarios: number; normalizacion: string | null; lat?: number; lng?: number }[];
 };
 export type EstadoClima = { icono: string; etiqueta: string };
 export type HoraClima = { hora: string; temp: number; sensacion: number | null; viento: number | null; lluvia: number | null } & EstadoClima;

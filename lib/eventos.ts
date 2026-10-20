@@ -35,7 +35,7 @@ export async function evaluarLuz(l: Luz) {
       tipo: "luz", clave: `luz:${hash(loc)}`, ttl: 6 * 3600, refrescar: true,
       titulo: `${loc}: corte de luz`,
       cuerpo: `${a.usuarios} usuarios sin luz${a.hasta ? ` · hasta las ${a.hasta.slice(11, 16)} hs` : ""}`,
-      url: "/?v=luz",
+      url: "/?v=luz", localidad: loc, // solo a quien eligió esa localidad
     });
   }
 }
@@ -53,16 +53,15 @@ const cuando = (c: { inicio: string; fin: string }) =>
   c.inicio.slice(0, 10) === c.fin.slice(0, 10)
     ? `de ${hh(c.inicio.slice(11, 16))} a ${hh(c.fin.slice(11, 16))} hs`
     : `desde el ${dia(c.inicio.slice(0, 10))} a las ${hh(c.inicio.slice(11, 16))} hasta el ${dia(c.fin.slice(0, 10))} a las ${hh(c.fin.slice(11, 16))} hs`;
-const sumarDia = (fecha: string) => new Date(new Date(`${fecha}T12:00:00Z`).getTime() + 86400_000).toISOString().slice(0, 10);
-
 // Corre cada vez que el proceso automático trae los cortes (cada ~20 min):
-//  · el día anterior entre las 18 y las 20 hs → "Mañana hay corte…"
-//  · el mismo día desde las 7:30, si todavía no empezó → recordatorio
+//  · apenas Edesur publica un corte (antes de que empiece) → aviso, solo a quien eligió esa localidad
 //  · si Edesur cambia el día u horario de un corte ya avisado → aviso de la corrección
+// El mismo día se repite dentro del resumen de la mañana. De 23 a 7 no se evalúa: el aviso sale apenas termina el silencio.
 // Cada aviso tiene su clave (corte + horario), así que nunca se repite.
 export async function evaluarProgramados(p: { cortes: CorteProgramado[] }) {
   const ahora = ahoraAR();
-  const hoy = ahora.slice(0, 10), manana = sumarDia(hoy), hm = ahora.slice(11, 16);
+  const hora = Number(ahora.slice(11, 13));
+  const silencio = hora >= config.push.silencioDesde || hora < config.push.silencioHasta;
   const cfg = config.programados;
   const [crudo] = await redis([["HGETALL", "prog:estado"]]);
   const estados = new Map<string, Estado>();
@@ -76,22 +75,22 @@ export async function evaluarProgramados(p: { cortes: CorteProgramado[] }) {
     if ((c.clientes ?? 0) < cfg.avisarDesdeClientes) continue; // corte chico: sin notificación
     const antes = estados.get(c.id);
     let avisado = antes?.avisado ?? false;
-    const base = { tipo: "luz" as const, ttl: 10 * 86400 };
+    const base = { tipo: "luz" as const, ttl: 10 * 86400, localidad: c.localidad };
     const clave = `prog:${c.id}:${c.inicio}`;
 
-    if (antes?.avisado && (antes.inicio !== c.inicio || antes.fin !== c.fin)) {
-      await notificarSeguro({ ...base, clave: `${clave}:${c.fin}:corr`, titulo: `${c.localidad}: cambió un corte programado`,
-        cuerpo: `Cambió el corte programado en parte de ${c.localidad}: ahora ${dia(c.inicio.slice(0, 10))}, ${cuando(c)}${clientes(c.clientes)}. Tocá para ver la zona en el mapa. Horario estimado, según Edesur.`, url: "/?v=luz" });
-    } else if (c.inicio.slice(0, 10) === manana && hm >= cfg.avisoAnterior.desde && hm < cfg.avisoAnterior.hasta) {
-      await notificarSeguro({ ...base, clave: `${clave}:ant`, titulo: `${c.localidad}: corte programado mañana`,
-        cuerpo: `Mañana hay un corte programado en parte de ${c.localidad}, ${cuando(c)}${clientes(c.clientes)}. Tocá para ver la zona en el mapa. Horario estimado, según Edesur.`, url: "/?v=luz" });
-      avisado = true;
-    } else if (c.inicio.slice(0, 10) === hoy && hm >= cfg.recordatorio.desde && hm < cfg.recordatorio.hasta && c.inicio > ahora) {
-      await notificarSeguro({ ...base, clave: `${clave}:rec`, titulo: `${c.localidad}: corte programado hoy`,
-        cuerpo: `Hoy hay un corte programado en parte de ${c.localidad}, ${cuando(c)}${clientes(c.clientes)}. Tocá para ver la zona en el mapa. Horario estimado, según Edesur.`, url: "/?v=luz" });
-      avisado = true;
+    if (!silencio) {
+      if (antes?.avisado && (antes.inicio !== c.inicio || antes.fin !== c.fin)) {
+        await notificarSeguro({ ...base, clave: `${clave}:${c.fin}:corr`, titulo: `${c.localidad}: cambió un corte programado`,
+          cuerpo: `Cambió el corte programado en parte de ${c.localidad}: ahora ${dia(c.inicio.slice(0, 10))}, ${cuando(c)}${clientes(c.clientes)}. Horario estimado, según Edesur.`, url: "/?v=luz" });
+      } else if (!avisado) {
+        if (c.inicio > ahora) {
+          await notificarSeguro({ ...base, clave: `${clave}:nuevo`, titulo: `${c.localidad}: corte programado`,
+            cuerpo: `Hay un corte programado en parte de ${c.localidad}: ${dia(c.inicio.slice(0, 10))}, ${cuando(c)}${clientes(c.clientes)}. Horario estimado, según Edesur.`, url: "/?v=luz" });
+        }
+        avisado = true; // si ya empezó, se ve como corte del momento y no se avisa como programado
+      }
     }
-    if (!antes || antes.inicio !== c.inicio || antes.fin !== c.fin || antes.avisado !== avisado) {
+    if (!antes || (!silencio && (antes.inicio !== c.inicio || antes.fin !== c.fin || antes.avisado !== avisado))) {
       await redis([["HSET", "prog:estado", c.id, JSON.stringify({ inicio: c.inicio, fin: c.fin, avisado })]]);
     }
   }

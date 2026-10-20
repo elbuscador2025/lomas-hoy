@@ -21,12 +21,12 @@ export default function PanelPush() {
   useEffect(() => { cargar(); }, [cargar]);
 
   // La prueba va al celular (o navegador) desde el que estás mirando el panel, si tiene los avisos activados.
-  async function prueba() {
+  async function prueba(accion = "prueba") {
     setMsg("Enviando…");
     try {
       const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
       if (!sub) return setMsg("Este celular no tiene los avisos activados. Activalos primero desde la app (campana de arriba).");
-      const res = await post("/api/panel/push", { accion: "prueba", endpoint: sub.endpoint });
+      const res = await post("/api/panel/push", { accion, endpoint: sub.endpoint });
       setMsg((await res.json().catch(() => ({}))).mensaje ?? "No se pudo enviar.");
       cargar();
     } catch {
@@ -37,7 +37,8 @@ export default function PanelPush() {
   if (!r) return <p className="vacio">Cargando…</p>;
   return (
     <div>
-      <button className="btn ancho" onClick={prueba}>Enviarme una notificación de prueba</button>
+      <button className="btn ancho" onClick={() => prueba()}>Enviarme una notificación de prueba</button>
+      <button className="btn claro ancho" onClick={() => prueba("resumen")}>Enviarme el resumen ahora</button>
       {msg && <p className="normal">{msg}</p>}
 
       <h2>Celulares con avisos activados</h2>

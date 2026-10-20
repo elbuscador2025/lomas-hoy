@@ -190,3 +190,19 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 .pago:first-child { border-top:0; }
 .video-presentacion { width:100%; max-height:72vh; border-radius:20px; background:#0E2A5E; display:block; margin:12px 0 16px; }
 .fila-panel .btn { white-space:nowrap; flex:none; }
+
+/* Mis avisos, localidad y mapa de luz */
+.num-rojo { position:absolute; top:-2px; right:-2px; min-width:20px; height:20px; padding:0 5px; border-radius:999px; background:#D32F2F; color:#fff; font-size:12px; font-weight:800; display:grid; place-items:center; border:2px solid var(--azul); box-sizing:border-box; }
+.tarjeta.aviso-guardado { background:var(--celeste); border-color:var(--azul); }
+.tarjeta.aviso-guardado .pildora { align-self:flex-start; margin-bottom:4px; }
+.tarjeta.aviso-guardado .texto-aviso { font-size:16px; }
+.pregunta-localidad { display:flex; flex-direction:column; gap:6px; font-weight:700; font-size:17px; }
+.pregunta-localidad select { min-height:44px; padding:8px 10px; border:1px solid #C3D0E6; border-radius:12px; font-size:16px; font-family:inherit; color:var(--texto); background:#fff; }
+.mapa-luz { height:300px; border-radius:16px; margin:12px 0 4px; z-index:0; }
+
+/* Trueque */
+.tarjeta-publicar { display:flex; flex-direction:column; gap:2px; width:100%; text-align:left; padding:16px; margin:4px 0 12px; border:2px solid var(--azul); border-radius:18px; background:var(--celeste); color:var(--texto); font-size:16px; cursor:pointer; }
+.tarjeta-publicar b { font-size:19px; color:var(--azul); }
+.recuadro-foto { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; width:100%; min-height:180px; margin:8px 0; border:2px dashed var(--azul); border-radius:18px; background:var(--celeste); color:var(--azul); font-size:16px; font-weight:700; cursor:pointer; overflow:hidden; padding:0; }
+.recuadro-foto img { width:100%; max-height:320px; object-fit:cover; display:block; }
+.cancelar-form { align-self:flex-start; display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 14px; border:2px solid var(--linea); border-radius:999px; background:#fff; color:var(--suave); font-size:16px; font-weight:700; cursor:pointer; }

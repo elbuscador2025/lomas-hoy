@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { config } from "@/lomas.config.mjs";
 
-export type Prefs = { tipos: Record<string, boolean> };
+export type Prefs = { tipos: Record<string, boolean>; localidad?: string };
 export type EstadoPush = "cargando" | "noSoportado" | "iosSinInstalar" | "inactivo" | "denegado" | "activo";
 
 const CLAVE = "lomas-hoy:push";

@@ -46,6 +46,8 @@ export const config = {
     alertaDesdeUsuarios: 50,
     // Desde cuántos usuarios afectados en una localidad la alerta pasa a roja.
     graveDesdeUsuarios: 500,
+    // Villa Albertina no figura como localidad aparte en lo que publican Edesur/ENRE (no se pudo comprobar): se la asocia a Lomas de Zamora.
+    comoLoInforma: { "Villa Albertina": "Lomas de Zamora" },
   },
 
   colectivos: {
@@ -101,8 +103,6 @@ export const config = {
     paginaPublica: "https://www.edesur.com.ar/servicios-al-cliente/cortes-programados/",
     diasAdelante: 14,
     avisarDesdeClientes: 50, // los cortes más chicos se ven en la sección Luz, pero no mandan notificación
-    avisoAnterior: { desde: "18:00", hasta: "20:00" }, // el día anterior
-    recordatorio: { desde: "07:30", hasta: "09:00" }, // el mismo día, solo si el corte empieza después
   },
 
   // Cortes de agua. AySA no publica los cortes en una fuente que se pueda leer sola (su consulta pide captcha y cuenta de cliente),
@@ -126,10 +126,13 @@ export const config = {
       tormenta: { activa: false, titulo: "Alertas de tormenta" },
       colectivos: { activa: true, titulo: "Paros de colectivos" },
       // Apagado de entrada: solo se prende si la persona lo elige. Como mucho un aviso por día, a las 19.
+      // Todos los días a las 7: una sola notificación con lo del día. Prendido de entrada.
+      resumen: { activa: true, titulo: "Resumen de la mañana" },
       mascotas: { activa: true, porDefecto: false, titulo: "Mascotas perdidas" },
       // Apagado de entrada. Como mucho un aviso por día, a las 19, juntando los trueques nuevos.
       trueque: { activa: true, porDefecto: false, titulo: "Trueque" },
     },
+    horaResumen: { desde: "07:00", hasta: "10:00" }, // el resumen sale en la primera vuelta del proceso automático después de las 7
     maximoPorDia: 6, // por celular, sumando todos los tipos
     silencioDesde: 23, // de 23:00 a 7:00 no se manda nada (salvo tormenta naranja o roja)
     silencioHasta: 7,

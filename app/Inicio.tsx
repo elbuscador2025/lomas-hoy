@@ -10,7 +10,10 @@ import { ahoraAR } from "@/lib/avisos";
 import { Icono } from "./Iconos";
 import Pie from "./Pie";
 import LugarCard from "./LugarCard";
-import Notificaciones, { CartelInstalar, CartelAvisos } from "./Notificaciones";
+import Notificaciones, { CartelInstalar, CartelAvisos, PreguntaLocalidad } from "./Notificaciones";
+import MisAvisos, { useAvisos } from "./MisAvisos";
+import MapaLuz from "./MapaLuz";
+import { mismaLocalidad } from "@/lib/localidades";
 import { MascotaCard, ListaMascotas, FormularioMascota } from "./Mascotas";
 import { ListaTrueque, FormularioTrueque, FormularioFeria, PublicacionCard, FeriaCard } from "./Trueque";
 import { avisosDeFeriado } from "@/lib/feriados";
@@ -77,6 +80,7 @@ export default function Inicio() {
   const [q, setQ] = useState("");
   const [vista, setVista] = useState<string | null>(null);
   const push = usePush();
+  const avisosApp = useAvisos();
   const [panel, setPanel] = useState<string | null>(null); // adónde lleva el enlace del pie: mi panel
   const s = config.secciones;
 
@@ -198,6 +202,12 @@ export default function Inicio() {
     if (clima) lineas.push(`🌡️ ${Math.round(clima.ahora.temp)}° – ${clima.ahora.etiqueta}`);
     lineas.push(location.origin);
     wsp(lineas.join("\n"));
+  }
+
+  // Tocar un aviso guardado lleva a su sección (o a la pantalla principal)
+  function irA(url: string) {
+    const v = new URL(url, location.origin).searchParams.get("v");
+    if (v && v !== "avisos") abrir(v); else volver();
   }
 
   const km = (l: Lugar) => (yo && l.lat != null && l.lng != null ? distanciaKm(yo, { lat: l.lat, lng: l.lng }) : undefined);
@@ -337,15 +347,20 @@ export default function Inicio() {
       </Detalle>
     );
 
-  if (vista === "luz")
+  if (vista === "luz") {
+    const miLoc = push.prefs.localidad;
+    const suyos = (l: string | null) => mismaLocalidad(miLoc, l);
+    const cortesOrden = [...cortes].sort((a, b) => Number(suyos(b.localidad)) - Number(suyos(a.localidad)));
+    const programadosOrden = [...programados].sort((a, b) => Number(suyos(b.localidad)) - Number(suyos(a.localidad)));
     return (
       <Detalle titulo={s.luz.titulo} onVolver={volver}>
         {!d.luz?.contenido ? <SinDatos error={d.luz?.error} /> : cortes.length === 0 ? (
-          <p>No hay cortes informados en {config.ciudad}.</p>
+          <p>{programados.length === 0 ? "Sin cortes en Lomas." : "No hay cortes en este momento."}</p>
         ) : (
           <ul className="lista">
-            {cortes.map((x, i) => (
+            {cortesOrden.map((x, i) => (
               <li key={i}>
+                {suyos(x.localidad) && <span className="pildora aviso">Tu zona</span>}{" "}
                 <b>{nombreLindo(x.localidad ?? config.ciudad)}</b> ·{" "}
                 {x.tension === "media" ? "Media tensión" : x.tension === "baja" ? "Baja tensión" : "Corte"} · {plural(x.usuarios, "usuario", "usuarios")}
                 <br />
@@ -354,6 +369,7 @@ export default function Inicio() {
             ))}
           </ul>
         )}
+        <MapaLuz cortes={cortes} programados={programados} />
         <Pie seccion="luz" fuente={config.luz.fuente} url={config.luz.paginaPublica} fila={d.luz} />
         {config.programados.activa && (
           <div className="bloque">
@@ -362,8 +378,9 @@ export default function Inicio() {
               <p>No hay cortes programados para los próximos días.</p>
             ) : (
               <ul className="lista">
-                {programados.map((c) => (
+                {programadosOrden.map((c) => (
                   <li key={c.id + c.inicio}>
+                    {suyos(c.localidad) && <span className="pildora aviso">Tu zona</span>}{" "}
                     <b>{c.localidad}</b>
                     <br />
                     {c.inicio.slice(0, 10) === c.fin.slice(0, 10)
@@ -390,6 +407,7 @@ export default function Inicio() {
         )}
       </Detalle>
     );
+  }
 
   if (vista === "agua" && aguaVisible) {
     const cuandoAgua = (c: { desde: string | null; hasta: string | null }) => !c.desde || !c.hasta ? "Sin horario informado"
@@ -516,8 +534,15 @@ export default function Inicio() {
 
   if (vista === "notificaciones")
     return (
-      <Detalle titulo="Avisos" onVolver={volver}>
+      <Detalle titulo="Configurar avisos" onVolver={volver}>
         <Notificaciones push={push} agua={aguaVisible} />
+      </Detalle>
+    );
+
+  if (vista === "avisos")
+    return (
+      <Detalle titulo="Mis avisos" onVolver={volver}>
+        <MisAvisos avisos={avisosApp} onConfigurar={() => abrir("notificaciones")} onAbrir={irA} />
       </Detalle>
     );
 
@@ -548,9 +573,10 @@ export default function Inicio() {
       <header className="azul">
         <div className="azul-fila">
           <span className="marca">Lomas Hoy</span>
-          <button className="campana" aria-label="Avisos" onClick={() => abrir("notificaciones")}>
+          <button className="campana" aria-label={avisosApp.sinVer ? `Mis avisos: ${avisosApp.sinVer} sin ver` : "Mis avisos"} onClick={() => abrir("avisos")}>
             <Icono nombre="campana" tam={22} />
-            {(push.estado === "inactivo" || push.estado === "iosSinInstalar") && <span className="punto" />}
+            {avisosApp.sinVer > 0 ? <span className="num-rojo">{avisosApp.sinVer > 9 ? "9+" : avisosApp.sinVer}</span>
+              : (push.estado === "inactivo" || push.estado === "iosSinInstalar") && <span className="punto" />}
           </button>
         </div>
         <button className="clima-bloque" onClick={() => abrir("clima")} aria-label="Ver detalle del clima">
@@ -591,7 +617,7 @@ export default function Inicio() {
         {avisosDeFeriado(hoyStr).length > 0 && (
           <div className="franja" role="status">{avisosDeFeriado(hoyStr).map((t) => <p key={t}>{t}</p>)}</div>
         )}
-        {!resultados && <><CartelInstalar /><CartelAvisos push={push} agua={aguaVisible} /></>}
+        {!resultados && <><CartelInstalar /><CartelAvisos push={push} agua={aguaVisible} /><PreguntaLocalidad push={push} /></>}
         {sinConexion && <p className="offline">Sin conexión: se muestra lo último que se cargó.</p>}
 
         {resultados ? (

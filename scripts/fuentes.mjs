@@ -56,7 +56,7 @@ export function leerTren(html, cfg) {
 export function leerLuz(js, cfg) {
   if (!js.includes("addressPoints_Cuadro_D")) throw new Error("Formato del ENRE no reconocido");
   const cortes = [];
-  for (const [, cuerpo] of js.matchAll(/\[\s*-?\d+\.\d+,\s*-?\d+\.\d+,\s*\d+,\s*"([^"]*)"\s*\]/g)) {
+  for (const [, lat, lng, cuerpo] of js.matchAll(/\[\s*(-?\d+\.\d+),\s*(-?\d+\.\d+),\s*\d+,\s*"([^"]*)"\s*\]/g)) {
     const campo = (nombre) => cuerpo.match(new RegExp(`${nombre}:\\s*([^,]*)`))?.[1]?.trim() ?? null;
     if (campo("Partido")?.toUpperCase() !== cfg.luz.partido) continue;
     if (!cuerpo.toUpperCase().includes(cfg.luz.empresa)) continue;
@@ -66,6 +66,7 @@ export function leerLuz(js, cfg) {
       tension: /MEDIA TENSION/i.test(cuerpo) ? "media" : /BAJA TENSION/i.test(cuerpo) ? "baja" : "otra",
       localidad: campo("Localidad")?.replace(/^LAVALLOL$/i, "LLAVALLOL") ?? null,
       usuarios,
+      lat: Number(lat), lng: Number(lng), // punto que informa el ENRE para ese corte (sirve para ubicar la localidad en el mapa)
       normalizacion: cuerpo.match(/normalizacion:\s*([\d-]+ [\d:]+)/)?.[1] ?? null, // hora de Argentina
     });
   }

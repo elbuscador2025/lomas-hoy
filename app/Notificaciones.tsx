@@ -3,6 +3,31 @@ import { useEffect, useState } from "react";
 import { config } from "@/lomas.config.mjs";
 import { Icono } from "./Iconos";
 import { useInstalar, type Push } from "./usePush";
+import { LOCALIDADES } from "@/lib/localidades";
+
+// La única pregunta al activar los avisos: de acá sale a quién le llegan los cortes de luz.
+function SelectorLocalidad({ valor, onCambio }: { valor?: string; onCambio: (l: string) => void }) {
+  return (
+    <label className="pregunta-localidad">¿En qué localidad vivís?
+      <select value={valor ?? ""} onChange={(e) => onCambio(e.target.value)}>
+        <option value="">Elegí tu localidad</option>
+        {LOCALIDADES.map((l) => <option key={l}>{l}</option>)}
+      </select>
+    </label>
+  );
+}
+
+// A quienes activaron los avisos antes de que existiera la pregunta: se les hace la próxima vez que abren la app.
+export function PreguntaLocalidad({ push }: { push: Push }) {
+  if (push.estado !== "activo" || push.prefs.localidad) return null;
+  return (
+    <section className="cartel" aria-label="Tu localidad">
+      <SelectorLocalidad onCambio={(l) => push.guardar({ ...push.prefs, localidad: l })} />
+      <small className="chico">Hasta que elijas, no te llegan los avisos de cortes de luz.</small>
+      {push.error && <p className="error">{push.error}</p>}
+    </section>
+  );
+}
 
 function PasosIPhone() {
   return (
@@ -68,7 +93,8 @@ export function CartelAvisos({ push, agua }: { push: Push; agua: boolean }) {
         <p>En iPhone los avisos solo funcionan si abrís la app desde el ícono de la pantalla de inicio. Primero instalala con los pasos de arriba y abrila desde ahí.</p>
       ) : (
         <>
-          <button className="btn ancho grande-btn" disabled={push.ocupado} onClick={() => push.activar(push.prefs)}>Activar avisos</button>
+          <SelectorLocalidad valor={push.prefs.localidad} onCambio={(l) => push.setPrefs({ ...push.prefs, localidad: l })} />
+          <button className="btn ancho grande-btn" disabled={push.ocupado || !push.prefs.localidad} onClick={() => push.activar(push.prefs)}>Activar avisos</button>
           <small className="chico">Los podés apagar cuando quieras.</small>
           {push.error && <p className="error">{push.error}</p>}
         </>
@@ -110,13 +136,16 @@ export default function Notificaciones({ push, agua }: { push: Push; agua: boole
     return (
       <>
         <p>Recibí un aviso en el celular cuando pase algo importante. Con un toque: no hace falta registrarse ni dar datos personales.</p>
-        <button className="btn ancho grande-btn" disabled={push.ocupado} onClick={() => push.activar(prefs)}>Activar avisos</button>
+        <SelectorLocalidad valor={prefs.localidad} onCambio={(l) => push.setPrefs({ ...prefs, localidad: l })} />
+        <button className="btn ancho grande-btn" disabled={push.ocupado || !prefs.localidad} onClick={() => push.activar(prefs)}>Activar avisos</button>
         {push.error && <p className="error">{push.error}</p>}
       </>
     );
 
   return (
     <>
+      <SelectorLocalidad valor={prefs.localidad} onCambio={(l) => push.guardar({ ...prefs, localidad: l })} />
+      <p className="vacio">Los avisos de cortes de luz le llegan solo a quien eligió esa localidad.</p>
       <h2>Qué querés recibir</h2>
       {(Object.entries(config.push.tipos) as [string, { activa: boolean; titulo: string }][]).filter(([k]) => k !== "agua" || agua).map(([k, t]) => (
         <Interruptor key={k} titulo={t.titulo} activo={t.activa && !!prefs.tipos[k]} deshabilitado={!t.activa}

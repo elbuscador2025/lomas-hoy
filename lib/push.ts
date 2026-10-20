@@ -5,16 +5,19 @@ import { createHash } from "node:crypto";
 import { config } from "@/lomas.config.mjs";
 import { redis, hoyArgentina } from "@/lib/servidor";
 import { ahoraAR } from "@/lib/avisos";
+import { localidadValida, mismaLocalidad } from "@/lib/localidades";
 
-export type Tipo = "tren" | "luz" | "agua" | "tormenta" | "colectivos" | "mascotas" | "trueque";
-export const TIPOS: Tipo[] = ["tren", "luz", "agua", "tormenta", "colectivos", "mascotas", "trueque"];
+export type Tipo = "tren" | "luz" | "agua" | "tormenta" | "colectivos" | "mascotas" | "trueque" | "resumen";
+export const TIPOS: Tipo[] = ["tren", "luz", "agua", "tormenta", "colectivos", "mascotas", "trueque", "resumen"];
 export type Suscripcion = {
   endpoint: string; keys: { p256dh: string; auth: string };
-  tipos: Partial<Record<Tipo, boolean>>; creado: string; // sin barrio, nombre, teléfono, ni nada personal
+  tipos: Partial<Record<Tipo, boolean>>; creado: string; // sin nombre, teléfono, ni nada personal
+  localidad?: string; // la que eligió para los avisos de luz (sin ella no recibe avisos de luz)
 };
 export type Evento = {
   tipo: Tipo; clave: string; ttl: number; refrescar?: boolean; // clave = identifica la novedad para no repetirla
-  titulo: string; cuerpo: string; url: string; nocturna?: boolean;
+  titulo: string; cuerpo: string | ((s: Suscripcion) => string); url: string; nocturna?: boolean;
+  localidad?: string; // solo para quienes eligieron esta localidad
 };
 
 export const idDe = (endpoint: string) => createHash("sha256").update(endpoint).digest("base64url").slice(0, 22);
@@ -41,7 +44,8 @@ export function validarSuscripcion(d: Record<string, unknown>): Suscripcion | st
   if (!/^[A-Za-z0-9_-]{20,200}$/.test(p256dh) || !/^[A-Za-z0-9_-]{8,100}$/.test(auth)) return "Suscripción inválida.";
   const t = (d.tipos ?? {}) as Record<string, unknown>;
   const tipos = Object.fromEntries(TIPOS.map((k) => [k, !!t[k] && config.push.tipos[k].activa])) as Record<Tipo, boolean>;
-  return { endpoint, keys: { p256dh, auth }, tipos, creado: new Date().toISOString() };
+  const localidad = localidadValida(d.localidad) ? d.localidad : undefined;
+  return { endpoint, keys: { p256dh, auth }, tipos, localidad, creado: new Date().toISOString() };
 }
 
 export async function guardarSuscripcion(s: Suscripcion) {
@@ -82,10 +86,10 @@ async function enviarUna(s: Suscripcion, carga: object): Promise<Resultado> {
   }
 }
 
-async function enviarATodas(subs: Suscripcion[], carga: object) {
+async function enviarATodas(subs: Suscripcion[], cargaDe: (s: Suscripcion) => object) {
   const resultados: Resultado[] = [];
   for (let i = 0; i < subs.length; i += 10) {
-    resultados.push(...(await Promise.all(subs.slice(i, i + 10).map((s) => enviarUna(s, carga)))));
+    resultados.push(...(await Promise.all(subs.slice(i, i + 10).map((s) => enviarUna(s, cargaDe(s))))));
   }
   return resultados;
 }
@@ -108,7 +112,8 @@ export async function notificar(ev: Evento) {
   prepararVapid();
   // 3) Quiénes la reciben: todos los que tienen ese tipo prendido (si todavía no eligieron, está prendido)
   // (mascotas y trueque son opcionales: solo le llega a quien lo prendió)
-  const interesadas = (await todasLasSuscripciones()).filter((s) => (ev.tipo === "mascotas" || ev.tipo === "trueque" ? s.tipos?.[ev.tipo] === true : s.tipos?.[ev.tipo] !== false));
+  const interesadas = (await todasLasSuscripciones()).filter((s) => (ev.tipo === "mascotas" || ev.tipo === "trueque" ? s.tipos?.[ev.tipo] === true : s.tipos?.[ev.tipo] !== false))
+    .filter((s) => !ev.localidad || mismaLocalidad(s.localidad, ev.localidad)); // luz: solo a quien eligió esa localidad
   // 4) Máximo por día y por celular
   const dia = hoyArgentina();
   const [filas] = await redis([["HGETALL", `push:cuenta:${dia}`]]);
@@ -117,8 +122,8 @@ export async function notificar(ev: Evento) {
   for (let i = 0; i < plano.length; i += 2) cuenta.set(plano[i], Number(plano[i + 1]));
   const destino = interesadas.filter((s) => (cuenta.get(idDe(s.endpoint)) ?? 0) < config.push.maximoPorDia);
 
-  const carga = { titulo: corto(ev.titulo, 60), cuerpo: corto(ev.cuerpo, 240), url: ev.url, tag: ev.clave };
-  const res = await enviarATodas(destino, carga);
+  const carga = { titulo: corto(ev.titulo, 60), url: ev.url, tag: ev.clave };
+  const res = await enviarATodas(destino, (s) => ({ ...carga, tipo: ev.tipo, cuerpo: corto(typeof ev.cuerpo === "function" ? ev.cuerpo(s) : ev.cuerpo, 240) }));
 
   const ok = destino.filter((_, i) => res[i].ok), mal = res.filter((r) => !r.ok);
   const aBorrar = destino.filter((_, i) => res[i].borrar);
@@ -132,6 +137,21 @@ export async function notificar(ev: Evento) {
     sinCupo: interesadas.length - destino.length, borradas: aBorrar.length,
     errores: [...new Set(mal.map((r) => `${r.estado ?? "?"}: ${r.mensaje}`))].slice(0, 3),
   }, ok.length, mal.length);
+}
+
+// Envía a un solo celular (no cuenta para el máximo ni se frena por horario). Sirve para las pruebas del panel.
+export async function enviarAUno(endpoint: string, carga: { titulo: string; cuerpo: string; url: string; tag: string; tipo?: string }, nombre: string) {
+  prepararVapid();
+  const [j] = await redis([["HGET", "push:subs", idDe(endpoint)]]);
+  if (!j) return { ok: false, mensaje: "Este celular no tiene los avisos activados." } as Resultado;
+  const r = await enviarUna(JSON.parse(j as string), carga);
+  if (r.borrar) await borrarSuscripcion(endpoint);
+  await registrar({ tipo: nombre, evento: nombre, enviadas: r.ok ? 1 : 0, fallidas: r.ok ? 0 : 1, errores: r.ok ? [] : [`${r.estado ?? "?"}: ${r.mensaje}`] }, r.ok ? 1 : 0, r.ok ? 0 : 1);
+  return r;
+}
+export async function leerSuscripcion(endpoint: string): Promise<Suscripcion | null> {
+  const [j] = await redis([["HGET", "push:subs", idDe(endpoint)]]);
+  return j ? (JSON.parse(j as string) as Suscripcion) : null;
 }
 
 // Nunca tira error: si algo falla se anota y la app sigue como si nada.

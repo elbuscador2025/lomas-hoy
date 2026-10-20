@@ -60,13 +60,13 @@ export function ListaTrueque({ publicaciones, ferias, onPublicar, onAvisarFeria 
     <>
       <p className="aviso-publicar">Encontrate en un lugar público y de día.</p>
       <div className="filtros" role="tablist" aria-label="Trueque">
-        {([["cambio", "Cambio esto"], ["ferias", "Ferias de trueque"]] as const).map(([id, t]) => (
+        {([["cambio", "Publicaciones"], ["ferias", "Ferias"]] as const).map(([id, t]) => (
           <button key={id} role="tab" className={`filtro ${pestana === id ? "activo" : ""}`} aria-selected={pestana === id} onClick={() => setPestana(id)}>{t}</button>
         ))}
       </div>
       {pestana === "cambio" ? (
         <>
-          <button className="btn ancho grande-btn" onClick={onPublicar}>Publicar</button>
+          <button className="tarjeta-publicar" onClick={onPublicar}><b>¿Tenés algo para cambiar?</b><span>Tocá acá y publicalo gratis</span></button>
           <div className="filtros-doble">
             <select aria-label="Categoría" value={cat} onChange={(e) => setCat(e.target.value)}>
               <option value="">Categorías</option>
@@ -77,16 +77,20 @@ export function ListaTrueque({ publicaciones, ferias, onPublicar, onAvisarFeria 
               {barrios.map((b) => <option key={b}>{b}</option>)}
             </select>
           </div>
-          {lista.length === 0 ? <p className="vacio">Todavía no hay publicaciones.</p> : <ul className="lista">{lista.map((p) => <PublicacionCard key={p.id} p={p} />)}</ul>}
+          {lista.length === 0 ? <p className="vacio">Todavía no hay trueques. ¡Publicá el primero!</p> : <ul className="lista">{lista.map((p) => <PublicacionCard key={p.id} p={p} />)}</ul>}
         </>
       ) : (
         <>
-          <button className="btn ancho grande-btn" onClick={onAvisarFeria}>Avisar de una feria</button>
+          <button className="tarjeta-publicar" onClick={onAvisarFeria}><b>¿Conocés una feria de trueque?</b><span>Avisanos</span></button>
           {ferias.length === 0 ? <p className="vacio">Todavía no hay ferias cargadas.</p> : <ul className="lista">{ferias.map((f) => <FeriaCard key={f.id} f={f} />)}</ul>}
         </>
       )}
     </>
   );
+}
+
+function Cancelar({ onClick }: { onClick: () => void }) {
+  return <button type="button" className="cancelar-form" onClick={onClick}><Icono nombre="cerrar" tam={20} ancho={2.8} /> Cancelar</button>;
 }
 
 export function FormularioTrueque({ onListo }: { onListo: () => void }) {
@@ -154,14 +158,12 @@ export function FormularioTrueque({ onListo }: { onListo: () => void }) {
 
   return (
     <form onSubmit={enviar} className="form">
-      <p className="aviso-publicar">
-        Tu WhatsApp queda a la vista de todos.<br />
-        Es trueque: no se permite vender ni poner precio.<br />
-        No se permiten medicamentos, comida casera, animales ni armas.
-      </p>
+      <Cancelar onClick={onListo} />
       <div>
-        <b>Foto</b>
-        {vista && /* eslint-disable-next-line @next/next/no-img-element */ <img className="foto-mascota" src={vista} alt="Tu foto" />}
+        <b>Subí una foto</b>
+        <button type="button" className="recuadro-foto" onClick={() => galeria.current?.click()} aria-label="Subir una foto">
+          {vista ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={vista} alt="Tu foto" /> : <><Icono nombre="camara" tam={48} /><span>Tocá para elegir una foto</span></>}
+        </button>
         <div className="acciones">
           <button type="button" className="btn claro" onClick={() => camara.current?.click()}><Icono nombre="camara" tam={20} /> Sacar foto</button>
           <button type="button" className="btn claro" onClick={() => galeria.current?.click()}><Icono nombre="galeria" tam={20} /> Elegir de la galería</button>
@@ -190,7 +192,12 @@ export function FormularioTrueque({ onListo }: { onListo: () => void }) {
       <label>Tu WhatsApp (con código de área, sin 0 ni 15)
         <input type="tel" inputMode="tel" autoComplete="tel" placeholder="11 5555-5555" value={v.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} />
       </label>
-      <button className="btn grande-btn" disabled={enviando}>{enviando ? "Enviando…" : "Enviar"}</button>
+      <p className="aviso-publicar">
+        Tu WhatsApp queda a la vista de todos.<br />
+        Es trueque: no se permite vender ni poner precio.<br />
+        No se permiten medicamentos, comida casera, animales ni armas.
+      </p>
+      <button className="btn grande-btn" disabled={enviando}>{enviando ? "Publicando…" : "Publicar"}</button>
       {error && <p className="error">{error}</p>}
     </form>
   );
@@ -231,6 +238,7 @@ export function FormularioFeria({ onListo }: { onListo: () => void }) {
 
   return (
     <form onSubmit={enviar} className="form">
+      <Cancelar onClick={onListo} />
       <label>Lugar o nombre de la feria<input maxLength={80} value={v.lugar} onChange={(e) => set("lugar", e.target.value)} /></label>
       <label>Dirección<input maxLength={100} value={v.direccion} onChange={(e) => set("direccion", e.target.value)} /></label>
       <label>Barrio
@@ -244,7 +252,7 @@ export function FormularioFeria({ onListo }: { onListo: () => void }) {
       <label>WhatsApp de contacto (opcional)
         <input type="tel" inputMode="tel" placeholder="11 5555-5555" value={v.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} />
       </label>
-      <button className="btn grande-btn" disabled={enviando}>{enviando ? "Enviando…" : "Enviar"}</button>
+      <button className="btn grande-btn" disabled={enviando}>{enviando ? "Publicando…" : "Publicar"}</button>
       {error && <p className="error">{error}</p>}
     </form>
   );

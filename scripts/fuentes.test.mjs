@@ -8,7 +8,7 @@ test("luz: toma solo los cortes de Lomas de Zamora (Edesur)", () => {
     [-34.79, -58.42, 21, "<b>CORTE DE BAJA TENSION</b>, EDESUR S.A., Partido: LOMAS DE ZAMORA, Localidad: LAVALLOL, Usuarios afectados: 3 "]
     ,[-34.6, -58.4, 21, "<b>CORTE DE BAJA TENSION</b>, EDESUR S.A., Partido: CAPITAL, Localidad: FLORESTA, Usuarios afectados: 18 "]];`;
   const r = leerLuz(js, cfg);
-  assert.deepEqual(r.cortes, [{ tension: "baja", localidad: "LLAVALLOL", usuarios: 3, normalizacion: null }]);
+  assert.deepEqual(r.cortes, [{ tension: "baja", localidad: "LLAVALLOL", usuarios: 3, lat: -34.79, lng: -58.42, normalizacion: null }]);
 });
 
 import { leerTren } from "./fuentes.mjs";
