@@ -19,7 +19,7 @@ export const config = {
     mascotas: { activa: true, titulo: "Mascotas perdidas" },
     anses: { activa: true, titulo: "Hoy cobran" },
     trueque: { activa: true, titulo: "Trueque" },
-    trabajo: { activa: true, titulo: "Trabajo +50" },
+    trabajo: { activa: true, titulo: "Trabajo para mayores de 50 años" },
   },
 
   tren: {
@@ -96,7 +96,7 @@ export const config = {
     categorias: ["Ropa", "Chicos", "Hogar", "Herramientas", "Electrónica", "Otros"],
   },
 
-  // Trabajo +50 (ofrezco / busco trabajo; sin registro, nada se publica sin aprobación)
+  // Trabajo para mayores de 50 años (ofrezco / busco trabajo; sin registro, nada se publica sin aprobación)
   trabajo: {
     diasVigencia: 30, // la publicación se baja sola a los 30 días de aprobada
     maxPorDiaPorCelular: 3,
@@ -143,7 +143,7 @@ export const config = {
       // Apagado de entrada. Como mucho un aviso por día, a las 19, juntando los trueques nuevos.
       trueque: { activa: true, porDefecto: false, titulo: "Trueque" },
       // Apagado de entrada. Como mucho un aviso por día, a las 19, juntando los trabajos nuevos.
-      trabajo: { activa: true, porDefecto: false, titulo: "Trabajo +50" },
+      trabajo: { activa: true, porDefecto: false, titulo: "Trabajo para mayores de 50 años" },
     },
     horaResumen: { desde: "07:00", hasta: "10:00" }, // el resumen sale en la primera vuelta del proceso automático después de las 7
     maximoPorDia: 6, // por celular, sumando todos los tipos

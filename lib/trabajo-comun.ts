@@ -1,4 +1,4 @@
-// Trabajo +50: tipos y reglas que usan el servidor y la pantalla (nada secreto).
+// Trabajo para mayores de 50 años: tipos y reglas que usan el servidor y la pantalla (nada secreto).
 import { config } from "@/lomas.config.mjs";
 
 export const RUBROS: string[] = config.trabajo.rubros;

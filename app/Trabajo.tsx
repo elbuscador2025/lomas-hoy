@@ -38,7 +38,7 @@ export function ListaTrabajo({ publicaciones, onPublicar }: { publicaciones: Pub
   return (
     <>
       <p className="aviso-estafa" role="note">{AVISO_TRABAJO}</p>
-      <div className="filtros" role="tablist" aria-label="Trabajo +50">
+      <div className="filtros" role="tablist" aria-label="Trabajo para mayores de 50 años">
         {([["ofrezco", "Ofrezco trabajo"], ["busco", "Busco trabajo"]] as const).map(([id, t]) => (
           <button key={id} role="tab" className={`filtro ${modo === id ? "activo" : ""}`} aria-selected={modo === id} onClick={() => setModo(id)}>{t}</button>
         ))}

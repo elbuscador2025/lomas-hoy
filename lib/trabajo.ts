@@ -1,4 +1,4 @@
-// Trabajo +50: guardado, moderación, fotos y limpieza. Todo se valida acá, en el servidor.
+// Trabajo para mayores de 50 años: guardado, moderación, fotos y limpieza. Todo se valida acá, en el servidor.
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { put, del } from "@vercel/blob";
 import { config } from "@/lomas.config.mjs";
@@ -150,7 +150,7 @@ export async function mantener() {
     if (n > 0) {
       await notificarSeguro({
         tipo: "trabajo", clave: `trabajo:resumen:${hoy}`, ttl: 2 * 86400,
-        titulo: "Trabajo +50", cuerpo: `Hoy hay ${n} ${n === 1 ? "trabajo nuevo" : "trabajos nuevos"} en Lomas`, url: "/?v=trabajo",
+        titulo: "Trabajo para mayores de 50 años", cuerpo: `Hoy hay ${n} ${n === 1 ? "trabajo nuevo" : "trabajos nuevos"} en Lomas`, url: "/?v=trabajo",
       });
     }
   }

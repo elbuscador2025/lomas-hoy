@@ -36,11 +36,11 @@ const TITULO_DE: Record<string, string> = {
   guardias: "Guardias y salitas", vets: "Veterinarias y salud animal", otros: "Emergencias y servicios",
 };
 
-function Tile({ icono, titulo, resumen, estado, tono, onClick }: {
-  icono: string; titulo: string; resumen: React.ReactNode; estado: string; tono: Tono; onClick: () => void;
+function Tile({ icono, titulo, resumen, estado, tono, onClick, color }: {
+  color: string; icono: string; titulo: string; resumen: React.ReactNode; estado: string; tono: Tono; onClick: () => void;
 }) {
   return (
-    <button className="tile" onClick={onClick}>
+    <button className={`tile coloreado c-${color}`} onClick={onClick}>
       <span className="tile-arriba">
         <span className="tile-icono"><Icono nombre={icono} tam={28} /></span>
         <span className={`pildora ${tono}`}>{estado}</span>
@@ -51,9 +51,9 @@ function Tile({ icono, titulo, resumen, estado, tono, onClick }: {
   );
 }
 
-function Detalle({ titulo, onVolver, children }: { titulo: string; onVolver: () => void; children: React.ReactNode }) {
+function Detalle({ titulo, onVolver, color, children }: { titulo: string; onVolver: () => void; color?: string; children: React.ReactNode }) {
   return (
-    <main className="detalle">
+    <main className={`detalle${color ? ` coloreado c-${color}` : ""}`}>
       <div className="barra">
         <button className="volver" onClick={onVolver}><Icono nombre="volver" tam={22} ancho={2.5} /> Volver</button>
       </div>
@@ -182,6 +182,8 @@ export default function Inicio() {
     : aguaNotas.length ? ["Aviso", "aviso", `Nota de ${aguaNotas[0].fuente}: corte en ${aguaNotas[0].localidad}`]
     : ["Normal", "ok", "Sin cortes informados"];
   const nombreDiaCorto = (f: string) => capitalizar(new Date(`${f}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "short", day: "numeric" }).replace(/[.,]/g, ""));
+  const hoyDia = clima?.porDia?.find((x) => x.fecha === ahora.slice(0, 10)) ?? clima?.porDia?.[0];
+  const maxMin = hoyDia ? { max: Math.round(hoyDia.max), min: Math.round(hoyDia.min) } : null;
   const filaHoras = clima ? proximasHoras(clima, ahora) : [];
   const hoyStr = ahora.slice(0, 10);
   const nuevasMascotas = mascotas.filter((m) => esNueva(m, config.mascotas.diasNuevas)).length;
@@ -266,11 +268,26 @@ export default function Inicio() {
       <Detalle titulo="Clima" onVolver={volver}>
         {!clima || !a ? <SinDatos error={d.clima?.error} /> : (
           <>
+            <div className="bloque-azul">
+              <p className="fecha-azul">{capitalizar(fechaLarga())}</p>
+              {filaHoras.length > 0 && (
+                <span className="horas-azul">
+                  {filaHoras.map((h) => (
+                    <span key={h.hora} className={h.hora === "Ahora" ? "ahora" : ""}>
+                      <small>{h.hora === "Ahora" ? "Ahora" : h.hora.slice(11, 16)}</small>
+                      <Icono nombre={h.icono} tam={22} />
+                      <b>{Math.round(h.temp)}°</b>
+                      {h.lluvia != null && h.lluvia >= 30 ? <small className="lluvia"><Icono nombre="gota" tam={11} ancho={2.4} />{h.lluvia}%</small> : <small className="lluvia">&nbsp;</small>}
+                    </span>
+                  ))}
+                </span>
+              )}
+            </div>
             <div className="clima-detalle"><Icono nombre={a.icono} tam={64} />
               <div><span className="temp-chica">{Math.round(a.temp)}°</span><br />{a.etiqueta}</div></div>
             {clima.frase && <p className="frase">{clima.frase}</p>}
             <p className="vacio">
-              {a.medidoEn ? `Medido en ${a.estacion} a las ${a.medidoEn} · SMN` : "Estimado por Open-Meteo (no hay una medición reciente del SMN)"}
+              {a.medidoEn ? `Medido en ${a.estacion} a las ${a.medidoEn} · SMN${d.clima?.ok_en ? ` · Actualizado ${hora(d.clima.ok_en)}` : ""}` : "Estimado por Open-Meteo (no hay una medición reciente del SMN)"}
             </p>
             <p>
               {[a.sensacion != null && `Sensación ${Math.round(a.sensacion)}°`, a.humedad != null && `Humedad ${a.humedad}%`, a.viento != null && `Viento ${Math.round(a.viento)} km/h`]
@@ -346,7 +363,7 @@ export default function Inicio() {
 
   if (vista === "tren")
     return (
-      <Detalle titulo={s.tren.titulo} onVolver={volver}>
+      <Detalle color="tren" titulo={s.tren.titulo} onVolver={volver}>
         {!tren ? <SinDatos error={d.tren?.error} /> : (
           <>
             {tren.delDia.length === 0
@@ -366,7 +383,7 @@ export default function Inicio() {
 
   if (vista === "colectivos")
     return (
-      <Detalle titulo={s.colectivos.titulo} onVolver={volver}>
+      <Detalle color="colectivos" titulo={s.colectivos.titulo} onVolver={volver}>
         {!d.colectivos?.contenido ? <SinDatos error={d.colectivos?.error} /> : (
           <>
             {paros.length === 0 ? <p>Sin paros anunciados.</p> : (
@@ -397,7 +414,7 @@ export default function Inicio() {
     const cortesOrden = [...cortes].sort((a, b) => Number(suyos(b.localidad)) - Number(suyos(a.localidad)));
     const programadosOrden = [...programados].sort((a, b) => Number(suyos(b.localidad)) - Number(suyos(a.localidad)));
     return (
-      <Detalle titulo={s.luz.titulo} onVolver={volver}>
+      <Detalle color="luz" titulo={s.luz.titulo} onVolver={volver}>
         {!d.luz?.contenido ? <SinDatos error={d.luz?.error} /> : cortes.length === 0 ? (
           <p>{programados.length === 0 ? "Sin cortes en Lomas." : "No hay cortes en este momento."}</p>
         ) : (
@@ -460,7 +477,7 @@ export default function Inicio() {
         : `Desde el ${diaCorto(c.desde.slice(0, 10))} a las ${horaCorte(c.desde)} hasta el ${diaCorto(c.hasta.slice(0, 10))} a las ${horaCorte(c.hasta)} hs`;
     const fechaCarga = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone: ZONA, day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", hour12: false });
     return (
-      <Detalle titulo={s.agua.titulo} onVolver={volver}>
+      <Detalle color="agua" titulo={s.agua.titulo} onVolver={volver}>
         {!d.agua?.contenido ? <SinDatos error={d.agua?.error} /> : aguaTodos.length === 0 ? (
           <p>Sin cortes informados.</p>
         ) : (
@@ -488,14 +505,14 @@ export default function Inicio() {
 
   if (vista === "mascotas")
     return (
-      <Detalle titulo={s.mascotas.titulo} onVolver={volver}>
+      <Detalle color="mascotas" titulo={s.mascotas.titulo} onVolver={volver}>
         <ListaMascotas mascotas={mascotas} onPublicar={() => abrir("mascotas-publicar")} />
       </Detalle>
     );
 
   if (vista === "mascotas-publicar")
     return (
-      <Detalle titulo="Publicar" onVolver={volver}>
+      <Detalle color="mascotas" titulo="Publicar" onVolver={volver}>
         <FormularioMascota onListo={volver} />
       </Detalle>
     );
@@ -503,7 +520,7 @@ export default function Inicio() {
   if (vista === "anses") {
     const porPrestacion = [...new Set(rAnses.delMes.map((p) => p.prestacion))];
     return (
-      <Detalle titulo={s.anses.titulo} onVolver={volver}>
+      <Detalle color="anses" titulo={s.anses.titulo} onVolver={volver}>
         <p className="frase">{rAnses.texto}</p>
         {rAnses.sinDatos ? null : porPrestacion.map((pr) => (
           <div key={pr}>
@@ -524,7 +541,7 @@ export default function Inicio() {
 
   if (vista === "farmacias")
     return (
-      <Detalle titulo={s.farmacias.titulo} onVolver={volver}>
+      <Detalle color="farmacias" titulo={s.farmacias.titulo} onVolver={volver}>
         <p>Todavía no tenemos el cronograma oficial de turnos.</p>
         <a className="btn grande-btn" target="_blank" rel="noreferrer" href={mapaFarmacias}>Ver farmacias abiertas ahora</a>
         <small className="chico">{TEXTO_FARMACIAS}</small>
@@ -540,7 +557,7 @@ export default function Inicio() {
     // con ubicación, por cercanía; sin ubicación, por localidad
     const resto = yo ? ordenarLugares(otras, yo) : [...otras].sort((a, b) => a.localidad.localeCompare(b.localidad, "es") || a.nombre.localeCompare(b.nombre, "es"));
     return (
-      <Detalle titulo={TITULO_DE.vets} onVolver={volver}>
+      <Detalle color="vets" titulo={TITULO_DE.vets} onVolver={volver}>
         {yo
           ? <p className="vacio">Ordenado por cercanía a tu ubicación.</p>
           : <button className="btn claro ancho" onClick={pedirUbicacion}><Icono nombre="pin" tam={20} /> Ordenar por cercanía</button>}
@@ -556,7 +573,7 @@ export default function Inicio() {
   if (vista === "guardias" || vista === "otros") {
     const cats = CATEGORIAS.filter((c) => CATEGORIAS_DE[vista].includes(c.id));
     return (
-      <Detalle titulo={TITULO_DE[vista]} onVolver={volver}>
+      <Detalle color={vista === "guardias" ? "guardias" : "otros"} titulo={TITULO_DE[vista]} onVolver={volver}>
         {yo
           ? <p className="vacio">Ordenado por cercanía a tu ubicación.</p>
           : <button className="btn claro ancho" onClick={pedirUbicacion}><Icono nombre="pin" tam={20} /> Ordenar por cercanía</button>}
@@ -592,35 +609,35 @@ export default function Inicio() {
 
   if (vista === "trabajo")
     return (
-      <Detalle titulo={s.trabajo.titulo} onVolver={volver}>
+      <Detalle color="trabajo" titulo={s.trabajo.titulo} onVolver={volver}>
         <ListaTrabajo publicaciones={trabajo} onPublicar={(m) => abrir(`trabajo-${m}`)} />
       </Detalle>
     );
 
   if (vista === "trabajo-ofrezco" || vista === "trabajo-busco")
     return (
-      <Detalle titulo={vista === "trabajo-ofrezco" ? "Ofrezco trabajo" : "Busco trabajo"} onVolver={volver}>
+      <Detalle color="trabajo" titulo={vista === "trabajo-ofrezco" ? "Ofrezco trabajo" : "Busco trabajo"} onVolver={volver}>
         <FormularioTrabajo modo={vista === "trabajo-ofrezco" ? "ofrezco" : "busco"} onListo={volver} />
       </Detalle>
     );
 
   if (vista === "trueque")
     return (
-      <Detalle titulo={s.trueque.titulo} onVolver={volver}>
+      <Detalle color="trueque" titulo={s.trueque.titulo} onVolver={volver}>
         <ListaTrueque publicaciones={trueque.publicaciones} ferias={trueque.ferias} onPublicar={() => abrir("trueque-publicar")} onAvisarFeria={() => abrir("trueque-feria")} />
       </Detalle>
     );
 
   if (vista === "trueque-publicar")
     return (
-      <Detalle titulo="Publicar" onVolver={volver}>
+      <Detalle color="trueque" titulo="Publicar" onVolver={volver}>
         <FormularioTrueque onListo={volver} />
       </Detalle>
     );
 
   if (vista === "trueque-feria")
     return (
-      <Detalle titulo="Avisar de una feria" onVolver={volver}>
+      <Detalle color="trueque" titulo="Avisar de una feria" onVolver={volver}>
         <FormularioFeria onListo={volver} />
       </Detalle>
     );
@@ -628,56 +645,24 @@ export default function Inicio() {
   // ---- Pantalla principal ----
   return (
     <main className="home">
-      <header className="azul">
+      <header className="azul compacto" onClick={() => abrir("clima")}>
         <div className="azul-fila">
           <span className="marca">Lomas Hoy</span>
-          <button className="campana" aria-label={avisosApp.sinVer ? `Mis avisos: ${avisosApp.sinVer} sin ver` : "Mis avisos"} onClick={() => abrir("avisos")}>
+          <button className="campana" aria-label={avisosApp.sinVer ? `Mis avisos: ${avisosApp.sinVer} sin ver` : "Mis avisos"} onClick={(e) => { e.stopPropagation(); abrir("avisos"); }}>
             <Icono nombre="campana" tam={22} />
             {avisosApp.sinVer > 0 ? <span className="num-rojo">{avisosApp.sinVer > 9 ? "9+" : avisosApp.sinVer}</span>
               : (push.estado === "inactivo" || push.estado === "iosSinInstalar") && <span className="punto" />}
           </button>
         </div>
-        <button className="clima-bloque" onClick={() => abrir("clima")} aria-label="Ver detalle del clima">
-          <span className="clima-fila">
-            <span className="temp">{clima ? `${Math.round(clima.ahora.temp)}°` : "--°"}</span>
-            <span className="clima-icono"><Icono nombre={clima ? clima.ahora.icono : "nube"} tam={84} ancho={1.6} /></span>
+        <button className="clima-compacto" aria-label="Ver el clima: hora por hora y 5 días">
+          <span className="cc-fila">
+            <span className="clima-icono"><Icono nombre={clima ? clima.ahora.icono : "nube"} tam={52} ancho={1.7} /></span>
+            <span className="temp-c">{clima ? `${Math.round(clima.ahora.temp)}°` : "--°"}</span>
+            <span className="frase-c">{clima?.frase ?? (clima ? clima.ahora.etiqueta : datos ? "Sin datos del clima" : "Cargando…")}</span>
           </span>
-          {clima?.frase && <span className="frase-azul">{clima.frase}</span>}
-          <span className="estado">{clima ? clima.ahora.etiqueta : datos ? "Sin datos del clima" : "Cargando…"}</span>
-          {clima && (
-            <span className="origen-azul">
-              {d.clima?.ok_en ? `Actualizado ${hora(d.clima.ok_en)}` : ""}
-            </span>
-          )}
-          <span className="fecha-azul">{capitalizar(fechaLarga())}</span>
-          {filaHoras.length > 0 && (
-            <span className="horas-azul">
-              {filaHoras.map((h) => (
-                <span key={h.hora} className={h.hora === "Ahora" ? "ahora" : ""}>
-                  <small>{h.hora === "Ahora" ? "Ahora" : h.hora.slice(11, 16)}</small>
-                  <Icono nombre={h.icono} tam={22} />
-                  <b>{Math.round(h.temp)}°</b>
-                  {h.lluvia != null && h.lluvia >= 30 ? <small className="lluvia"><Icono nombre="gota" tam={11} ancho={2.4} />{h.lluvia}%</small> : <small className="lluvia">&nbsp;</small>}
-                </span>
-              ))}
-            </span>
-          )}
+          {maxMin && <span className="cc-minmax">Máx {maxMin.max}° · Mín {maxMin.min}°</span>}
+          <span className="cc-link">Ver hora por hora y 5 días ›</span>
         </button>
-        {clima?.porDia && clima.porDia.length > 0 && (
-          <>
-            <h2 className="titulo-dias">Próximos días</h2>
-            <div className="dias-azul">
-              {clima.porDia.slice(0, 5).map((x) => (
-                <button key={x.fecha} onClick={() => abrir(`dia:${x.fecha}`)} aria-label={`Clima del ${nombreDiaCorto(x.fecha)}`}>
-                  <small>{nombreDiaCorto(x.fecha)}</small>
-                  <Icono nombre={x.icono} tam={26} />
-                  <b>{Math.round(x.max)}°</b><small>{Math.round(x.min)}°</small>
-                  {(x.lluvia ?? 0) >= 30 ? <small className="lluvia"><Icono nombre="gota" tam={11} ancho={2.4} />{x.lluvia}%</small> : <small className="lluvia">&nbsp;</small>}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
       </header>
 
       <section className="hoja">
@@ -690,7 +675,6 @@ export default function Inicio() {
         {avisosDeFeriado(hoyStr).length > 0 && (
           <div className="franja" role="status">{avisosDeFeriado(hoyStr).map((t) => <p key={t}>{t}</p>)}</div>
         )}
-        {!resultados && <><CartelInstalar /><CartelAvisos push={push} agua={aguaVisible} /><PreguntaLocalidad push={push} /></>}
         {sinConexion && <p className="offline">Sin conexión: se muestra lo último que se cargó.</p>}
 
         {resultados ? (
@@ -772,59 +756,60 @@ export default function Inicio() {
 
             <div className="grilla">
               {s.tren.activa && (
-                <Tile icono="tren" titulo={s.tren.titulo} estado={trenEstado} tono={trenTono} onClick={() => abrir("tren")}
+                <Tile color="tren" icono="tren" titulo={s.tren.titulo} estado={trenEstado} tono={trenTono} onClick={() => abrir("tren")}
                   resumen={!tren ? "Sin datos por ahora" : trenN ? tren.delDia[0].ramal : tren.obras.length ? "Sin novedades hoy · hay obras y avisos" : "Sin novedades hoy"} />
               )}
               {s.colectivos.activa && (
-                <Tile icono="colectivo" titulo={s.colectivos.titulo} onClick={() => abrir("colectivos")}
+                <Tile color="colectivos" icono="colectivo" titulo={s.colectivos.titulo} onClick={() => abrir("colectivos")}
                   estado={!d.colectivos?.contenido ? "Sin datos" : paros.length ? plural(paros.length, "aviso", "avisos") : "Normal"}
                   tono={!d.colectivos?.contenido ? "neutro" : paros.length ? "aviso" : "ok"}
                   resumen={!d.colectivos?.contenido ? "Sin datos por ahora" : paros.length ? "Paro anunciado" : "Sin paros anunciados"} />
               )}
               {s.luz.activa && (
-                <Tile icono="luz" titulo="Luz" estado={luzEstado} tono={luzTono} onClick={() => abrir("luz")}
+                <Tile color="luz" icono="luz" titulo="Luz" estado={luzEstado} tono={luzTono} onClick={() => abrir("luz")}
                   resumen={(!d.luz?.contenido ? "Sin datos por ahora" : cortes.length === 0 ? "Sin cortes" : `${plural(cortes.length, "corte", "cortes")} · ${plural(usuariosSinLuz, "usuario", "usuarios")}`) + (programados.length ? ` · ${plural(programados.length, "programado", "programados")}` : "")} />
               )}
               {s.agua.activa && aguaVisible && (
-                <Tile icono="gota" titulo="Agua" estado={aguaEstado} tono={aguaTono} onClick={() => abrir("agua")} resumen={aguaResumen} />
+                <Tile color="agua" icono="gota" titulo="Agua" estado={aguaEstado} tono={aguaTono} onClick={() => abrir("agua")} resumen={aguaResumen} />
               )}
               {s.urgencias.activa && (
                 <>
-                  <Tile icono="guardia" titulo="Guardias y salitas" estado={plural(lugaresDe("guardias").length, "lugar", "lugares")} tono="neutro" onClick={() => abrir("guardias")}
+                  <Tile color="guardias" icono="guardia" titulo="Guardias y salitas" estado={plural(lugaresDe("guardias").length, "lugar", "lugares")} tono="neutro" onClick={() => abrir("guardias")}
                     resumen="Hospitales, guardias y centros de salud" />
-                  <Tile icono="patita" titulo="Veterinarias" estado={`${vets.length} en total`} tono="neutro" onClick={() => abrir("vets")}
+                  <Tile color="vets" icono="patita" titulo="Veterinarias" estado={`${vets.length} en total`} tono="neutro" onClick={() => abrir("vets")}
                     resumen={abiertas24 ? `${abiertas24} de guardia 24 hs` : "Veterinarias y salud animal"} />
                 </>
               )}
               {s.farmacias.activa && (
-                <Tile icono="farmacia" titulo={s.farmacias.titulo} estado="Mapa" tono="neutro" onClick={() => abrir("farmacias")}
+                <Tile color="farmacias" icono="farmacia" titulo={s.farmacias.titulo} estado="Mapa" tono="neutro" onClick={() => abrir("farmacias")}
                   resumen="Farmacias abiertas ahora, cerca tuyo" />
               )}
               {s.mascotas.activa && (
-                <Tile icono="patita" titulo={s.mascotas.titulo} onClick={() => abrir("mascotas")}
+                <Tile color="mascotas" icono="patita" titulo={s.mascotas.titulo} onClick={() => abrir("mascotas")}
                   estado={nuevasMascotas ? plural(nuevasMascotas, "nueva", "nuevas") : "Ver"} tono={nuevasMascotas ? "aviso" : "neutro"}
                   resumen={mascotas.length ? `${plural(mascotas.length, "publicación", "publicaciones")} de vecinos` : "Perdidos y encontrados"} />
               )}
               {s.anses.activa && (
-                <Tile icono="dinero" titulo={s.anses.titulo} onClick={() => abrir("anses")}
+                <Tile color="anses" icono="dinero" titulo={s.anses.titulo} onClick={() => abrir("anses")}
                   estado={rAnses.hayHoy ? "Hoy" : rAnses.sinDatos ? "Sin datos" : "Mes"} tono={rAnses.hayHoy ? "ok" : "neutro"}
                   resumen={rAnses.hayHoy ? rAnses.lineasHoy.map((l) => <span key={l} className="linea-tile">{l}</span>) : rAnses.texto} />
               )}
               {s.trueque.activa && (
-                <Tile icono="trueque" titulo={s.trueque.titulo} onClick={() => abrir("trueque")}
+                <Tile color="trueque" icono="trueque" titulo={s.trueque.titulo} onClick={() => abrir("trueque")}
                   estado={nuevasTrueque ? plural(nuevasTrueque, "nueva", "nuevas") : "Ver"} tono={nuevasTrueque ? "aviso" : "neutro"}
                   resumen={trueque.publicaciones.length ? `${plural(trueque.publicaciones.length, "publicación", "publicaciones")} de vecinos` : "Cambios entre vecinos"} />
               )}
               {s.trabajo.activa && (
-                <Tile icono="trabajo" titulo={s.trabajo.titulo} onClick={() => abrir("trabajo")}
+                <Tile color="trabajo" icono="trabajo" titulo={s.trabajo.titulo} onClick={() => abrir("trabajo")}
                   estado={nuevasTrabajo ? plural(nuevasTrabajo, "nueva", "nuevas") : "Ver"} tono={nuevasTrabajo ? "aviso" : "neutro"}
-                  resumen="Trabajos y changas que aceptan gente de más de 50" />
+                  resumen="Busco trabajo · Ofrezco trabajo" />
               )}
               {s.urgencias.activa && (
-                <Tile icono="escudo" titulo="Emergencias y servicios" estado={plural(lugaresDe("otros").length, "número", "números")} tono="neutro" onClick={() => abrir("otros")}
+                <Tile color="otros" icono="escudo" titulo="Emergencias y servicios" estado={plural(lugaresDe("otros").length, "número", "números")} tono="neutro" onClick={() => abrir("otros")}
                   resumen="Policía, bomberos y reclamos" />
               )}
             </div>
+            <CartelInstalar /><CartelAvisos push={push} agua={aguaVisible} /><PreguntaLocalidad push={push} />
             <button className="btn whatsapp" onClick={compartirDia}>Compartir por WhatsApp</button>
           </>
         )}

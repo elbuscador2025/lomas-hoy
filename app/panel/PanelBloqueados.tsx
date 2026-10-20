@@ -5,7 +5,7 @@ import { post } from "./api";
 type Bloqueo = { id: string; whatsapp: string; t: string; nota: string };
 const fecha = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", dateStyle: "short", timeStyle: "short", hour12: false });
 
-// Pestaña "Bloqueados": quienes ya no pueden publicar en Trueque ni en Trabajo +50.
+// Pestaña "Bloqueados": quienes ya no pueden publicar en Trueque ni en Trabajo para mayores de 50 años.
 export default function PanelBloqueados() {
   const [lista, setLista] = useState<Bloqueo[]>([]);
   const cargar = useCallback(async () => {
@@ -16,7 +16,7 @@ export default function PanelBloqueados() {
   return (
     <div>
       <h2>Bloqueados ({lista.length})</h2>
-      <p className="vacio">No pueden publicar en Trueque ni en Trabajo +50 (ni ese número ni ese celular).</p>
+      <p className="vacio">No pueden publicar en Trueque ni en Trabajo para mayores de 50 años (ni ese número ni ese celular).</p>
       {lista.length === 0 && <p className="vacio">No hay nadie bloqueado.</p>}
       {lista.map((b) => (
         <div key={b.id} className="fila-panel">

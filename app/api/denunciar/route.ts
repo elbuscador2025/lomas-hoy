@@ -2,7 +2,7 @@ import { after } from "next/server";
 import { denunciar } from "@/lib/moderacion";
 import { redis } from "@/lib/servidor";
 
-// Denunciar una publicación de Trueque o Trabajo +50. Con 3 denuncias de celulares distintos se oculta hasta que yo la revise.
+// Denunciar una publicación de Trueque o Trabajo para mayores de 50 años. Con 3 denuncias de celulares distintos se oculta hasta que yo la revise.
 export async function POST(req: Request) {
   if (!req.headers.get("content-type")?.includes("application/json")) return Response.json({ ok: false }, { status: 415 });
   const c = await req.json().catch(() => ({}));

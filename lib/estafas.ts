@@ -1,4 +1,4 @@
-// Reglas contra estafas de Trueque y Trabajo +50. Lo usan el servidor (que decide) y la pantalla (que avisa antes de enviar).
+// Reglas contra estafas de Trueque y Trabajo para mayores de 50 años. Lo usan el servidor (que decide) y la pantalla (que avisa antes de enviar).
 
 export const AVISO_TRUEQUE = "Acá no se vende ni se cobra nada. Si alguien te pide plata, denuncialo.";
 export const AVISO_TRABAJO = "Ningún trabajo te puede pedir plata. Nunca mandes DNI, CBU ni claves por WhatsApp. Si alguien te pide plata, denuncialo.";

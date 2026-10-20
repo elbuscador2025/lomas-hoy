@@ -1,4 +1,4 @@
-// Denuncias y bloqueos de Trueque y Trabajo +50. Sin dependencias de las dos secciones: las pantallas de mi panel las juntan.
+// Denuncias y bloqueos de Trueque y Trabajo para mayores de 50 años. Sin dependencias de las dos secciones: las pantallas de mi panel las juntan.
 import { createHash } from "node:crypto";
 import { redis } from "@/lib/servidor";
 import { notificarAdmin } from "@/lib/push";
