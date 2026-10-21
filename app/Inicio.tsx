@@ -14,6 +14,8 @@ import Notificaciones, { CartelInstalar, CartelAvisos, PreguntaLocalidad } from 
 import MisAvisos, { useAvisos } from "./MisAvisos";
 import MapaLuz from "./MapaLuz";
 import BotonLlamar from "./BotonLlamar";
+import Discapacidad from "./Discapacidad";
+import { TRAMITES } from "@/lib/discapacidad";
 import { estadoHorario, esDeNocheVet } from "@/lib/horarios";
 import { transporteDe, luzEnZona, estadoEnUnaFrase } from "@/lib/transporte";
 import { mismaLocalidad } from "@/lib/localidades";
@@ -252,6 +254,7 @@ export default function Inicio() {
       ),
       trueque: s.trueque.activa ? trueque.publicaciones.filter((p) => coincide(`trueque cambio ${p.ofrezco} ${p.busco} ${p.categoria} ${p.barrio}`)) : [],
       trabajo: s.trabajo.activa ? trabajo.filter((p) => coincide(`trabajo empleo changa ofrezco busco ${p.texto} ${p.rubro} ${p.barrio} ${p.horario}`)) : [],
+      discapacidad: s.discapacidad.activa && coincide(`discapacidad cud certificado pase de colectivo gratis autismo tea imdipam taller protegido pension simbolo estacionamiento ${TRAMITES.map((t) => `${t.titulo} ${t.palabras}`).join(" ")}`),
       ferias: s.trueque.activa ? trueque.ferias.filter((f) => coincide(`trueque feria ferias de trueque ${f.lugar} ${f.direccion} ${f.barrio} ${f.dias}`)) : [],
       tren: s.tren.activa ? (d.tren?.contenido?.novedades ?? []).filter((n) => coincide(`${s.tren.titulo} tren roca ${n.ramal} ${n.motivo}`)) : [],
       paros: s.colectivos.activa ? paros.filter((p) => coincide(`colectivo colectivos paro uta ${p.titular}`)) : [],
@@ -264,7 +267,7 @@ export default function Inicio() {
       clima: s.clima.activa && clima && coincide(`clima tiempo temperatura lluvia ${clima.ahora.etiqueta} ${clima.dias.map((d) => d.etiqueta).join(" ")}`) ? clima : null,
     };
   }, [busqueda, lugares, mascotas, trueque, trabajo, rAnses.texto, d.tren, paros, cortes, programados, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
-  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
+  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.discapacidad || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
 
   // ---- Estado de cada cuadradito ----
   const hayGrave = (v: Novedad["vista"]) => novedades.some((n) => n.vista === v && n.gravedad === "grave");
@@ -706,6 +709,13 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "discapacidad")
+    return (
+      <Detalle color="disc" titulo={s.discapacidad.titulo} onVolver={volver}>
+        <Discapacidad />
+      </Detalle>
+    );
+
   if (vista === "trabajo")
     return (
       <Detalle color="trabajo" titulo={s.trabajo.titulo} onVolver={volver}>
@@ -793,6 +803,10 @@ export default function Inicio() {
             {resultados.trueque.length > 0 && (
               <div className="grupo"><h2>{s.trueque.titulo}</h2>
                 <ul className="lista">{resultados.trueque.map((p) => <PublicacionCard key={p.id} p={p} />)}</ul>
+              </div>)}
+            {resultados.discapacidad && (
+              <div className="grupo"><h2>{s.discapacidad.titulo}</h2>
+                <button className="tarjeta muni" onClick={() => abrir("discapacidad")}><b>Trámites, certificado (CUD) y ayuda</b><small>Ver la sección Discapacidad</small></button>
               </div>)}
             {resultados.trabajo.length > 0 && (
               <div className="grupo"><h2>{s.trabajo.titulo}</h2>
@@ -911,6 +925,10 @@ export default function Inicio() {
                 <Tile color="trueque" icono="trueque" titulo={s.trueque.titulo} onClick={() => abrir("trueque")}
                   estado={nuevasTrueque ? plural(nuevasTrueque, "nueva", "nuevas") : "Ver"} tono={nuevasTrueque ? "aviso" : "neutro"}
                   resumen={trueque.publicaciones.length ? `${plural(trueque.publicaciones.length, "publicación", "publicaciones")} de vecinos` : "Cambios entre vecinos"} />
+              )}
+              {s.discapacidad.activa && (
+                <Tile color="disc" icono="discapacidad" titulo={s.discapacidad.titulo} estado="Ver" tono="neutro" onClick={() => abrir("discapacidad")}
+                  resumen="Trámites, certificado y ayuda" />
               )}
               {s.trabajo.activa && (
                 <Tile color="trabajo" icono="trabajo" titulo={s.trabajo.titulo} onClick={() => abrir("trabajo")}

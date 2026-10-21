@@ -314,3 +314,18 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 .banda-noche { background:#B3261E; color:#fff; font-weight:700; border-radius:12px; padding:10px 12px; margin:0 0 10px; }
 .pildora.estado-horario.abierta { background:var(--verde-bg); color:var(--verde); }
 .pildora.estado-horario.cerrada, .pildora.estado-horario.sin { background:#E1E8F4; color:#3F4F73; }
+
+/* Discapacidad */
+.c-disc { --c-bg:#E5E9EF; --c-fuerte:#455A64; }
+.lugar-principal { display:flex; flex-direction:column; gap:4px; background:var(--gris-azul); border-radius:18px; padding:14px; margin:8px 0 14px; overflow-wrap:anywhere; }
+.lugar-principal h2 { margin:0 0 4px; }
+.lugar-principal small { color:var(--suave); }
+.tramite { background:#fff; border:1px solid var(--linea); border-radius:16px; margin:8px 0; padding:0 14px; }
+.tramite > summary { display:flex; justify-content:space-between; align-items:center; gap:8px; min-height:56px; cursor:pointer; list-style:none; }
+.tramite[open] > summary .flecha { transform:rotate(90deg); }
+.tramite-cuerpo { padding-bottom:14px; overflow-wrap:anywhere; }
+.tramite-cuerpo h3 { margin:12px 0 2px; font-size:16px; color:var(--c-fuerte, var(--azul)); }
+.tramite-cuerpo p { margin:0; }
+.tramite-cuerpo ul { margin:2px 0 0; padding-left:20px; }
+.enlaces-oficiales { list-style:none !important; padding-left:0 !important; margin:10px 0 !important; display:flex; flex-direction:column; gap:6px; }
+.enlaces-oficiales a { display:block; padding:10px 12px; border-radius:12px; background:var(--celeste); color:var(--azul); font-weight:700; text-decoration:none; }

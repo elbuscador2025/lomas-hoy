@@ -20,6 +20,7 @@ export const config = {
     anses: { activa: true, titulo: "Hoy cobran" },
     trueque: { activa: true, titulo: "Trueque" },
     trabajo: { activa: true, titulo: "Trabajo para mayores de 50 años" },
+    discapacidad: { activa: true, titulo: "Discapacidad" },
   },
 
   tren: {
