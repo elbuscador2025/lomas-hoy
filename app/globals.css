@@ -337,3 +337,12 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 .frase-lineas span { display:block; white-space:nowrap; font-size:14.5px; font-weight:800; line-height:1.3; }
 .frase-lineas span.chica { font-size:12.5px; }
 .frase { white-space:pre-line; }
+
+/* Franja del clima: que no crezca (la temperatura no se toca) */
+.azul.compacto { padding-bottom:30px; }
+.clima-compacto { margin-top:2px; }
+.saludo-azul { margin:0 0 2px; }
+.cc-fila .temp-c { line-height:.95; }
+.frase-lineas { margin-top:0; }
+.frase-lineas span { font-size:13.5px; line-height:1.15; }
+.frase-lineas span.chica { font-size:12px; }
