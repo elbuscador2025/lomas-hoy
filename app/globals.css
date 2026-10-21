@@ -307,3 +307,10 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 /* Aviso de tormenta */
 .banda-tormenta { display:flex; align-items:center; gap:8px; width:100%; margin:6px 0 4px; padding:8px 12px; border:0; border-radius:12px; background:#D32F2F; color:#fff; text-align:left; font-family:inherit; font-size:14px; font-weight:700; line-height:1.25; cursor:pointer; }
 .banda-tormenta svg { flex:none; }
+
+/* Veterinarias: guardia 24 horas y estado según la hora */
+.guardia24 { background:#FFE5E5; border:2px solid #C62828; border-radius:20px; padding:4px 14px 8px; margin:8px 0 14px; }
+.guardia24 h2 { color:#B3261E; margin:10px 0 0; }
+.banda-noche { background:#B3261E; color:#fff; font-weight:700; border-radius:12px; padding:10px 12px; margin:0 0 10px; }
+.pildora.estado-horario.abierta { background:var(--verde-bg); color:var(--verde); }
+.pildora.estado-horario.cerrada, .pildora.estado-horario.sin { background:#E1E8F4; color:#3F4F73; }

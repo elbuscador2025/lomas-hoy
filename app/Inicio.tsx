@@ -14,6 +14,7 @@ import Notificaciones, { CartelInstalar, CartelAvisos, PreguntaLocalidad } from 
 import MisAvisos, { useAvisos } from "./MisAvisos";
 import MapaLuz from "./MapaLuz";
 import BotonLlamar from "./BotonLlamar";
+import { estadoHorario, esDeNocheVet } from "@/lib/horarios";
 import { transporteDe, luzEnZona, estadoEnUnaFrase } from "@/lib/transporte";
 import { mismaLocalidad } from "@/lib/localidades";
 import { MascotaCard, ListaMascotas, FormularioMascota } from "./Mascotas";
@@ -642,21 +643,28 @@ export default function Inicio() {
 
   if (vista === "vets") {
     const de24 = (l: Lugar) => /24 hs/i.test(l.horario);
+    const noche = esDeNocheVet(ahora);
+    const estados = new Map(vets.map((l) => [l.id, estadoHorario(l.horario, ahora)]));
     const guardia = ordenarLugares(vets.filter(de24), yo);
-    const municipal = vets.filter((l) => !de24(l) && l.etiqueta);
-    const otras = vets.filter((l) => !de24(l) && !l.etiqueta);
-    // con ubicación, por cercanía; sin ubicación, por localidad
-    const resto = yo ? ordenarLugares(otras, yo) : [...otras].sort((a, b) => a.localidad.localeCompare(b.localidad, "es") || a.nombre.localeCompare(b.nombre, "es"));
+    // el resto: primero las abiertas ahora, después las cerradas o sin horario (cada grupo por cercanía o, sin ubicación, por localidad)
+    const ordenar = (xs: Lugar[]) => (yo ? ordenarLugares(xs, yo) : [...xs].sort((a, b) => a.localidad.localeCompare(b.localidad, "es") || a.nombre.localeCompare(b.nombre, "es")));
+    const otras = vets.filter((l) => !de24(l));
+    const resto = [...ordenar(otras.filter((l) => estados.get(l.id)?.tipo === "abierta")), ...ordenar(otras.filter((l) => estados.get(l.id)?.tipo !== "abierta"))];
     return (
       <Detalle color="vets" titulo={TITULO_DE.vets} onVolver={volver}>
+        {noche && guardia.length > 0 && <p className="banda-noche" role="status">Es de noche: estas {guardia.length} atienden las 24 horas</p>}
+        {guardia.length > 0 && (
+          <section className="guardia24" aria-label="Guardia 24 horas">
+            <h2>{noche ? "Atienden ahora" : "Guardia 24 horas"}</h2>
+            <ul className="lista">{guardia.map((l) => <LugarCard key={l.id} lugar={l} km={km(l)} estado={estados.get(l.id)} />)}</ul>
+          </section>
+        )}
         {yo
           ? <p className="vacio">Ordenado por cercanía a tu ubicación.</p>
           : <button className="btn claro ancho" onClick={pedirUbicacion}><Icono nombre="pin" tam={20} /> Ordenar por cercanía</button>}
         {errorUbicacion && <p className="aviso-pie">No pudimos obtener tu ubicación. Revisá el permiso del navegador.</p>}
         {lugares.length === 0 && <SinDatos />}
-        {guardia.length > 0 && (<><h2>Guardia 24 hs</h2><ul className="lista">{guardia.map((l) => <LugarCard key={l.id} lugar={l} km={km(l)} />)}</ul></>)}
-        {municipal.length > 0 && (<><h2>Hospital Municipal de Animales</h2><ul className="lista">{municipal.map((l) => <LugarCard key={l.id} lugar={l} km={km(l)} />)}</ul></>)}
-        {resto.length > 0 && (<><h2>Todas las veterinarias</h2><ul className="lista">{resto.map((l) => <LugarCard key={l.id} lugar={l} km={km(l)} />)}</ul></>)}
+        {resto.length > 0 && (<><h2>Otras veterinarias</h2><ul className="lista">{resto.map((l) => <LugarCard key={l.id} lugar={l} km={km(l)} estado={estados.get(l.id)} />)}</ul></>)}
       </Detalle>
     );
   }
