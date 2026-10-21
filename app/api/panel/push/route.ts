@@ -1,7 +1,6 @@
 import { redis, hoyArgentina } from "@/lib/servidor";
 import { esAdmin } from "@/lib/cuentas";
 import { todasLasSuscripciones, enviarPrueba } from "@/lib/push";
-import { enviarResumenAhora } from "@/lib/resumen";
 
 // Mi panel: cuántos celulares tienen avisos, cuántas notificaciones salieron, y el botón de prueba.
 export async function POST(req: Request) {
@@ -12,11 +11,6 @@ export async function POST(req: Request) {
   if (c.accion === "prueba") {
     const r = await enviarPrueba(String(c.endpoint ?? ""));
     return Response.json({ ok: r.ok, mensaje: r.ok ? "Enviada. Debería llegarte en unos segundos." : `No se pudo enviar. ${"mensaje" in r ? r.mensaje : ""}` });
-  }
-
-  if (c.accion === "resumen") {
-    const r = await enviarResumenAhora(String(c.endpoint ?? ""));
-    return Response.json({ ok: r.ok, mensaje: r.ok ? "Enviado. Debería llegarte en unos segundos." : `No se pudo enviar. ${"mensaje" in r ? r.mensaje : ""}` });
   }
 
   const subs = await todasLasSuscripciones();

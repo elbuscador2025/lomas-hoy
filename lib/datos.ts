@@ -28,7 +28,7 @@ export type Clima = {
   pronosticoEn: string;
 };
 export type Colectivos = {
-  paros: { titular: string; medio: string; link: string; fecha: string }[];
+  paros: { titular: string; medio: string; link: string; fecha: string; alcance?: string; resumen?: string }[];
   diariosLeidos: string[]; diariosSinLeer: string[];
 };
 export type Programados = { cortes: { id: string; localidad: string; lat?: number; lng?: number; inicio: string; fin: string; clientes: number | null; motivo: string }[] };
@@ -39,7 +39,8 @@ export type Lugar = {
   id: string; categoria: string; nombre: string; direccion: string; localidad: string;
   telefonos: string[]; horario: string; etiqueta?: string; fuente: string; fuenteUrl: string; lat?: number; lng?: number;
 };
-export type Todo = { tren?: Fila<Tren>; luz?: Fila<Luz>; clima?: Fila<Clima>; colectivos?: Fila<Colectivos>; programados?: Fila<Programados>; agua?: Fila<Agua> };
+export type Subte = { lineas: { id: string; estado: "normal" | "demora" | "interrumpida" | "paro"; texto: string; desde: string | null }[] };
+export type Todo = { subte?: Fila<Subte>; tren?: Fila<Tren>; luz?: Fila<Luz>; clima?: Fila<Clima>; colectivos?: Fila<Colectivos>; programados?: Fila<Programados>; agua?: Fila<Agua> };
 
 const CLAVE_CACHE = "lomas-hoy:datos";
 const CLAVE_LUGARES = "lomas-hoy:lugares";

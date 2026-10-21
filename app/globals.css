@@ -269,3 +269,23 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 .cartel-logo { display:flex; align-items:center; gap:12px; }
 .cartel-logo img { border-radius:11px; flex:none; }
 .cartel > .cartel-logo b { font-size:18px; }
+
+/* Transporte, saludo y subte */
+.c-subte { --c-bg:#E9E7DF; --c-fuerte:#5C5A3A; }
+.saludo-azul { display:flex; flex-direction:column; gap:1px; margin:6px 0 4px; font-size:14px; line-height:1.25; }
+.saludo-azul b { font-size:15px; }
+.saludo-azul span { opacity:.95; }
+.transporte { border-radius:20px; padding:12px 14px 6px; margin-top:16px; }
+.transporte.coloreado { background:var(--c-bg); }
+.transporte h2 { margin:0 0 4px; font-size:19px; color:#10213F; display:flex; align-items:center; gap:8px; }
+.transporte h2 svg { color:var(--c-fuerte); }
+.renglon { display:grid; grid-template-columns:14px 92px 1fr 14px; align-items:center; gap:8px; width:100%; min-height:48px; padding:8px 0; background:none; border:0; border-top:1px solid rgba(16,33,63,.12); text-align:left; font-family:inherit; font-size:16px; color:#10213F; cursor:pointer; }
+.renglon b { font-size:16px; }
+.renglon-texto { font-size:15px; font-weight:600; color:#2B3A55; overflow-wrap:anywhere; }
+.renglon-texto.problema { color:#B3261E; font-weight:700; }
+.renglon-texto.sin { color:#5B6577; font-weight:500; }
+.renglon-flecha { font-size:24px; color:#5B6577; text-align:right; }
+.punto-estado { width:14px; height:14px; border-radius:50%; background:#9AA5B8; }
+.punto-estado.ok { background:#2E9E4F; }
+.punto-estado.alerta { background:#E0A800; }
+.punto-estado.problema { background:#D32F2F; }

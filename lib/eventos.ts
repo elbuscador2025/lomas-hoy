@@ -1,7 +1,7 @@
 // Qué novedades merecen una notificación y cómo se identifica cada una (para no repetirla).
 import { createHash } from "node:crypto";
 import { config } from "@/lomas.config.mjs";
-import { clasificarTren, hoyMMDD, nombreLindo, type Tren, type Luz } from "@/lib/datos";
+import { clasificarTren, hoyMMDD, nombreLindo, type Tren, type Luz, type Subte } from "@/lib/datos";
 import { notificarSeguro } from "@/lib/push";
 import { redis } from "@/lib/servidor";
 import { filaAgua, aguaVisible } from "@/lib/agua";
@@ -106,7 +106,7 @@ export async function evaluarColectivos(c: { paros: { titular: string; medio: st
   if (!reciente) return;
   await notificarSeguro({
     tipo: "colectivos", clave: "colectivos:paro", ttl: 86400, refrescar: true,
-    titulo: "Paro de colectivos", cuerpo: `${reciente.titular} (${reciente.medio})`, url: "/?v=colectivos",
+    titulo: (reciente as { resumen?: string }).resumen ?? "Paro de colectivos", cuerpo: `${reciente.titular} (${reciente.medio})`, url: "/?v=colectivos",
   });
 }
 
@@ -131,5 +131,17 @@ export async function evaluarAgua() {
         titulo: `${c.localidad}: corte de agua`, cuerpo: `${c.zona} (${c.fuente})`, url: "/?v=agua",
       });
     }
+  }
+}
+
+// Subte: solo líneas interrumpidas o con paro (no demoras chicas). Una vez por línea y problema; mientras siga, no se repite.
+export async function evaluarSubte(s: Subte) {
+  for (const l of s.lineas) {
+    if (l.estado !== "interrumpida" && l.estado !== "paro") continue;
+    const nombre = l.id === "Premetro" ? "Premetro" : `Línea ${l.id}`;
+    await notificarSeguro({
+      tipo: "subte", clave: `subte:${l.id}:${l.estado}:${hash(l.texto)}`, ttl: 6 * 3600, refrescar: true,
+      titulo: `${nombre}: ${l.estado === "paro" ? "paro" : "interrumpida"}`, cuerpo: l.texto || `${nombre} ${l.estado === "paro" ? "con paro" : "interrumpida"}`, url: "/?v=subte",
+    });
   }
 }

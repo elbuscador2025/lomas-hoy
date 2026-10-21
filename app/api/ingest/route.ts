@@ -4,7 +4,7 @@ import { mantener } from "@/lib/mascotas";
 import { mantener as mantenerTrueque } from "@/lib/trueque";
 import { mantener as mantenerTrabajo } from "@/lib/trabajo";
 import { evaluarResumen } from "@/lib/resumen";
-import { evaluarTren, evaluarLuz, evaluarProgramados, evaluarColectivos, evaluarAgua } from "@/lib/eventos";
+import { evaluarTren, evaluarLuz, evaluarProgramados, evaluarColectivos, evaluarAgua, evaluarSubte } from "@/lib/eventos";
 import { redis } from "@/lib/servidor";
 
 // Lo llama el proceso automático (GitHub Actions) con la clave secreta.
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     return Response.json({ ok: false }, { status: 401 });
   }
   const { clave, contenido, error } = await req.json().catch(() => ({}));
-  if (!["tren", "luz", "colectivos", "programados", "agua", "pronostico", "mascotas"].includes(clave)) return Response.json({ ok: false }, { status: 400 });
+  if (!["tren", "luz", "colectivos", "programados", "agua", "pronostico", "mascotas", "subte"].includes(clave)) return Response.json({ ok: false }, { status: 400 });
 
   const ahora = new Date().toISOString();
   const llave = `datos:${clave}`;
@@ -26,6 +26,7 @@ export async function POST(req: Request) {
     if (clave === "programados") after(() => evaluarProgramados(contenido).catch((e) => console.error("push programados", e)));
     if (clave === "mascotas") after(() => Promise.all([mantener(), mantenerTrueque(), mantenerTrabajo(), evaluarResumen()]).catch((e) => console.error("mascotas", e)));
     if (clave === "colectivos") after(() => evaluarColectivos(contenido).catch((e) => console.error("push colectivos", e)));
+    if (clave === "subte") after(() => evaluarSubte(contenido).catch((e) => console.error("push subte", e)));
     if (clave === "agua") after(() => evaluarAgua().catch((e) => console.error("push agua", e)));
     if (clave === "luz") after(() => evaluarLuz(contenido).catch((e) => console.error("push luz", e)));
   } else {

@@ -14,3 +14,5 @@ jobs:
         env:
           SITIO_URL: ${{ secrets.SITIO_URL }}
           INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
+          SUBTE_CLIENT_ID: ${{ secrets.SUBTE_CLIENT_ID }}
+          SUBTE_CLIENT_SECRET: ${{ secrets.SUBTE_CLIENT_SECRET }}

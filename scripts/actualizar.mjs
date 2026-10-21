@@ -1,7 +1,7 @@
 // Proceso automático: lee tren, luz y colectivos (el clima se pide al abrir la app, ver lib/clima.ts) y se los manda al sitio (/api/ingest), que los guarda.
 // Si una fuente falla, el sitio NO pisa el último dato bueno: solo anota el error.
 import { config as cfg } from "../lomas.config.mjs";
-import { leerTren, leerLuz, leerRss, buscarParos, buscarAgua, leerProgramados } from "./fuentes.mjs";
+import { leerTren, leerLuz, leerRss, buscarParos, buscarAgua, leerProgramados, leerSubte } from "./fuentes.mjs";
 import { leerPronostico, urlOpenMeteo } from "./clima.mjs";
 
 const { SITIO_URL, INGEST_SECRET } = process.env;
@@ -46,6 +46,12 @@ const tareas = {
   tren: async () => leerTren(await traer(cfg.tren.url, "text"), cfg),
   luz: async () => leerLuz(await traer(cfg.luz.url, "text"), cfg),
   programados: async () => leerProgramados(await traer(cfg.programados.url, "json"), cfg),
+  // Sin clave todavía: se omite (el sitio muestra "Sin datos por ahora" en gris)
+  subte: async () => {
+    const { SUBTE_CLIENT_ID: id, SUBTE_CLIENT_SECRET: secreto } = process.env;
+    if (!id || !secreto) return null;
+    return leerSubte(await traer(`${cfg.subte.url}?json=1&client_id=${encodeURIComponent(id)}&client_secret=${encodeURIComponent(secreto)}`, "json"), cfg);
+  },
   colectivos: async () => {
     const d = await leerDiarios();
     return { paros: buscarParos(d.notas, cfg), diariosLeidos: d.diariosLeidos, diariosSinLeer: d.diariosSinLeer };
@@ -60,7 +66,9 @@ let fallos = 0;
 for (const [clave, tarea] of Object.entries(tareas)) {
   if (!(cfg.secciones[clave === "pronostico" ? "clima" : clave] ?? cfg[clave])?.activa) continue;
   try {
-    await guardar(clave, { contenido: await tarea() });
+    const contenido = await tarea();
+    if (contenido === null) { console.log(`${clave}: sin clave, se omite`); continue; }
+    await guardar(clave, { contenido });
     console.log(`${clave}: ok`);
   } catch (e) {
     fallos++;

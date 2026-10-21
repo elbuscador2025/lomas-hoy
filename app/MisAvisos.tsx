@@ -51,11 +51,7 @@ export default function MisAvisos({ avisos, onConfigurar, onAbrir }: {
   const { lista, marcarVistos } = avisos;
   const vistoAntes = useRef(leerVisto()); // para marcar "Nuevo" lo que llegó desde la última vez
   useEffect(() => { marcarVistos(); }, [marcarVistos]);
-  // el resumen de hoy va arriba de todo; después, lo más nuevo primero
-  const hoy = new Date().toLocaleDateString("en-CA", { timeZone: ZONA });
-  const esResumenDeHoy = (a: AvisoGuardado) => a.tipo === "resumen" && new Date(a.t).toLocaleDateString("en-CA", { timeZone: ZONA }) === hoy;
-  const resumen = lista.find(esResumenDeHoy);
-  const ordenada = resumen ? [resumen, ...lista.filter((a) => a !== resumen)] : lista;
+  const ordenada = lista; // lo más nuevo primero, el saludo como cualquier otro aviso
   return (
     <>
       <button className="btn claro ancho" onClick={onConfigurar}>Configurar avisos</button>

@@ -13,6 +13,7 @@ import LugarCard from "./LugarCard";
 import Notificaciones, { CartelInstalar, CartelAvisos, PreguntaLocalidad } from "./Notificaciones";
 import MisAvisos, { useAvisos } from "./MisAvisos";
 import MapaLuz from "./MapaLuz";
+import { transporteDe, luzEnZona, estadoEnUnaFrase } from "@/lib/transporte";
 import { mismaLocalidad } from "@/lib/localidades";
 import { MascotaCard, ListaMascotas, FormularioMascota } from "./Mascotas";
 import { ListaTrabajo, FormularioTrabajo } from "./Trabajo";
@@ -184,6 +185,10 @@ export default function Inicio() {
   const nombreDiaCorto = (f: string) => capitalizar(new Date(`${f}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "short", day: "numeric" }).replace(/[.,]/g, ""));
   const hoyDia = clima?.porDia?.find((x) => x.fecha === ahora.slice(0, 10)) ?? clima?.porDia?.[0];
   const maxMin = hoyDia ? { max: Math.round(hoyDia.max), min: Math.round(hoyDia.min) } : null;
+  const transp = transporteDe(d);
+  const hAR = Number(ahora.slice(11, 13));
+  const saludo = hAR >= 6 && hAR < 12 ? "Buen día" : hAR >= 12 && hAR < 20 ? "Buenas tardes" : "Buenas noches";
+  const estadoFrase = estadoEnUnaFrase(transp, luzEnZona(d, push.prefs.localidad, ahora));
   const filaHoras = clima ? proximasHoras(clima, ahora) : [];
   const hoyStr = ahora.slice(0, 10);
   const nuevasMascotas = mascotas.filter((m) => esNueva(m, config.mascotas.diasNuevas)).length;
@@ -361,6 +366,34 @@ export default function Inicio() {
     );
   }
 
+  if (vista === "subte") {
+    const lineas = d.subte?.contenido?.lineas ?? [];
+    const fechaDesde = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone: ZONA, day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", hour12: false });
+    return (
+      <Detalle color="subte" titulo="Subte" onVolver={volver}>
+        {!d.subte?.contenido ? <p className="vacio">Sin datos por ahora.</p> : (
+          <ul className="lista">
+            {lineas.map((l) => (
+              <li key={l.id} className="lugar">
+                <span className={`pildora ${l.estado === "normal" ? "ok" : l.estado === "demora" ? "aviso" : "grave"}`}>
+                  {l.estado === "normal" ? "Normal" : l.estado === "demora" ? "Demoras" : l.estado === "paro" ? "Paro" : "Interrumpida"}
+                </span>
+                <b>{l.id === "Premetro" ? "Premetro" : `Línea ${l.id}`}</b>
+                {l.estado !== "normal" && (
+                  <>
+                    <span>{l.texto || "Sin más detalles"}</span>
+                    <small>Afecta a: {l.id === "Premetro" ? "el Premetro" : `la línea ${l.id}`}{l.desde ? ` · Desde: ${fechaDesde(l.desde)} hs` : ""}</small>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        <Pie seccion="subte" fuente={config.subte.fuente} url={config.subte.paginaPublica} fila={d.subte} />
+      </Detalle>
+    );
+  }
+
   if (vista === "tren")
     return (
       <Detalle color="tren" titulo={s.tren.titulo} onVolver={volver}>
@@ -368,7 +401,7 @@ export default function Inicio() {
           <>
             {tren.delDia.length === 0
               ? <p>Sin novedades hoy en los ramales que pasan por {config.tren.estaciones.join(", ")}.</p>
-              : <ul className="lista">{tren.delDia.map((n, i) => <li key={i}><b>{n.ramal}</b><br />{n.motivo}</li>)}</ul>}
+              : <ul className="lista">{tren.delDia.map((n, i) => <li key={i}><b>{n.ramal}</b><br />{n.motivo}{n.desde && <><br /><small>Desde el {n.desde.slice(3, 5)}/{n.desde.slice(0, 2)}</small></>}</li>)}</ul>}
             {tren.obras.length > 0 && (
               <div className="bloque">
                 <h2>Obras y avisos</h2>
@@ -391,8 +424,10 @@ export default function Inicio() {
                 {paros.map((p) => (
                   <li key={p.link} className="lugar">
                     <span className="pildora aviso">Paro anunciado</span>
-                    <b>{p.titular}</b>
-                    <small>{p.medio} · {new Date(p.fecha).toLocaleString("es-AR", { timeZone: ZONA, day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })} hs</small>
+                    <b>{p.resumen ?? p.titular}</b>
+                    <span>{p.titular}</span>
+                    <small>Afecta a: {p.alcance ?? "colectivos del AMBA"}</small>
+                    <small>Desde: {p.medio} · {new Date(p.fecha).toLocaleString("es-AR", { timeZone: ZONA, day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })} hs</small>
                     <a className="btn claro" href={p.link} target="_blank" rel="noreferrer">Leer la nota en {p.medio}</a>
                   </li>
                 ))}
@@ -401,7 +436,7 @@ export default function Inicio() {
             {d.colectivos.contenido.diariosSinLeer.length > 0 && (
               <p className="aviso-pie">No se pudo leer: {d.colectivos.contenido.diariosSinLeer.join(", ")}.</p>
             )}
-            <p className="vacio">No hay una fuente oficial en tiempo real. Se muestran titulares de diarios con paros de colectivos del AMBA o de la provincia, de los últimos {config.colectivos.diasMaximos} días.</p>
+            <p className="vacio">No hay una fuente oficial en tiempo real. Se muestran titulares de diarios con paros y medidas de fuerza de colectivos de todo el AMBA (Capital Federal y Gran Buenos Aires), de los últimos {config.colectivos.diasMaximos} días.</p>
           </>
         )}
         <Pie seccion="colectivos" fuente={config.colectivos.fuente} fila={d.colectivos} />
@@ -654,6 +689,10 @@ export default function Inicio() {
               : (push.estado === "inactivo" || push.estado === "iosSinInstalar") && <span className="punto" />}
           </button>
         </div>
+        <div className="saludo-azul">
+          <b>{saludo} · {capitalizar(fechaLarga())}</b>
+          {estadoFrase && <span>{estadoFrase}</span>}
+        </div>
         <button className="clima-compacto" aria-label="Ver el clima: hora por hora y 5 días">
           <span className="cc-fila">
             <span className="clima-icono"><Icono nombre={clima ? clima.ahora.icono : "nube"} tam={52} ancho={1.7} /></span>
@@ -754,17 +793,20 @@ export default function Inicio() {
               </div>
             )}
 
+            {(s.tren.activa || s.colectivos.activa) && (
+              <section className="transporte coloreado c-tren" aria-label="Transporte">
+                <h2><Icono nombre="tren" tam={24} /> Transporte</h2>
+                {transp.map((r) => (
+                  <button key={r.id} className="renglon" onClick={() => abrir(r.id)}>
+                    <span className={`punto-estado ${r.punto}`} aria-hidden />
+                    <b>{r.nombre}</b>
+                    <span className={`renglon-texto ${r.punto}`}>{r.texto}</span>
+                    <span className="renglon-flecha" aria-hidden>›</span>
+                  </button>
+                ))}
+              </section>
+            )}
             <div className="grilla">
-              {s.tren.activa && (
-                <Tile color="tren" icono="tren" titulo={s.tren.titulo} estado={trenEstado} tono={trenTono} onClick={() => abrir("tren")}
-                  resumen={!tren ? "Sin datos por ahora" : trenN ? tren.delDia[0].ramal : tren.obras.length ? "Sin novedades hoy · hay obras y avisos" : "Sin novedades hoy"} />
-              )}
-              {s.colectivos.activa && (
-                <Tile color="colectivos" icono="colectivo" titulo={s.colectivos.titulo} onClick={() => abrir("colectivos")}
-                  estado={!d.colectivos?.contenido ? "Sin datos" : paros.length ? plural(paros.length, "aviso", "avisos") : "Normal"}
-                  tono={!d.colectivos?.contenido ? "neutro" : paros.length ? "aviso" : "ok"}
-                  resumen={!d.colectivos?.contenido ? "Sin datos por ahora" : paros.length ? "Paro anunciado" : "Sin paros anunciados"} />
-              )}
               {s.luz.activa && (
                 <Tile color="luz" icono="luz" titulo="Luz" estado={luzEstado} tono={luzTono} onClick={() => abrir("luz")}
                   resumen={(!d.luz?.contenido ? "Sin datos por ahora" : cortes.length === 0 ? "Sin cortes" : `${plural(cortes.length, "corte", "cortes")} · ${plural(usuariosSinLuz, "usuario", "usuarios")}`) + (programados.length ? ` · ${plural(programados.length, "programado", "programados")}` : "")} />

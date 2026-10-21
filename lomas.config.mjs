@@ -51,6 +51,15 @@ export const config = {
     comoLoInforma: { "Villa Albertina": "Lomas de Zamora" },
   },
 
+  // Subte: estado de las líneas con la API de transporte de la Ciudad (hace falta una clave gratuita: SUBTE_CLIENT_ID y SUBTE_CLIENT_SECRET).
+  subte: {
+    activa: true,
+    fuente: "Gobierno de la Ciudad de Buenos Aires – API de transporte",
+    url: "https://apitransporte.buenosaires.gob.ar/subtes/serviceAlerts",
+    paginaPublica: "https://api-transporte.buenosaires.gob.ar/",
+    lineas: ["A", "B", "C", "D", "E", "H", "Premetro"],
+  },
+
   colectivos: {
     fuente: "Titulares de La Nación, Infobae y TN",
     // Diarios con RSS público. Se leen los titulares y se buscan paros de colectivos por palabras clave.
@@ -60,7 +69,7 @@ export const config = {
       { medio: "TN", url: "https://tn.com.ar/arc/outboundfeeds/rss/?outputType=xml" },
     ],
     // El titular debe tener alguna palabra de cada grupo...
-    palabrasParo: ["paro", "paros"],
+    palabrasParo: ["paro", "paros", "medida de fuerza", "medidas de fuerza"],
     palabrasColectivos: ["colectivo", "colectivos", "UTA", "transporte automotor"],
     // ...y no nombrar otra provincia o ciudad del interior.
     lugaresAjenos: [
@@ -136,6 +145,8 @@ export const config = {
       // Apagado: el archivo abierto de alertas del SMN llegó vacío aunque había alertas vigentes en el país, así que no es confiable.
       tormenta: { activa: false, titulo: "Alertas de tormenta" },
       colectivos: { activa: true, titulo: "Paros de colectivos" },
+      // Apagado de entrada: solo líneas interrumpidas o paros, no demoras chicas.
+      subte: { activa: true, porDefecto: false, titulo: "Subte" },
       // Apagado de entrada: solo se prende si la persona lo elige. Como mucho un aviso por día, a las 19.
       // Todos los días a las 7: una sola notificación con lo del día. Prendido de entrada.
       resumen: { activa: true, titulo: "Resumen de la mañana" },

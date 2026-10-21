@@ -88,6 +88,19 @@ export function leerRss(xml, medio) {
   });
 }
 
+// A quién afecta un paro, según el titular: una o varias líneas, una empresa, o todo el AMBA
+export function alcanceParo(titular) {
+  const t = sinTildes(titular);
+  const lineas = t.match(/\blineas?\s+((?:\d{1,3}\s*(?:,|y|e)?\s*)+)/);
+  const nums = lineas ? lineas[1].match(/\d{1,3}/g) : null;
+  if (nums?.length === 1) return { alcance: `línea ${nums[0]}`, resumen: `Paro de la línea ${nums[0]}` };
+  if (nums?.length > 1) { const l = nums.slice(0, -1).join(", ") + " y " + nums[nums.length - 1]; return { alcance: `líneas ${l}`, resumen: `Paro de las líneas ${l}` }; }
+  const empresa = titular.match(/\bempresa\s+([A-ZÁÉÍÓÚ][\wÁÉÍÓÚáéíóúñ.]*(?:\s+[A-ZÁÉÍÓÚ][\wÁÉÍÓÚáéíóúñ.]*)?)/);
+  if (empresa) return { alcance: `empresa ${empresa[1]}`, resumen: `Paro en la empresa ${empresa[1]}` };
+  if (/\buta\b|\bamba\b|area metropolitana|gran buenos aires|conurbano|todo el pais|capital federal|colectivos del/.test(t)) return { alcance: "todo el AMBA", resumen: "Paro de colectivos en todo el AMBA" };
+  return { alcance: "colectivos del AMBA", resumen: "Paro de colectivos" };
+}
+
 export function buscarParos(notas, cfg, ahora = new Date()) {
   const c = cfg.colectivos;
   const paro = palabras(c.palabrasParo, false), bus = palabras(c.palabrasColectivos), ajeno = palabras(c.lugaresAjenos);
@@ -98,7 +111,7 @@ export function buscarParos(notas, cfg, ahora = new Date()) {
     .filter((n) => { const t = sinTildes(n.titular); return paro.test(n.titular.toLowerCase()) && bus.test(t) && !ajeno.test(t); })
     .filter((n) => !vistos.has(n.link) && vistos.add(n.link))
     .sort((a, b) => b.fecha - a.fecha)
-    .map((n) => ({ titular: n.titular, medio: n.medio, link: n.link, fecha: n.fecha.toISOString() }));
+    .map((n) => ({ titular: n.titular, medio: n.medio, link: n.link, fecha: n.fecha.toISOString(), ...alcanceParo(n.titular) }));
 }
 
 // ---- Cortes programados de Edesur ----
@@ -159,4 +172,42 @@ export function buscarAgua(notas, cfg, ahora = new Date()) {
     .filter((x) => !vistos.has(x.n.link) && vistos.add(x.n.link))
     .sort((a, b) => b.n.fecha - a.n.fecha)
     .map(({ n, lugar }) => ({ titular: n.titular, medio: n.medio, link: n.link, fecha: n.fecha.toISOString(), localidad: lugar.canon }));
+}
+
+// ---- Subte: estado de las líneas según la API de transporte de la Ciudad (alertas de servicio, formato GTFS-realtime en JSON) ----
+// Hace falta una clave gratuita (client_id y client_secret). Si el formato no se entiende, tira error y no se pisa el último dato bueno.
+const texto1 = (x) => { const t = x?.translation; return Array.isArray(t) ? (t.find((k) => /es/i.test(k.language ?? "")) ?? t[0])?.text ?? "" : ""; };
+const lineaDe = (s) => {
+  const m = String(s ?? "").match(/premetro|\blinea\s*([a-eh])\b|^linea\s*([a-eh])$|^([a-eh])$/i);
+  return !m ? null : /premetro/i.test(m[0]) ? "Premetro" : (m[1] ?? m[2] ?? m[3]).toUpperCase();
+};
+export function leerSubte(json, cfg, ahora = new Date()) {
+  const entidades = json?.entity ?? json?.entities;
+  if (!Array.isArray(entidades)) throw new Error("Formato de la API del subte no reconocido");
+  const lineas = cfg.subte.lineas.map((id) => ({ id, estado: "normal", texto: "", desde: null }));
+  const peor = { normal: 0, demora: 1, interrumpida: 2, paro: 3 };
+  for (const e of entidades) {
+    const a = e.alert ?? e;
+    const titulo = texto1(a.header_text), detalle = texto1(a.description_text);
+    const todo = sinTildes(`${titulo} ${detalle}`);
+    const periodos = a.active_period ?? [];
+    const inicio = Number(periodos[0]?.start) ? new Date(Number(periodos[0].start) * 1000) : null, fin = Number(periodos[0]?.end) ? new Date(Number(periodos[0].end) * 1000) : null;
+    if (fin && fin < ahora) continue; // ya terminó
+    if (inicio && inicio > new Date(ahora.getTime() + 6 * 3600_000)) continue; // todavía falta mucho
+    let afectadas = (a.informed_entity ?? []).map((i) => lineaDe(i.route_id ?? i.routeId)).filter(Boolean);
+    if (!afectadas.length) {
+      afectadas = [...new Set([...todo.matchAll(/linea\s*([a-eh])\b/g)].map((m) => m[1].toUpperCase()).concat(/premetro/.test(todo) ? ["Premetro"] : []))];
+      if (!afectadas.length && /todas las lineas/.test(todo)) afectadas = lineas.map((l) => l.id);
+    }
+    const efecto = String(a.effect ?? "").toUpperCase();
+    const estado = /\bpar[o]\b|medida de fuerza|asamblea/.test(todo) ? "paro"
+      : efecto === "NO_SERVICE" || efecto === "1" || /interrump|sin servicio|suspendid|cerrad|no funciona/.test(todo) ? "interrumpida"
+      : "demora";
+    for (const id of new Set(afectadas)) {
+      const l = lineas.find((x) => x.id === id);
+      if (!l || peor[estado] <= peor[l.estado]) continue;
+      l.estado = estado; l.texto = (detalle || titulo).trim().slice(0, 240); l.desde = inicio ? inicio.toISOString() : null;
+    }
+  }
+  return { lineas };
 }
