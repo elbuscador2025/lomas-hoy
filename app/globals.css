@@ -297,3 +297,9 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 .cc-minmax, .cc-link { font-size:14px; }
 .temp-c { font-size:48px; }
 .saludo-azul { margin:2px 0 2px; }
+
+/* Lluvia en Lomas y en Capital */
+.lluvia-zonas { margin:0 0 8px; color:var(--texto); font-size:16px; }
+.frase-c.larga { font-size:16px; line-height:1.2; }
+
+.avisarme-nuevos { margin:6px 0 10px; padding:10px 12px; border-radius:12px; background:var(--verde-bg); color:#10213F; font-weight:600; }

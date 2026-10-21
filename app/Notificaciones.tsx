@@ -158,3 +158,26 @@ export default function Notificaciones({ push, agua }: { push: Push; agua: boole
     </>
   );
 }
+
+// Botón de Trueque, Trabajo y Mascotas: prende (o apaga) ese tipo de aviso. Es el mismo interruptor de "Configurar avisos".
+export function AvisarmeNuevos({ push, tipo }: { push: Push; tipo: string }) {
+  const [msg, setMsg] = useState("");
+  const activo = push.estado === "activo" && !!push.prefs.tipos[tipo];
+  async function activar() {
+    setMsg("");
+    const nuevas = { ...push.prefs, tipos: { ...push.prefs.tipos, [tipo]: true } };
+    if (push.estado === "activo") return push.guardar(nuevas);
+    if (push.estado === "inactivo") { if (!(await push.activar(nuevas))) setMsg("No se pudieron activar los avisos. Probá de nuevo."); return; }
+    setMsg(push.estado === "denegado" ? "Los avisos están bloqueados en este navegador. Permití las notificaciones desde el candado de la dirección."
+      : push.estado === "iosSinInstalar" ? "En iPhone, primero agregá Lomas Hoy a la pantalla de inicio y abrila desde el ícono."
+      : push.estado === "noSoportado" ? "Este navegador no permite recibir avisos." : "Un momento…");
+  }
+  return activo ? (
+    <p className="avisarme-nuevos">Te avisamos cuando haya nuevos · <button className="link" onClick={() => push.guardar({ ...push.prefs, tipos: { ...push.prefs.tipos, [tipo]: false } })}>Desactivar</button></p>
+  ) : (
+    <>
+      <button className="btn claro ancho" disabled={push.ocupado} onClick={activar}>Avisarme cuando haya nuevos</button>
+      {msg && <p className="error">{msg}</p>}
+    </>
+  );
+}

@@ -1,6 +1,7 @@
 // Lista inicial de lugares. Solo datos copiados de fuentes oficiales; lo que no estaba confirmado quedó vacío.
 // Categorías: veterinarias | guardias | salitas | comisarias | bomberos | servicios
 const MUNI = { fuente: "Municipio de Lomas de Zamora", fuenteUrl: "https://lomasdezamora.gov.ar" };
+const METROGAS = { fuente: "MetroGAS, distribuidora de gas de Lomas de Zamora (sitio oficial)", fuenteUrl: "https://www.metrogas.com.ar/" };
 const MUNI_HOSP = {
   fuente: "Municipio de Lomas de Zamora – Listado de hospitales 2024",
   fuenteUrl: "https://lomasdezamora.gov.ar/pdf/eje-salud/Listado-de-Hospitales-2024.pdf",
@@ -132,6 +133,7 @@ export const lugaresIniciales = [
   lugar("servicios", "Defensa Civil", "", "", ["103"], "", MUNI),
   lugar("servicios", "Violencia de género", "", "", ["144"], "", MUNI),
   lugar("servicios", "Municipio – Atención a la Comunidad", "", "", ["0800 666 6666", "0800 122 5662"], "", MUNI),
+  lugar("servicios", "MetroGAS – Emergencias por pérdida de gas", "", "", ["0800-999-1050"], "24 hs", METROGAS),
   lugar("servicios", "Edesur – Consultas y reclamos", "", "", ["0810 222 0200"], "",
     { fuente: "Edesur", fuenteUrl: "https://www.edesur.com.ar/" }),
   lugar("servicios", "Edesur – Emergencias", "", "", ["0800 333 3787"], "",

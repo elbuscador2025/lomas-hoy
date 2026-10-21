@@ -9,6 +9,7 @@ export async function POST(req: Request) {
     ["HLEN", "primero"],
     ["SCARD", "volvieron"],
     ["LRANGE", "reportes", 0, 99],
+    ["LRANGE", "actualizacion:log", 0, 7],
   ]);
   const n = dias.length * 2;
   return Response.json({
@@ -16,5 +17,6 @@ export async function POST(req: Request) {
     dias: dias.map((dia, i) => ({ dia, visitantes: r[i * 2], volvieron: r[i * 2 + 1] })).filter((d) => d.visitantes),
     resumen: { visitantes_totales: r[n], volvieron_otro_dia: r[n + 1] },
     reportes: (r[n + 2] as string[]).map((x) => JSON.parse(x)),
+    corridas: (r[n + 3] as string[]).map((x) => JSON.parse(x)), // las últimas actualizaciones de datos: { t, o }
   });
 }

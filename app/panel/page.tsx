@@ -18,6 +18,7 @@ type Datos = {
   dias: { dia: string; visitantes: number; volvieron: number }[];
   resumen: { visitantes_totales: number; volvieron_otro_dia: number } | null;
   reportes: { creado_en: string; seccion: string; mensaje: string }[];
+  corridas?: { t: string; o: string }[];
 };
 
 const vacio: Lugar = { id: "", categoria: "guardias", nombre: "", direccion: "", localidad: "", telefonos: [], horario: "", fuente: "", fuenteUrl: "" };
@@ -107,6 +108,12 @@ export default function Panel() {
 
       {pestana === "stats" && (
         <>
+          <p className={`normal ${datos.corridas?.[0] && Date.now() - new Date(datos.corridas[0].t).getTime() > 45 * 60_000 ? "error" : ""}`}>
+            <b>Última actualización de datos:</b> {datos.corridas?.[0] ? `hace ${Math.max(0, Math.round((Date.now() - new Date(datos.corridas[0].t).getTime()) / 60_000))} minutos` : "todavía sin registro"}
+            {datos.corridas && datos.corridas.length > 1 && (
+              <><br /><small>Últimas corridas: {datos.corridas.map((x) => `${new Date(x.t).toLocaleTimeString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", hour: "2-digit", minute: "2-digit", hour12: false })} (${x.o === "despertador" ? "despertador" : "GitHub"})`).join(" · ")}</small></>
+            )}
+          </p>
           <p>
             Visitantes distintos: <b>{datos.resumen?.visitantes_totales ?? 0}</b> · Volvieron otro día:{" "}
             <b>{datos.resumen?.volvieron_otro_dia ?? 0}</b>

@@ -291,6 +291,7 @@ export default function Inicio() {
             <div className="clima-detalle"><Icono nombre={a.icono} tam={64} />
               <div><span className="temp-chica">{Math.round(a.temp)}°</span><br />{a.etiqueta}</div></div>
             {clima.frase && <p className="frase">{clima.frase}</p>}
+            {clima.lluvia && <p className="lluvia-zonas"><b>Lluvia en Lomas:</b> {clima.lluvia.lomas}{clima.lluvia.capital && <><br /><b>Lluvia en Capital:</b> {clima.lluvia.capital}</>}</p>}
             <p className="vacio">
               {a.medidoEn ? `Medido en ${a.estacion} a las ${a.medidoEn} · SMN${d.clima?.ok_en ? ` · Actualizado ${hora(d.clima.ok_en)}` : ""}` : "Estimado por Open-Meteo (no hay una medición reciente del SMN)"}
             </p>
@@ -305,7 +306,7 @@ export default function Inicio() {
                   <b>{h.hora === "Ahora" ? "Ahora" : h.hora.slice(11, 16)}</b><Icono nombre={h.icono} tam={22} />
                   <span>{h.etiqueta}</span><b>{Math.round(h.temp)}°</b>
                   <small className="detalle-hora">
-                    {[h.lluvia != null ? `Lluvia ${h.lluvia}%` : null, h.viento != null ? `Viento ${Math.round(h.viento)} km/h` : null, h.sensacion != null ? `Sensación ${Math.round(h.sensacion)}°` : null]
+                    {[h.lluvia != null ? `Lluvia Lomas ${h.lluvia}%${h.lluviaCap != null ? ` · Capital ${h.lluviaCap}%` : ""}` : null, h.viento != null ? `Viento ${Math.round(h.viento)} km/h` : null, h.sensacion != null ? `Sensación ${Math.round(h.sensacion)}°` : null]
                       .filter(Boolean).join(" · ")}
                   </small>
                 </li>
@@ -321,7 +322,7 @@ export default function Inicio() {
                 </li>
               ))}
             </ul>
-            <p className="vacio">Pronóstico para {config.ciudad}. Fuente: SMN y Open-Meteo.</p>
+            <p className="vacio">Pronóstico para {config.ciudad} y Capital. Fuente: SMN y Open-Meteo.</p>
           </>
         )}
         <Pie seccion="clima" fuente={config.clima.fuente} url={config.clima.url} fila={d.clima} minutosViejo={config.clima.minutosParaAvisarViejo} />
@@ -350,17 +351,18 @@ export default function Inicio() {
           <div className="clima-detalle"><Icono nombre={dia.icono} tam={64} />
             <div><span className="temp-chica">{Math.round(dia.max)}°</span> <small>/ {Math.round(dia.min)}°</small><br />Máxima y mínima</div></div>
           {frase && <p className="frase">{frase}</p>}
+          {dia.lluviaTexto && <p className="lluvia-zonas"><b>Lluvia en Lomas:</b> {dia.lluviaTexto.lomas}{dia.lluviaTexto.capital && <><br /><b>Lluvia en Capital:</b> {dia.lluviaTexto.capital}</>}</p>}
           <h2>Hora por hora</h2>
           <ul className="lista">
             {horasDia.map((h) => (
               <li key={h.hora} className="fila-hora">
                 <b>{h.hora.slice(11, 16)}</b><Icono nombre={h.icono} tam={22} />
-                <span>{h.lluvia != null ? `Lluvia ${h.lluvia}%` : "—"}</span><b>{h.temp}°</b>
-                <small className="detalle-hora">{[h.viento != null ? `Viento ${h.viento} km/h` : null, h.sensacion != null ? `Sensación ${h.sensacion}°` : null].filter(Boolean).join(" · ")}</small>
+                <span>{h.lluvia != null ? `Lluvia Lomas ${h.lluvia}%` : "—"}</span><b>{h.temp}°</b>
+                <small className="detalle-hora">{[h.lluviaCap != null ? `Lluvia Capital ${h.lluviaCap}%` : null, h.viento != null ? `Viento ${h.viento} km/h` : null, h.sensacion != null ? `Sensación ${h.sensacion}°` : null].filter(Boolean).join(" · ")}</small>
               </li>
             ))}
           </ul>
-          <p className="vacio">Pronóstico para {config.ciudad}. Fuente: Open-Meteo.</p>
+          <p className="vacio">Pronóstico para {config.ciudad} y Capital. Fuente: SMN y Open-Meteo.</p>
         </div>
       </Detalle>
     );
@@ -541,7 +543,7 @@ export default function Inicio() {
   if (vista === "mascotas")
     return (
       <Detalle color="mascotas" titulo={s.mascotas.titulo} onVolver={volver}>
-        <ListaMascotas mascotas={mascotas} onPublicar={() => abrir("mascotas-publicar")} />
+        <ListaMascotas mascotas={mascotas} push={push} onPublicar={() => abrir("mascotas-publicar")} />
       </Detalle>
     );
 
@@ -645,7 +647,7 @@ export default function Inicio() {
   if (vista === "trabajo")
     return (
       <Detalle color="trabajo" titulo={s.trabajo.titulo} onVolver={volver}>
-        <ListaTrabajo publicaciones={trabajo} onPublicar={(m) => abrir(`trabajo-${m}`)} />
+        <ListaTrabajo push={push} publicaciones={trabajo} onPublicar={(m) => abrir(`trabajo-${m}`)} />
       </Detalle>
     );
 
@@ -659,7 +661,7 @@ export default function Inicio() {
   if (vista === "trueque")
     return (
       <Detalle color="trueque" titulo={s.trueque.titulo} onVolver={volver}>
-        <ListaTrueque publicaciones={trueque.publicaciones} ferias={trueque.ferias} onPublicar={() => abrir("trueque-publicar")} onAvisarFeria={() => abrir("trueque-feria")} />
+        <ListaTrueque push={push} publicaciones={trueque.publicaciones} ferias={trueque.ferias} onPublicar={() => abrir("trueque-publicar")} onAvisarFeria={() => abrir("trueque-feria")} />
       </Detalle>
     );
 
@@ -697,7 +699,7 @@ export default function Inicio() {
           <span className="cc-fila">
             <span className="clima-icono"><Icono nombre={clima ? clima.ahora.icono : "nube"} tam={52} ancho={1.7} /></span>
             <span className="temp-c">{clima ? `${Math.round(clima.ahora.temp)}°` : "--°"}</span>
-            <span className="frase-c">{clima?.frase ?? (clima ? clima.ahora.etiqueta : datos ? "Sin datos del clima" : "Cargando…")}</span>
+            <span className={`frase-c${(clima?.frase?.length ?? 0) > 36 ? " larga" : ""}`}>{clima?.frase ?? (clima ? clima.ahora.etiqueta : datos ? "Sin datos del clima" : "Cargando…")}</span>
           </span>
           <span className="cc-pie">
             {maxMin && <span className="cc-minmax">Máx {maxMin.max}° · Mín {maxMin.min}°</span>}

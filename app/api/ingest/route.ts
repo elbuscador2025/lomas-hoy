@@ -1,13 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
-import { after } from "next/server";
-import { mantener } from "@/lib/mascotas";
-import { mantener as mantenerTrueque } from "@/lib/trueque";
-import { mantener as mantenerTrabajo } from "@/lib/trabajo";
-import { evaluarResumen } from "@/lib/resumen";
-import { evaluarTren, evaluarLuz, evaluarProgramados, evaluarColectivos, evaluarAgua, evaluarSubte } from "@/lib/eventos";
-import { redis } from "@/lib/servidor";
+import { guardarDato, registrarCorrida, CLAVES_VALIDAS } from "@/lib/ingesta";
 
-// Lo llama el proceso automático (GitHub Actions) con la clave secreta.
+// Lo llama GitHub Actions (el cadete de respaldo) con la clave secreta.
 export async function POST(req: Request) {
   const esperada = Buffer.from(`Bearer ${process.env.INGEST_SECRET ?? ""}`);
   const dada = Buffer.from(req.headers.get("authorization") ?? "");
@@ -15,25 +9,8 @@ export async function POST(req: Request) {
     return Response.json({ ok: false }, { status: 401 });
   }
   const { clave, contenido, error } = await req.json().catch(() => ({}));
-  if (!["tren", "luz", "colectivos", "programados", "agua", "pronostico", "mascotas", "subte"].includes(clave)) return Response.json({ ok: false }, { status: 400 });
-
-  const ahora = new Date().toISOString();
-  const llave = `datos:${clave}`;
-  if (contenido) {
-    await redis([["SET", llave, JSON.stringify({ clave, contenido, ok_en: ahora, intento_en: ahora, error: null })]]);
-    // Las notificaciones salen después de responder: si fallan, el dato ya quedó guardado.
-    if (clave === "tren") after(() => evaluarTren(contenido).catch((e) => console.error("push tren", e)));
-    if (clave === "programados") after(() => evaluarProgramados(contenido).catch((e) => console.error("push programados", e)));
-    if (clave === "mascotas") after(() => Promise.all([mantener(), mantenerTrueque(), mantenerTrabajo(), evaluarResumen()]).catch((e) => console.error("mascotas", e)));
-    if (clave === "colectivos") after(() => evaluarColectivos(contenido).catch((e) => console.error("push colectivos", e)));
-    if (clave === "subte") after(() => evaluarSubte(contenido).catch((e) => console.error("push subte", e)));
-    if (clave === "agua") after(() => evaluarAgua().catch((e) => console.error("push agua", e)));
-    if (clave === "luz") after(() => evaluarLuz(contenido).catch((e) => console.error("push luz", e)));
-  } else {
-    // Falló la lectura: se conserva el último dato bueno y solo se anota el error.
-    const [previo] = await redis([["GET", llave]]);
-    const base = previo ? JSON.parse(previo as string) : { clave, contenido: null, ok_en: null };
-    await redis([["SET", llave, JSON.stringify({ ...base, intento_en: ahora, error: String(error ?? "error").slice(0, 300) })]]);
-  }
+  if (!CLAVES_VALIDAS.includes(clave)) return Response.json({ ok: false }, { status: 400 });
+  await guardarDato(clave, contenido, error);
+  if (clave === "mascotas") await registrarCorrida("github"); // una vez por corrida
   return Response.json({ ok: true });
 }

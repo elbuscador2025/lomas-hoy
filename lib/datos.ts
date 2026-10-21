@@ -12,16 +12,17 @@ export type Luz = {
   cortes: { tension: "media" | "baja" | "otra"; localidad: string | null; usuarios: number; normalizacion: string | null; lat?: number; lng?: number }[];
 };
 export type EstadoClima = { icono: string; etiqueta: string };
-export type HoraClima = { hora: string; temp: number; sensacion: number | null; viento: number | null; lluvia: number | null } & EstadoClima;
+export type HoraClima = { hora: string; temp: number; sensacion: number | null; viento: number | null; lluvia: number | null; lluviaCap?: number } & EstadoClima;
 export type DiaClima = { fecha: string; min: number; max: number; lluvia: number | null; palabra: string } & EstadoClima;
-export type HoraDia = { hora: string; temp: number; sensacion: number | null; viento: number | null; lluvia: number | null; icono: string };
-export type DiaDetalle = { fecha: string; min: number; max: number; lluvia: number | null; palabra: string; icono: string; etiqueta: string; frase: string | null; horas: HoraDia[] };
+export type HoraDia = { hora: string; temp: number; sensacion: number | null; viento: number | null; lluvia: number | null; lluviaCap?: number; icono: string };
+export type DiaDetalle = { fecha: string; min: number; max: number; lluvia: number | null; palabra: string; icono: string; etiqueta: string; frase: string | null; lluviaTexto?: { lomas: string; capital: string | null } | null; horas: HoraDia[] };
 export type Clima = {
   ahora: {
     temp: number; sensacion: number | null; humedad: number | null; viento: number | null;
     medidoEn: string | null; estacion: string | null; // si vino del SMN: "HH:MM" y estación
   } & EstadoClima;
   frase: string | null; // "Llueve a la tarde, llevá paraguas"
+  lluvia?: { lomas: string; capital: string | null } | null; // la lluvia de lo que queda de hoy, en Lomas y en Capital
   horas: HoraClima[]; // desde la hora actual, hasta 48
   dias: DiaClima[];
   porDia?: DiaDetalle[]; // hoy y 5 días más, hora por hora (puede faltar hasta la próxima vuelta del proceso automático)
@@ -199,7 +200,7 @@ export const normalizar = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, 
 export function proximasHoras(c: Clima, ahoraAR: string): HoraClima[] {
   const actual = c.horas.find((h) => h.hora.slice(0, 13) === ahoraAR.slice(0, 13));
   const siguientes = c.horas.filter((h) => h.hora.slice(0, 13) > ahoraAR.slice(0, 13)).slice(0, 24);
-  return [{ hora: "Ahora", temp: c.ahora.temp, sensacion: c.ahora.sensacion, viento: c.ahora.viento, icono: c.ahora.icono, etiqueta: c.ahora.etiqueta, lluvia: actual?.lluvia ?? null }, ...siguientes];
+  return [{ hora: "Ahora", temp: c.ahora.temp, sensacion: c.ahora.sensacion, viento: c.ahora.viento, icono: c.ahora.icono, etiqueta: c.ahora.etiqueta, lluvia: actual?.lluvia ?? null, lluviaCap: actual?.lluviaCap }, ...siguientes];
 }
 
 // Búsqueda del buscador en Google Maps: se agrega "en Lomas de Zamora" salvo que la persona ya lo haya escrito.

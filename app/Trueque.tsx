@@ -6,6 +6,8 @@ import { Icono } from "./Iconos";
 import { achicar } from "./Mascotas";
 import Denunciar from "./Denunciar";
 import DenunciarEstafa from "./DenunciarEstafa";
+import { AvisarmeNuevos } from "./Notificaciones";
+import type { Push } from "./usePush";
 import { AVISO_TRUEQUE, datoProhibido } from "@/lib/estafas";
 
 const fechaCorta = (iso: string) => new Date(iso).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "numeric", month: "long" });
@@ -52,8 +54,8 @@ export function FeriaCard({ f }: { f: FeriaTrueque }) {
   );
 }
 
-export function ListaTrueque({ publicaciones, ferias, onPublicar, onAvisarFeria }: {
-  publicaciones: PublicacionTrueque[]; ferias: FeriaTrueque[]; onPublicar: () => void; onAvisarFeria: () => void;
+export function ListaTrueque({ publicaciones, ferias, push, onPublicar, onAvisarFeria }: {
+  push: Push; publicaciones: PublicacionTrueque[]; ferias: FeriaTrueque[]; onPublicar: () => void; onAvisarFeria: () => void;
 }) {
   const barrios = useBarrios();
   const [pestana, setPestana] = useState<"cambio" | "ferias">("cambio");
@@ -70,6 +72,7 @@ export function ListaTrueque({ publicaciones, ferias, onPublicar, onAvisarFeria 
           <button key={id} role="tab" className={`filtro ${pestana === id ? "activo" : ""}`} aria-selected={pestana === id} onClick={() => setPestana(id)}>{t}</button>
         ))}
       </div>
+      <AvisarmeNuevos push={push} tipo="trueque" />
       {pestana === "cambio" ? (
         <>
           <button className="tarjeta-publicar" onClick={onPublicar}><b>¿Tenés algo para cambiar?</b><span>Tocá acá y publicalo gratis</span></button>

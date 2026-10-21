@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { config } from "@/lomas.config.mjs";
 import { ESPECIES, type MascotaPublica } from "@/lib/mascotas-comun";
 import { Icono } from "./Iconos";
+import { AvisarmeNuevos } from "./Notificaciones";
+import type { Push } from "./usePush";
 
 const fechaCorta = (iso: string) => new Date(iso).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "numeric", month: "long" });
 const tituloEspecie = (id: string) => ESPECIES.find((e) => e.id === id)?.titulo ?? id;
@@ -25,11 +27,12 @@ export function MascotaCard({ m }: { m: MascotaPublica }) {
   );
 }
 
-export function ListaMascotas({ mascotas, onPublicar }: { mascotas: MascotaPublica[]; onPublicar: () => void }) {
+export function ListaMascotas({ mascotas, push, onPublicar }: { mascotas: MascotaPublica[]; push: Push; onPublicar: () => void }) {
   const [filtro, setFiltro] = useState<"todos" | "perdido" | "encontrado">("todos");
   const lista = mascotas.filter((m) => filtro === "todos" || m.estado === filtro);
   return (
     <>
+      <AvisarmeNuevos push={push} tipo="mascotas" />
       <button className="btn ancho grande-btn" onClick={onPublicar}>Publicar</button>
       <div className="filtros" role="group" aria-label="Filtrar">
         {([["todos", "Todos"], ["perdido", "Perdidos"], ["encontrado", "Encontrados"]] as const).map(([id, t]) => (

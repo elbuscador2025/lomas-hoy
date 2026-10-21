@@ -8,6 +8,8 @@ import { achicar } from "./Mascotas";
 import { useBarrios, Cancelar } from "./Trueque";
 import Denunciar from "./Denunciar";
 import DenunciarEstafa from "./DenunciarEstafa";
+import { AvisarmeNuevos } from "./Notificaciones";
+import type { Push } from "./usePush";
 
 const fechaCorta = (iso: string) => new Date(iso).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "numeric", month: "long" });
 const dispositivo = () => { try { return localStorage.getItem("lomas-hoy:id") ?? ""; } catch { return ""; } };
@@ -30,7 +32,7 @@ export function TrabajoCard({ p }: { p: PublicacionTrabajo }) {
   );
 }
 
-export function ListaTrabajo({ publicaciones, onPublicar }: { publicaciones: PublicacionTrabajo[]; onPublicar: (m: Modo) => void }) {
+export function ListaTrabajo({ publicaciones, push, onPublicar }: { push: Push; publicaciones: PublicacionTrabajo[]; onPublicar: (m: Modo) => void }) {
   const barrios = useBarrios();
   const [modo, setModo] = useState<Modo>("ofrezco");
   const [rubro, setRubro] = useState("");
@@ -45,6 +47,7 @@ export function ListaTrabajo({ publicaciones, onPublicar }: { publicaciones: Pub
           <button key={id} role="tab" className={`filtro ${modo === id ? "activo" : ""}`} aria-selected={modo === id} onClick={() => setModo(id)}>{t}</button>
         ))}
       </div>
+      <AvisarmeNuevos push={push} tipo="trabajo" />
       <button className="tarjeta-publicar" onClick={() => onPublicar(modo)}>
         {modo === "ofrezco"
           ? <><b>¿Tenés un trabajo para ofrecer?</b><span>Publicalo gratis</span></>
