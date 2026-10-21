@@ -142,8 +142,8 @@ export const config = {
       tren: { activa: true, titulo: "Tren Roca" },
       luz: { activa: true, titulo: "Cortes de luz" },
       agua: { activa: true, titulo: "Cortes de agua" },
-      // Apagado: el archivo abierto de alertas del SMN llegó vacío aunque había alertas vigentes en el país, así que no es confiable.
-      tormenta: { activa: false, titulo: "Alertas de tormenta" },
+      // Aviso propio por pronóstico (el archivo abierto de alertas oficiales del SMN llega vacío: no se puede usar). Prendido de entrada.
+      tormenta: { activa: true, titulo: "Alertas de tormenta" },
       colectivos: { activa: true, titulo: "Paros de colectivos" },
       // Apagado de entrada: solo líneas interrumpidas o paros, no demoras chicas.
       subte: { activa: true, porDefecto: false, titulo: "Subte" },
@@ -158,7 +158,7 @@ export const config = {
     },
     horaResumen: { desde: "07:00", hasta: "10:00" }, // el resumen sale en la primera vuelta del proceso automático después de las 7
     maximoPorDia: 6, // por celular, sumando todos los tipos
-    silencioDesde: 23, // de 23:00 a 7:00 no se manda nada (salvo tormenta naranja o roja)
+    silencioDesde: 23, // de 23:00 a 7:00 no se manda nada (salvo una tormenta fuerte que empieza en las próximas horas)
     silencioHasta: 7,
   },
 

@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { config } from "@/lomas.config.mjs";
 
-export type Prefs = { tipos: Record<string, boolean>; localidad?: string };
+export type Prefs = { tipos: Record<string, boolean>; localidad?: string; v?: number };
 export type EstadoPush = "cargando" | "noSoportado" | "iosSinInstalar" | "inactivo" | "denegado" | "activo";
 
 const CLAVE = "lomas-hoy:push";
@@ -25,7 +25,8 @@ export const estaInstalada = () =>
 function leerPrefs(): Prefs {
   try {
     const p = JSON.parse(localStorage.getItem(CLAVE) ?? "null");
-    if (p?.tipos) return { ...prefsIniciales(), ...p, tipos: { ...prefsIniciales().tipos, ...p.tipos } };
+    // v2: las alertas de tormenta pasaron a estar prendidas para todos (antes no se podían elegir)
+    if (p?.tipos) return { ...prefsIniciales(), ...p, v: 2, tipos: { ...prefsIniciales().tipos, ...p.tipos, ...((p.v ?? 1) < 2 ? { tormenta: true } : {}) } };
   } catch {}
   return prefsIniciales();
 }

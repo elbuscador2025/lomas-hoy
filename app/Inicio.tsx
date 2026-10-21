@@ -13,6 +13,7 @@ import LugarCard from "./LugarCard";
 import Notificaciones, { CartelInstalar, CartelAvisos, PreguntaLocalidad } from "./Notificaciones";
 import MisAvisos, { useAvisos } from "./MisAvisos";
 import MapaLuz from "./MapaLuz";
+import BotonLlamar from "./BotonLlamar";
 import { transporteDe, luzEnZona, estadoEnUnaFrase } from "@/lib/transporte";
 import { mismaLocalidad } from "@/lib/localidades";
 import { MascotaCard, ListaMascotas, FormularioMascota } from "./Mascotas";
@@ -185,6 +186,8 @@ export default function Inicio() {
   const nombreDiaCorto = (f: string) => capitalizar(new Date(`${f}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "short", day: "numeric" }).replace(/[.,]/g, ""));
   const hoyDia = clima?.porDia?.find((x) => x.fecha === ahora.slice(0, 10)) ?? clima?.porDia?.[0];
   const maxMin = hoyDia ? { max: Math.round(hoyDia.max), min: Math.round(hoyDia.min) } : null;
+  // Aviso propio por pronóstico (no oficial), mientras dure y si el pronóstico no está viejo
+  const tormenta = clima?.tormenta && clima.tormenta.hasta >= ahora && (!d.clima?.ok_en || Date.now() - new Date(d.clima.ok_en).getTime() < 3 * 3600_000) ? clima.tormenta : null;
   const transp = transporteDe(d);
   const hAR = Number(ahora.slice(11, 13));
   const saludo = hAR >= 6 && hAR < 12 ? "Buen día" : hAR >= 12 && hAR < 20 ? "Buenas tardes" : "Buenas noches";
@@ -364,6 +367,33 @@ export default function Inicio() {
           </ul>
           <p className="vacio">Pronóstico para {config.ciudad} y Capital. Fuente: SMN y Open-Meteo.</p>
         </div>
+      </Detalle>
+    );
+  }
+
+  if (vista === "tormenta") {
+    const hh = (f: string) => `${Number(f.slice(11, 13))}`;
+    return (
+      <Detalle color="guardias" titulo="Aviso de tormenta" onVolver={volver}>
+        {!tormenta ? <p className="vacio">Ya no hay un aviso vigente.</p> : (
+          <>
+            <p className="aviso-estafa" role="note">{tormenta.texto} Es un pronóstico, no una alerta oficial del Servicio Meteorológico Nacional.</p>
+            <h2>Cuándo</h2>
+            <p>Desde las {hh(tormenta.desde)} hs hasta las {tormenta.hastaHora} hs aproximadamente.</p>
+            <h2>Qué se espera</h2>
+            <p>{capitalizar(tormenta.peligros.join(" y "))} en {tormenta.zonas.join(" y ")}.</p>
+            <h2>Qué hacer</h2>
+            <ul className="lista">
+              <li>No saques la basura.</li>
+              <li>Asegurá macetas, toldos y lo que tengas afuera.</li>
+              <li>Evitá circular por calles inundadas y zonas que se anegan.</li>
+              <li>Si hay una emergencia, llamá al 103 (Defensa Civil) o al 911.</li>
+            </ul>
+            <BotonLlamar nombre="Defensa Civil" numero="103" />
+            <BotonLlamar nombre="Policía – Emergencias" numero="911" />
+            <p className="vacio">Fuente: pronóstico del Servicio Meteorológico Nacional (modelo) y Open-Meteo, para Lomas de Zamora y Capital. Las alertas oficiales se consultan en <a href="https://www.smn.gob.ar/" target="_blank" rel="noreferrer">smn.gob.ar</a>.</p>
+          </>
+        )}
       </Detalle>
     );
   }
@@ -695,6 +725,11 @@ export default function Inicio() {
           <b>{saludo} · {capitalizar(fechaLarga())}</b>
           {estadoFrase && <span>{estadoFrase}</span>}
         </div>
+        {tormenta && (
+          <button className="banda-tormenta" onClick={(e) => { e.stopPropagation(); abrir("tormenta"); }}>
+            <Icono nombre="tormenta" tam={22} /> <span>{tormenta.texto} <u>Ver el detalle ›</u></span>
+          </button>
+        )}
         <button className="clima-compacto" aria-label="Ver el clima: hora por hora y 5 días">
           <span className="cc-fila">
             <span className="clima-icono"><Icono nombre={clima ? clima.ahora.icono : "nube"} tam={52} ancho={1.7} /></span>

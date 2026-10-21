@@ -75,7 +75,7 @@ export function leerObservacionSmn(txt, estacion, ahora = new Date()) {
 export const urlOpenMeteo = (cfg, punto = cfg.clima) =>
   `https://api.open-meteo.com/v1/forecast?latitude=${punto.latitud}&longitude=${punto.longitud}` +
   `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,precipitation,rain,showers` +
-  `&hourly=temperature_2m,apparent_temperature,weather_code,precipitation_probability,precipitation,wind_speed_10m` +
+  `&hourly=temperature_2m,apparent_temperature,weather_code,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m` +
   `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset` +
   `&forecast_days=7&timezone=${encodeURIComponent(cfg.zonaHoraria)}`;
 
@@ -201,6 +201,17 @@ export function leerPronostico(json, extra = {}) {
   const smnChance = (filas, hora) => { const mm = mmDeHora(filas, hora); return mm == null ? null : chanceSmn(mm); };
   const lluviaLomas = (k) => chanceFinal(h.precipitation_probability[k], smnChance(extra.smn?.lomas, h.time[k]));
   const lluviaCap = (hora) => (hayCap ? chanceFinal(capOM.get(hora)?.p ?? null, smnChance(extra.smn?.capital, hora)) : undefined);
+  // Peligros por hora (prudentes, para no avisar de más): tormenta (código de tormenta y chance alta en las dos fuentes),
+  // lluvia fuerte (10 mm en una hora o 25 mm en tres, también con chance alta) y ráfagas de 80 km/h o más (solo las da Open-Meteo, por eso el umbral es alto)
+  const capIdx = new Map((hc?.time ?? []).map((t, i) => [t, i]));
+  const peligrosDe = (arr, k, chance) => {
+    const mm1 = arr.precipitation?.[k] ?? 0, mm3 = [0, 1, 2].reduce((s, d) => s + (arr.precipitation?.[k + d] ?? 0), 0);
+    const p = [];
+    if (arr.weather_code?.[k] >= 95 && chance >= 50) p.push("tormentas fuertes");
+    if ((mm1 >= 10 || mm3 >= 25) && chance >= 50) p.push("lluvia fuerte");
+    if ((arr.wind_gusts_10m?.[k] ?? 0) >= 80) p.push("ráfagas fuertes");
+    return p;
+  };
   const desde = h.time.findIndex((t) => t.slice(0, 13) >= c.time.slice(0, 13)); // desde la hora actual
   const horas = h.time.slice(desde, desde + 48).map((hora, i) => ({
     hora,
@@ -209,6 +220,8 @@ export function leerPronostico(json, extra = {}) {
     viento: h.wind_speed_10m[desde + i],
     lluvia: lluviaLomas(desde + i),
     lluviaCap: lluviaCap(hora),
+    pL: peligrosDe(h, desde + i, lluviaLomas(desde + i)),
+    pC: capIdx.has(hora) ? peligrosDe(hc, capIdx.get(hora), lluviaCap(hora)) : [],
     mm: h.precipitation[desde + i],
     codigo: h.weather_code[desde + i],
     ...(desdeCodigo(h.weather_code[desde + i]) ?? { icono: "nube", etiqueta: "—" }),
@@ -286,6 +299,26 @@ function textoRestoDelDia(horas, ahora) {
   return a ? { lomas: a.texto, capital: b?.texto ?? null } : null;
 }
 
+// Aviso propio por pronóstico (no es una alerta oficial): mira las próximas 12 horas en Lomas y en Capital. Null si no hay nada fuerte.
+export function avisoTormenta(horas, ahora) {
+  const ventana = horas.filter((x) => x.hora.slice(0, 13) >= ahora.slice(0, 13)).slice(0, 12);
+  const malas = ventana.filter((x) => x.pL?.length || x.pC?.length);
+  if (!malas.length) return null;
+  const peligros = ["tormentas fuertes", "lluvia fuerte", "ráfagas fuertes"].filter((p) => malas.some((x) => x.pL?.includes(p) || x.pC?.includes(p)));
+  const zonas = [malas.some((x) => x.pL?.length) && "Lomas", malas.some((x) => x.pC?.length) && "Capital"].filter(Boolean);
+  const desde = malas[0].hora, ultima = malas[malas.length - 1].hora;
+  const franja = franjaDe(Number(desde.slice(11, 13)));
+  const empiezaEnHoras = Math.max(0, ventana.findIndex((x) => x.hora === desde));
+  const que = unir(peligros);
+  const texto = `Pronóstico de ${que} ${franja} en ${unir(zonas)}.`;
+  const hastaH = (Number(ultima.slice(11, 13)) + 1) % 24;
+  return {
+    desde, hasta: ultima, hastaHora: hastaH, peligros, zonas, franja, empiezaEnHoras, texto,
+    titulo: peligros.includes("tormentas fuertes") ? "Pronóstico de tormentas fuertes" : `Pronóstico de ${peligros[0]}`,
+    cuerpo: `${texto} Asegurá lo que tengas afuera y evitá zonas que se inundan. Es un pronóstico, no una alerta oficial.`,
+  };
+}
+
 // Junta lo medido (SMN, si hay) con el pronóstico guardado. ahoraAR: "YYYY-MM-DDTHH:mm".
 export function componerClima(pron, medido, ahoraAR) {
   const base = medido ?? pron.actual;
@@ -294,6 +327,7 @@ export function componerClima(pron, medido, ahoraAR) {
     ahora,
     frase: armarFrase({ horas: pron.horas, ahora: ahoraAR, ahoraEstado: ahora }),
     lluvia: textoRestoDelDia(pron.horas, ahoraAR),
+    tormenta: avisoTormenta(pron.horas, ahoraAR),
     horas: pron.horas,
     dias: pron.dias,
     porDia: pron.porDia,

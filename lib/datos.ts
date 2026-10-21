@@ -16,6 +16,7 @@ export type HoraClima = { hora: string; temp: number; sensacion: number | null; 
 export type DiaClima = { fecha: string; min: number; max: number; lluvia: number | null; palabra: string } & EstadoClima;
 export type HoraDia = { hora: string; temp: number; sensacion: number | null; viento: number | null; lluvia: number | null; lluviaCap?: number; icono: string };
 export type DiaDetalle = { fecha: string; min: number; max: number; lluvia: number | null; palabra: string; icono: string; etiqueta: string; frase: string | null; lluviaTexto?: { lomas: string; capital: string | null } | null; horas: HoraDia[] };
+export type AvisoTormenta = { desde: string; hasta: string; hastaHora: number; peligros: string[]; zonas: string[]; franja: string; empiezaEnHoras: number; texto: string; titulo: string; cuerpo: string };
 export type Clima = {
   ahora: {
     temp: number; sensacion: number | null; humedad: number | null; viento: number | null;
@@ -23,6 +24,7 @@ export type Clima = {
   } & EstadoClima;
   frase: string | null; // "Llueve a la tarde, llevá paraguas"
   lluvia?: { lomas: string; capital: string | null } | null; // la lluvia de lo que queda de hoy, en Lomas y en Capital
+  tormenta?: AvisoTormenta | null; // aviso propio por pronóstico (no oficial): tormentas, lluvia o ráfagas fuertes en las próximas 12 horas
   horas: HoraClima[]; // desde la hora actual, hasta 48
   dias: DiaClima[];
   porDia?: DiaDetalle[]; // hoy y 5 días más, hora por hora (puede faltar hasta la próxima vuelta del proceso automático)

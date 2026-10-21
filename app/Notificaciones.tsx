@@ -72,7 +72,7 @@ const AVISOS_QUE_LLEGAN: { icono: string; texto: string; activo: boolean }[] = [
   { icono: "luz", texto: "Hay un corte de luz ahora", activo: config.push.tipos.luz.activa },
   { icono: "gota", texto: "Hay un corte de agua", activo: config.push.tipos.agua.activa },
   { icono: "colectivo", texto: "Hay paro de colectivos", activo: config.push.tipos.colectivos.activa },
-  { icono: "tormenta", texto: "Hay alerta de tormenta", activo: config.push.tipos.tormenta.activa },
+  { icono: "tormenta", texto: "Se pronostica una tormenta fuerte", activo: config.push.tipos.tormenta.activa },
 ];
 
 // Cartel para activar los avisos. Pide el permiso del navegador solo al tocar "Activar avisos".
@@ -148,8 +148,7 @@ export default function Notificaciones({ push, agua }: { push: Push; agua: boole
       <p className="vacio">Los avisos de cortes de luz le llegan solo a quien eligió esa localidad.</p>
       <h2>Qué querés recibir</h2>
       {(Object.entries(config.push.tipos) as [string, { activa: boolean; titulo: string }][]).filter(([k]) => k !== "agua" || agua).map(([k, t]) => (
-        <Interruptor key={k} titulo={t.titulo} activo={t.activa && !!prefs.tipos[k]} deshabilitado={!t.activa}
-          nota={!t.activa ? "No disponible por ahora: no hay una fuente oficial confiable." : undefined}
+        <Interruptor key={k} titulo={t.titulo} activo={t.activa && !!prefs.tipos[k]}
           onCambio={(v) => push.guardar({ ...prefs, tipos: { ...prefs.tipos, [k]: v } })} />
       ))}
       <p className="vacio">De 23:00 a 7:00 no te mandamos nada. Todo se sigue viendo dentro de la app. Máximo {config.push.maximoPorDia} avisos por día.</p>

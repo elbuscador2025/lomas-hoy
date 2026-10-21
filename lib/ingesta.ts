@@ -4,7 +4,7 @@ import { mantener } from "@/lib/mascotas";
 import { mantener as mantenerTrueque } from "@/lib/trueque";
 import { mantener as mantenerTrabajo } from "@/lib/trabajo";
 import { evaluarResumen } from "@/lib/resumen";
-import { evaluarTren, evaluarLuz, evaluarProgramados, evaluarColectivos, evaluarAgua, evaluarSubte } from "@/lib/eventos";
+import { evaluarTren, evaluarLuz, evaluarProgramados, evaluarColectivos, evaluarAgua, evaluarSubte, evaluarTormenta } from "@/lib/eventos";
 import { redis } from "@/lib/servidor";
 
 export const CLAVES_VALIDAS = ["tren", "luz", "colectivos", "programados", "agua", "pronostico", "mascotas", "subte"];
@@ -21,6 +21,7 @@ export async function guardarDato(clave: string, contenido: any, error?: unknown
     if (clave === "mascotas") after(() => Promise.all([mantener(), mantenerTrueque(), mantenerTrabajo(), evaluarResumen()]).catch((e) => console.error("mascotas", e)));
     if (clave === "colectivos") after(() => evaluarColectivos(contenido).catch((e) => console.error("push colectivos", e)));
     if (clave === "subte") after(() => evaluarSubte(contenido).catch((e) => console.error("push subte", e)));
+    if (clave === "pronostico") after(() => evaluarTormenta(contenido).catch((e) => console.error("push tormenta", e)));
     if (clave === "agua") after(() => evaluarAgua().catch((e) => console.error("push agua", e)));
     if (clave === "luz") after(() => evaluarLuz(contenido).catch((e) => console.error("push luz", e)));
   } else {

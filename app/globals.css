@@ -303,3 +303,7 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 .frase-c.larga { font-size:16px; line-height:1.2; }
 
 .avisarme-nuevos { margin:6px 0 10px; padding:10px 12px; border-radius:12px; background:var(--verde-bg); color:#10213F; font-weight:600; }
+
+/* Aviso de tormenta */
+.banda-tormenta { display:flex; align-items:center; gap:8px; width:100%; margin:6px 0 4px; padding:8px 12px; border:0; border-radius:12px; background:#D32F2F; color:#fff; text-align:left; font-family:inherit; font-size:14px; font-weight:700; line-height:1.25; cursor:pointer; }
+.banda-tormenta svg { flex:none; }

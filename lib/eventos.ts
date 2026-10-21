@@ -6,6 +6,7 @@ import { notificarSeguro } from "@/lib/push";
 import { redis } from "@/lib/servidor";
 import { filaAgua, aguaVisible } from "@/lib/agua";
 import { ahoraAR } from "@/lib/avisos";
+import { avisoTormenta } from "@/scripts/clima.mjs";
 
 const hash = (s: string) => createHash("sha1").update(s).digest("hex").slice(0, 12);
 
@@ -144,4 +145,18 @@ export async function evaluarSubte(s: Subte) {
       titulo: `${nombre}: ${l.estado === "paro" ? "paro" : "interrumpida"}`, cuerpo: l.texto || `${nombre} ${l.estado === "paro" ? "con paro" : "interrumpida"}`, url: "/?v=subte",
     });
   }
+}
+
+// Tormenta fuerte pronosticada en las próximas 12 horas (Lomas o Capital). Una sola notificación por evento (día + momento del día).
+// De 23 a 7 solo sale si empieza en las próximas 6 horas (es un tema de seguridad); si empieza más tarde, se espera sin gastar el aviso.
+export async function evaluarTormenta(p: { horas: unknown[] }, prefijo = "") {
+  const ahora = ahoraAR();
+  const a = avisoTormenta(p.horas, ahora);
+  if (!a) return;
+  const hora = Number(ahora.slice(11, 13));
+  if ((hora >= config.push.silencioDesde || hora < config.push.silencioHasta) && a.empiezaEnHoras > 6) return;
+  await notificarSeguro({
+    tipo: "tormenta", clave: `tormenta:${a.desde.slice(0, 10)}:${a.franja}`, ttl: 86400, nocturna: true,
+    titulo: prefijo + a.titulo, cuerpo: a.cuerpo, url: "/?v=tormenta",
+  });
 }
