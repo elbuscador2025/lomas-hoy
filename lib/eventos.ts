@@ -163,7 +163,7 @@ export async function evaluarTormenta(p: { horas: unknown[] }, prefijo = "") {
 
 // Alerta oficial del SMN (tormentas, lluvias o viento) para Lomas o la Ciudad. Una sola notificación por alerta (evento + nivel + día).
 // De 23 a 7 solo sale si ya rige o empieza en las próximas 6 horas; si empieza más tarde, se espera sin gastar el aviso.
-export async function evaluarAlertasSmn(a: Alertas) {
+export async function evaluarAlertasSmn(a: Alertas, prefijo = "") {
   const ahora = ahoraAR();
   const hora = Number(ahora.slice(11, 13));
   const silencio = hora >= config.push.silencioDesde || hora < config.push.silencioHasta;
@@ -174,7 +174,7 @@ export async function evaluarAlertasSmn(a: Alertas) {
     const evento = x.evento.toLowerCase();
     await notificarSeguro({
       tipo: "tormenta", clave: `alertaSmn:${evento}:${x.nivel}:${(x.desde ?? ahora).slice(0, 10)}`, ttl: 86400, nocturna: true,
-      titulo: `Alerta ${x.nivel} por ${evento}`,
+      titulo: `${prefijo}Alerta ${x.nivel} por ${evento}`,
       cuerpo: `Alerta ${x.nivel} por ${evento} del SMN para ${x.zonas.join(" y ")}, hasta las ${x.hasta.slice(11, 16)} hs. ${x.instruccion.split(/\s\d-\s?/)[0].replace(/^1-\s?/, "")}`,
       url: "/?v=tormenta",
     });
