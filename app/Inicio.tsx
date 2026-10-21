@@ -774,13 +774,15 @@ export default function Inicio() {
         )}
         <button className="clima-compacto" aria-label="Ver el clima: hora por hora y 5 días">
           <span className="cc-fila">
-            <span className="clima-icono"><Icono nombre={clima ? clima.ahora.icono : "nube"} tam={52} ancho={1.7} /></span>
+            <span className="clima-icono"><Icono nombre={clima ? clima.ahora.icono : "nube"} tam={46} ancho={1.7} /></span>
             <span className="temp-c">{clima ? `${Math.round(clima.ahora.temp)}°` : "--°"}</span>
-            <span className={`frase-c${(clima?.frase?.length ?? 0) > 36 ? " larga" : ""}`}>{clima?.frase ?? (clima ? clima.ahora.etiqueta : datos ? "Sin datos del clima" : "Cargando…")}</span>
+            <span className="cc-lado">
+              {maxMin && <span className="cc-minmax">Máx {maxMin.max}° · Mín {maxMin.min}°</span>}
+              <span className="cc-link">Ver hora por hora y 5 días ›</span>
+            </span>
           </span>
-          <span className="cc-pie">
-            {maxMin && <span className="cc-minmax">Máx {maxMin.max}° · Mín {maxMin.min}°</span>}
-            <span className="cc-link">Ver hora por hora y 5 días ›</span>
+          <span className="frase-lineas">
+            {(clima?.frase ?? (clima ? clima.ahora.etiqueta : datos ? "Sin datos del clima" : "Cargando…")).split("\n").map((l) => <span key={l} className={l.length > 46 ? "chica" : ""}>{l}</span>)}
           </span>
         </button>
       </header>

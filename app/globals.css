@@ -329,3 +329,11 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 .tramite-cuerpo ul { margin:2px 0 0; padding-left:20px; }
 .enlaces-oficiales { list-style:none !important; padding-left:0 !important; margin:10px 0 !important; display:flex; flex-direction:column; gap:6px; }
 .enlaces-oficiales a { display:block; padding:10px 12px; border-radius:12px; background:var(--celeste); color:var(--azul); font-weight:700; text-decoration:none; }
+
+/* Franja del clima: la frase en dos renglones cortos, debajo de la temperatura */
+.cc-lado { display:flex; flex-direction:column; gap:1px; min-width:0; flex:1; }
+.cc-fila { gap:12px; }
+.frase-lineas { display:flex; flex-direction:column; margin-top:2px; }
+.frase-lineas span { display:block; white-space:nowrap; font-size:14.5px; font-weight:800; line-height:1.3; }
+.frase-lineas span.chica { font-size:12.5px; }
+.frase { white-space:pre-line; }

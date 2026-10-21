@@ -48,15 +48,23 @@ test("cortes programados: toma solo el partido (aunque Edesur escriba mal la loc
 });
 
 import { armarFrase } from "./clima.mjs";
-test("clima: la frase pone primero la lluvia, y sino lo más importante", () => {
-  const h = (hora, o = {}) => ({ hora: `2026-10-11T${hora}:00`, lluvia: 0, mm: 0, codigo: 3, sensacion: 18, viento: 10, ...o });
-  const dia = [h("10"), h("13", { lluvia: 90, mm: 1.5, codigo: 63 }), h("21", { lluvia: 50 })];
+test("clima: la frase tiene dos renglones, hoy (o esta noche) y mañana", () => {
+  const h = (dia, hora, o = {}) => ({ hora: `2026-10-${dia}T${hora}:00`, lluvia: 0, lluviaCap: 0, mm: 0, codigo: 3, sensacion: 18, viento: 10, ...o });
   const nublado = { icono: "nube" };
-  assert.equal(armarFrase({ horas: dia, ahora: "2026-10-11T10:30", ahoraEstado: nublado }), "Llueve a la tarde, llevá paraguas");
-  assert.equal(armarFrase({ horas: dia, ahora: "2026-10-11T10:30", ahoraEstado: { icono: "lluvia" } }), "Está lloviendo ahora, llevá paraguas");
-  const frio = [h("10", { sensacion: 9 }), h("15", { sensacion: 11 })];
-  assert.equal(armarFrase({ horas: frio, ahora: "2026-10-11T10:30", ahoraEstado: nublado }), "Hoy hace fresco, salí abrigado");
-  assert.equal(armarFrase({ horas: [h("10")], ahora: "2026-10-11T10:30", ahoraEstado: nublado }), "Hoy no llueve");
+  // 11 hs del 11: hoy llueve a la tarde (90%), mañana llueve a la tarde
+  const dia = [h(11, "10"), h(11, "13", { lluvia: 90, lluviaCap: 90 }), h(11, "21"), h(12, "08"), h(12, "14", { lluvia: 80, lluviaCap: 80 }), h(12, "21")];
+  assert.equal(armarFrase({ horas: dia, ahora: "2026-10-11T10:30", ahoraEstado: nublado }), "Hoy: lluvia a la tarde, llevá paraguas\nMañana: lluvia a la tarde, llevá paraguas");
+  assert.equal(armarFrase({ horas: dia, ahora: "2026-10-11T10:30", ahoraEstado: { icono: "lluvia" } }), "Hoy: está lloviendo ahora, llevá paraguas\nMañana: lluvia a la tarde, llevá paraguas");
+  // 21 hs: "Esta noche" y "Mañana"
+  assert.equal(armarFrase({ horas: dia, ahora: "2026-10-11T21:10", ahoraEstado: nublado }), "Esta noche: sin lluvias\nMañana: lluvia a la tarde, llevá paraguas");
+  // sin lluvia ni hoy ni mañana: un solo renglón (con el aviso de frío si corresponde)
+  const seco = [h(11, "10", { sensacion: 9 }), h(11, "15", { sensacion: 11 }), h(12, "10"), h(12, "15")];
+  assert.equal(armarFrase({ horas: seco, ahora: "2026-10-11T10:30", ahoraEstado: nublado }), "Hoy y mañana sin lluvias, hace fresco, salí abrigado");
+  assert.equal(armarFrase({ horas: [h(11, "10"), h(12, "10")], ahora: "2026-10-11T10:30", ahoraEstado: nublado }), "Hoy y mañana sin lluvias");
+  // si en Capital es peor, se agrega corto; chaparrones aislados es el escalón más bajo; y nunca "a la mañana"
+  const cap = [h(11, "14", { lluvia: 5, lluviaCap: 45 }), h(12, "08", { lluvia: 15, lluviaCap: 15 })];
+  assert.equal(armarFrase({ horas: cap, ahora: "2026-10-11T10:30", ahoraEstado: nublado }), "Hoy: sin lluvias · Capital: probable lluvia a la tarde\nMañana: chaparrones aislados");
+  assert.ok(!/a la mañana/.test(armarFrase({ horas: [h(12, "08", { lluvia: 90, lluviaCap: 90 })], ahora: "2026-10-11T10:30", ahoraEstado: nublado })));
 });
 
 import { esDeNoche, deNoche } from "./clima.mjs";

@@ -256,32 +256,68 @@ const franjaDe = (hora) => FRANJAS.find(([, a, b]) => hora >= a && hora < b)[0];
 const unir = (l) => (l.length > 1 ? `${l.slice(0, -1).join(", ")} y ${l[l.length - 1]}` : l[0]);
 const sumarDia = (f) => new Date(new Date(`${f}T12:00:00Z`).getTime() + 86400_000).toISOString().slice(0, 10);
 
-// ahora: "YYYY-MM-DDTHH:mm" (hora de Argentina). Hasta las 20 habla de lo que queda de hoy; después, de mañana.
-export function armarFrase({ horas, ahora, ahoraEstado }) {
-  if (ahoraEstado?.icono === "tormenta") return "Hay tormenta ahora";
-  if (ahoraEstado?.icono === "lluvia") return "Está lloviendo ahora, llevá paraguas";
-  const hoy = ahora.slice(0, 10), h = Number(ahora.slice(11, 13));
-  const manana = h >= 20;
-  const ambito = horas.filter((x) => {
-    const hh = Number(x.hora.slice(11, 13));
-    return manana ? x.hora.slice(0, 10) === sumarDia(hoy) && hh >= 6 : x.hora.slice(0, 10) === hoy && hh >= h;
-  });
-  if (!ambito.length) return null; // sin datos: no se inventa una frase
-  const dicho = (t) => (manana ? `Mañana, ${t.charAt(0).toLowerCase()}${t.slice(1)}` : t);
-
-  const lluvia = fraseLluvia(ambito);
-  if (lluvia) return dicho(lluvia);
-
+// Cómo se dice la lluvia de un tramo del día, corto. nivel: 0 sin lluvias · 1 chaparrones aislados · 2 probable lluvia · 3 lluvia
+const decir = (nivel, franjas, { cuando = true, paraguas = true } = {}) => {
+  if (nivel === 0) return "sin lluvias";
+  if (nivel === 1) return "chaparrones aislados";
+  const t = cuando && franjas.length ? ` ${franjas.length >= 3 ? "durante el día" : unir(franjas)}` : "";
+  return nivel === 2 ? `probable lluvia${t}` : `lluvia${t}${paraguas ? ", llevá paraguas" : ""}`;
+};
+// La lluvia de un tramo en Lomas y en Capital: una sola frase si es parecida; si en Capital es peor, se agrega "Capital: ...". Null si no hay datos.
+function lineaLluvia(horas, { cuando = true } = {}) {
+  const a = textoLluvia(horas, "lluvia");
+  if (!a) return null;
+  const b = textoLluvia(horas, "lluviaCap");
+  if (!b || a.nivel === b.nivel) {
+    const set = new Set([...a.franjas, ...(b?.franjas ?? [])]);
+    return { nivel: a.nivel, texto: decir(a.nivel, FRANJAS.map((f) => f[0]).filter((f) => set.has(f)), { cuando }) };
+  }
+  if (b.nivel > a.nivel) return { nivel: b.nivel, texto: `${decir(a.nivel, a.franjas, { cuando })} · Capital: ${decir(b.nivel, b.franjas, { cuando, paraguas: false })}` };
+  return { nivel: a.nivel, texto: decir(a.nivel, a.franjas, { cuando }) };
+}
+// Aviso de frío, calor o viento (solo se usa si no hay lluvia que decir)
+function consejoClima(ambito) {
+  if (!ambito.length) return null;
   const maxSens = Math.max(...ambito.map((x) => x.sensacion)), minSens = Math.min(...ambito.map((x) => x.sensacion));
   const masViento = ambito.reduce((a, b) => (b.viento > a.viento ? b : a));
   const viento = masViento.viento, cuando = franjaDe(Number(masViento.hora.slice(11, 13)));
-  if (maxSens >= 35) return dicho("Mucho calor, tomá agua");
-  if (viento >= 50) return dicho(`Mucho viento ${cuando}`);
-  if (minSens <= 5) return dicho("Mucho frío, abrigate bien");
-  if (maxSens >= 30) return dicho("Hace calor, salí liviano");
-  if (viento >= 40) return dicho(`Mucho viento ${cuando}`);
-  if (minSens <= 12) return manana ? "Mañana fresca, salí abrigado" : "Hoy hace fresco, salí abrigado";
-  return manana ? "Mañana no llueve" : "Hoy no llueve";
+  if (maxSens >= 35) return "mucho calor, tomá agua";
+  if (viento >= 50) return `mucho viento ${cuando}`;
+  if (minSens <= 5) return "mucho frío, abrigate bien";
+  if (maxSens >= 30) return "hace calor, salí liviano";
+  if (viento >= 40) return `mucho viento ${cuando}`;
+  if (minSens <= 12) return "hace fresco, salí abrigado";
+  return null;
+}
+
+// La frase del clima, en dos renglones cortos (separados por "\n"):
+//  · lo que queda del día: "Hoy: ..." de 6 a 20 hs, "Esta noche: ..." de 20 a 6;
+//  · el día siguiente: "Mañana: ..." con el momento en que llueve (de madrugada, la segunda línea es "Hoy: ..." porque lo que viene es hoy).
+// Si no llueve en ninguno, un solo renglón: "Hoy y mañana sin lluvias".
+// ahora: "YYYY-MM-DDTHH:mm" (hora de Argentina).
+export function armarFrase({ horas, ahora, ahoraEstado }) {
+  const hoy = ahora.slice(0, 10), h = Number(ahora.slice(11, 13)), manana = sumarDia(hoy);
+  const noche = h >= 20 || h < 6;
+  const hh = (x) => Number(x.hora.slice(11, 13)), dia = (x) => x.hora.slice(0, 10);
+  const L1 = noche ? "Esta noche" : "Hoy";
+  // tramo 1: lo que queda del día (o de la noche) · tramo 2: el día que sigue
+  const t1 = h >= 20 ? horas.filter((x) => (dia(x) === hoy && hh(x) >= h) || (dia(x) === manana && hh(x) < 6))
+    : h < 6 ? horas.filter((x) => dia(x) === hoy && hh(x) >= h && hh(x) < 6)
+    : horas.filter((x) => dia(x) === hoy && hh(x) >= h);
+  const dia2 = h < 6 ? hoy : manana, L2 = h < 6 ? "Hoy" : "Mañana";
+  const t2 = horas.filter((x) => dia(x) === dia2 && hh(x) >= 6);
+  const l1 = lineaLluvia(t1, { cuando: !noche }), l2 = lineaLluvia(t2);
+  const ahoraLluvia = ahoraEstado?.icono === "tormenta" ? "hay tormenta ahora" : ahoraEstado?.icono === "lluvia" ? "está lloviendo ahora, llevá paraguas" : null;
+  if (!l1 && !l2 && !ahoraLluvia) return null; // sin datos: no se inventa una frase
+  const consejo = ahoraLluvia || l1?.nivel ? null : consejoClima(t1);
+  if (!ahoraLluvia && (!l1 || l1.nivel === 0) && (!l2 || l2.nivel === 0)) {
+    return `${L1} y ${L2.toLowerCase()} sin lluvias${consejo ? `, ${consejo}` : ""}`;
+  }
+  const lineas = [];
+  if (ahoraLluvia) lineas.push(`${L1}: ${ahoraLluvia}`);
+  else if (l1) lineas.push(`${L1}: ${l1.texto}${l1.nivel === 0 && consejo ? `, ${consejo}` : ""}`);
+  if (l2) lineas.push(`${L2}: ${l2.texto}`);
+  return lineas.join("\n");
 }
 
 // ---- Observación del SMN (se pide aparte, una sola vez para todos) ----

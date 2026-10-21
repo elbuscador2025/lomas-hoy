@@ -40,7 +40,7 @@ export function textoSaludo(d: Datos, localidad?: string) {
   const hoy = d.ahora.slice(0, 10);
   const temp = d.max ?? d.temp;
   const partes: string[] = [];
-  if (temp != null) partes.push(`Hoy máx ${Math.round(temp)}°${d.frase ? `, ${minuscula(d.frase.replace(/^Hoy /, ""))}` : ""}.`);
+  if (temp != null) partes.push(`Hoy máx ${Math.round(temp)}°.${d.frase ? ` ${d.frase.split("\n").join(". ")}.` : ""}`);
   const estado = estadoEnUnaFrase(transporteDe(d.todo), luzEnZona(d.todo, localidad, d.ahora));
   if (estado) partes.push(estado);
   if (d.alerta) partes.push(`Ojo: ${d.alerta}.`);
