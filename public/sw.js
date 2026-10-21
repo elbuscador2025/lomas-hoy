@@ -1,5 +1,5 @@
 // Guarda la app en el celu para que abra sin internet, y muestra las notificaciones.
-const CACHE = "lomas-hoy-v3";
+const CACHE = "lomas-hoy-v4";
 const AVISOS = "lomas-hoy-avisos"; // "Mis avisos": lo que llegó en los últimos 7 días, guardado en el propio celular
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.add("/")));
@@ -7,7 +7,11 @@ self.addEventListener("install", (e) => {
 });
 self.addEventListener("activate", (e) => {
   e.waitUntil(
-    caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE && k !== AVISOS).map((k) => caches.delete(k)))).then(() => self.clients.claim())
+    caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE && k !== AVISOS).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
+      // Si había pantallas abiertas con una versión vieja de la app, se recargan solas con la nueva
+      .then(() => self.clients.matchAll({ type: "window" }))
+      .then((ventanas) => ventanas.forEach((v) => v.navigate(v.url).catch(() => {})))
   );
 });
 self.addEventListener("fetch", (e) => {

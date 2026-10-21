@@ -92,7 +92,8 @@ export default function Inicio() {
 
   useEffect(() => {
     cargarDatos().then((r) => { setDatos(r.datos); setLugares(r.lugares); setMascotas(r.mascotas); setTrueque(r.trueque); setTrabajo(r.trabajo); setAnses(r.anses); setSinConexion(r.sinConexion); });
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).catch(() => {});
+    fetch("/api/version", { cache: "no-store" }).then((r) => r.json()).then((x) => { if (x.v && process.env.NEXT_PUBLIC_VERSION && x.v !== process.env.NEXT_PUBLIC_VERSION) location.reload(); }).catch(() => {});
     // Visita anónima: un número al azar guardado en el celu, avisado una vez por día.
     try {
       const hoy = new Date().toISOString().slice(0, 10);
@@ -107,6 +108,11 @@ export default function Inicio() {
     // Al volver a la app después de un rato, se piden los datos de nuevo (el clima se renueva solo en el servidor).
     let ultima = Date.now();
     const alVolverAVer = () => {
+      if (document.visibilityState === "visible") {
+        // ¿Hay una versión nueva de la app? Si la nuestra quedó vieja (por ejemplo, la app guardada en el celular), se recarga sola.
+        navigator.serviceWorker?.getRegistration().then((r) => r?.update()).catch(() => {});
+        fetch("/api/version", { cache: "no-store" }).then((r) => r.json()).then((x) => { if (x.v && process.env.NEXT_PUBLIC_VERSION && x.v !== process.env.NEXT_PUBLIC_VERSION) location.reload(); }).catch(() => {});
+      }
       if (document.visibilityState === "visible" && Date.now() - ultima > 3 * 60_000) {
         ultima = Date.now();
         cargarDatos().then((r) => { setDatos(r.datos); setLugares(r.lugares); setMascotas(r.mascotas); setTrueque(r.trueque); setTrabajo(r.trabajo); setAnses(r.anses); setSinConexion(r.sinConexion); });
