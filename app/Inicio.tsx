@@ -699,8 +699,10 @@ export default function Inicio() {
             <span className="temp-c">{clima ? `${Math.round(clima.ahora.temp)}°` : "--°"}</span>
             <span className="frase-c">{clima?.frase ?? (clima ? clima.ahora.etiqueta : datos ? "Sin datos del clima" : "Cargando…")}</span>
           </span>
-          {maxMin && <span className="cc-minmax">Máx {maxMin.max}° · Mín {maxMin.min}°</span>}
-          <span className="cc-link">Ver hora por hora y 5 días ›</span>
+          <span className="cc-pie">
+            {maxMin && <span className="cc-minmax">Máx {maxMin.max}° · Mín {maxMin.min}°</span>}
+            <span className="cc-link">Ver hora por hora y 5 días ›</span>
+          </span>
         </button>
       </header>
 

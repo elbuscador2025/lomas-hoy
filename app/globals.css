@@ -289,3 +289,11 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 .punto-estado.ok { background:#2E9E4F; }
 .punto-estado.alerta { background:#E0A800; }
 .punto-estado.problema { background:#D32F2F; }
+
+/* Franja del clima más baja */
+.azul.compacto { padding:10px 16px 34px; }
+.azul.compacto .campana { width:40px; height:40px; }
+.cc-pie { display:flex; flex-wrap:wrap; column-gap:12px; align-items:baseline; margin-top:2px; }
+.cc-minmax, .cc-link { font-size:14px; }
+.temp-c { font-size:48px; }
+.saludo-azul { margin:2px 0 2px; }
