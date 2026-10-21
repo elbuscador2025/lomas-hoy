@@ -6,11 +6,11 @@ import { Icono } from "./Iconos";
 import { achicar } from "./Mascotas";
 import Denunciar from "./Denunciar";
 import DenunciarEstafa from "./DenunciarEstafa";
+import { haceCuanto } from "@/lib/hace";
 import { AvisarmeNuevos } from "./Notificaciones";
 import type { Push } from "./usePush";
 import { AVISO_TRUEQUE, datoProhibido } from "@/lib/estafas";
 
-const fechaCorta = (iso: string) => new Date(iso).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "numeric", month: "long" });
 const dispositivo = () => { try { return localStorage.getItem("lomas-hoy:id") ?? ""; } catch { return ""; } };
 
 export function useBarrios() {
@@ -29,7 +29,7 @@ export function PublicacionCard({ p }: { p: PublicacionTrueque }) {
         <span className="pildora neutro">{p.categoria}</span>
         <b>Ofrezco: {p.ofrezco}</b>
         <span>Busco a cambio: {p.busco}</span>
-        <small>{p.barrio} · Publicado el {fechaCorta(p.aprobada)}</small>
+        <small>📍 {p.barrio} · {haceCuanto(p.aprobada)}</small>
         <a className="btn whatsapp-chico" target="_blank" rel="noreferrer" href={`https://wa.me/${p.whatsapp}?text=${encodeURIComponent(texto)}`}><Icono nombre="whatsapp" tam={22} /> Escribir por WhatsApp</a>
         <Denunciar seccion="trueque" id={p.id} />
       </div>
@@ -43,7 +43,7 @@ export function FeriaCard({ f }: { f: FeriaTrueque }) {
     <li className="mascota">
       <div className="mascota-datos">
         <b>{f.lugar}</b>
-        <span>{f.direccion} · {f.barrio}</span>
+        <span>{f.direccion} · 📍 {f.barrio}</span>
         <span>{f.dias} · {f.horario}</span>
         <div className="acciones">
           <a className="btn claro" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destino)}`}>Cómo llegar</a>
@@ -82,7 +82,7 @@ export function ListaTrueque({ publicaciones, ferias, push, onPublicar, onAvisar
               {CATEGORIAS_TRUEQUE.map((c) => <option key={c}>{c}</option>)}
             </select>
             <select aria-label="Barrio" value={barrio} onChange={(e) => setBarrio(e.target.value)}>
-              <option value="">Barrios</option>
+              <option value="">📍 Todo Lomas</option>
               {barrios.map((b) => <option key={b}>{b}</option>)}
             </select>
           </div>

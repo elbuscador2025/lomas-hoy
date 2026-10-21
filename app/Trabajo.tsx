@@ -1,7 +1,8 @@
 "use client";
 import { useRef, useState } from "react";
 import { config } from "@/lomas.config.mjs";
-import { RUBROS, type PublicacionTrabajo, type Modo } from "@/lib/trabajo-comun";
+import { RUBROS, ZONAS_EXTRA, type PublicacionTrabajo, type Modo } from "@/lib/trabajo-comun";
+import { haceCuanto } from "@/lib/hace";
 import { AVISO_TRABAJO, datoProhibido } from "@/lib/estafas";
 import { Icono } from "./Iconos";
 import { achicar } from "./Mascotas";
@@ -11,7 +12,6 @@ import DenunciarEstafa from "./DenunciarEstafa";
 import { AvisarmeNuevos } from "./Notificaciones";
 import type { Push } from "./usePush";
 
-const fechaCorta = (iso: string) => new Date(iso).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "numeric", month: "long" });
 const dispositivo = () => { try { return localStorage.getItem("lomas-hoy:id") ?? ""; } catch { return ""; } };
 
 export function TrabajoCard({ p }: { p: PublicacionTrabajo }) {
@@ -24,7 +24,7 @@ export function TrabajoCard({ p }: { p: PublicacionTrabajo }) {
         <span className="pildora neutro">{p.rubro}{p.tipo ? ` · ${p.tipo === "changa" ? "Changa" : "Fijo"}` : ""}</span>
         <b>{p.texto}</b>
         <span>{p.modo === "ofrezco" ? "Horario o días" : "Disponibilidad"}: {p.horario}</span>
-        <small>{p.barrio} · Publicado el {fechaCorta(p.aprobada)}</small>
+        <small>📍 {p.barrio} · {haceCuanto(p.aprobada)}</small>
         <a className="btn whatsapp-chico" target="_blank" rel="noreferrer" href={`https://wa.me/${p.whatsapp}?text=${encodeURIComponent(texto)}`}><Icono nombre="whatsapp" tam={22} /> Escribir por WhatsApp</a>
         <Denunciar seccion="trabajo" id={p.id} />
       </div>
@@ -58,9 +58,9 @@ export function ListaTrabajo({ publicaciones, push, onPublicar }: { push: Push; 
           <option value="">Rubros</option>
           {RUBROS.map((r) => <option key={r}>{r}</option>)}
         </select>
-        <select aria-label="Barrio" value={barrio} onChange={(e) => setBarrio(e.target.value)}>
-          <option value="">Barrios</option>
-          {barrios.map((b) => <option key={b}>{b}</option>)}
+        <select aria-label="Zona" value={barrio} onChange={(e) => setBarrio(e.target.value)}>
+          <option value="">📍 Todas las zonas</option>
+          {[...barrios, ...ZONAS_EXTRA].map((b) => <option key={b}>{b}</option>)}
         </select>
       </div>
       {lista.length === 0 ? <p className="vacio">Todavía no hay publicaciones.</p> : <ul className="lista">{lista.map((p) => <TrabajoCard key={p.id} p={p} />)}</ul>}
@@ -100,7 +100,7 @@ export function FormularioTrabajo({ modo, onListo }: { modo: Modo; onListo: () =
     e.preventDefault();
     setError("");
     if (!v.rubro) return setError("Elegí el rubro.");
-    if (!v.barrio) return setError("Elegí el barrio.");
+    if (!v.barrio) return setError("Elegí la zona.");
     if (ofrezco && !v.tipo) return setError("Elegí si es una changa o un trabajo fijo.");
     const prohibido = datoProhibido(v.texto, v.horario);
     if (prohibido) return setError(prohibido);
@@ -147,10 +147,10 @@ export function FormularioTrabajo({ modo, onListo }: { modo: Modo; onListo: () =
           {RUBROS.map((r) => <option key={r}>{r}</option>)}
         </select>
       </label>
-      <label>Barrio
+      <label>Zona
         <select value={v.barrio} onChange={(e) => set("barrio", e.target.value)}>
-          <option value="">Elegí el barrio</option>
-          {barrios.map((b) => <option key={b}>{b}</option>)}
+          <option value="">Elegí la zona</option>
+          {[...barrios, ...ZONAS_EXTRA].map((b) => <option key={b}>{b}</option>)}
         </select>
       </label>
       {ofrezco && (

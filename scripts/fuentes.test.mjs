@@ -66,3 +66,14 @@ test("clima: de noche (entre la puesta y la salida del sol) el sol pasa a luna",
   assert.equal(esDeNoche(sol, "2026-10-11T12:00"), false);
   assert.deepEqual([deNoche("sol"), deNoche("solnube"), deNoche("lluvia")], ["luna", "lunanube", "lluvia"]);
 });
+
+import { fraseLluvia, chanceFinal } from "./clima.mjs";
+test("clima: la lluvia no exagera, no usa \"a la mañana\" y no enumera todo el día", () => {
+  const h = (hora, lluvia, lluviaCap) => ({ hora: `2026-10-21T${hora}:00`, lluvia, lluviaCap });
+  assert.equal(chanceFinal(90, 0), 29); // un solo pronóstico lo dice: escalón más bajo
+  assert.equal(fraseLluvia([h("08", 5, 5), h("14", 45, 45)]), "Probable lluvia a la tarde");
+  assert.equal(fraseLluvia([h("08", 50, 50), h("14", 45, 45), h("21", 40, 40)]), "Probable lluvia durante el día");
+  assert.equal(fraseLluvia([h("08", 50, 50), h("14", 5, 5)]), "Probable lluvia temprano");
+  assert.equal(fraseLluvia([h("14", 5, 45)]), "En Lomas no llueve. En Capital, probable lluvia a la tarde: llevá paraguas");
+  assert.equal(fraseLluvia([h("14", 15, 15)]), "No se descartan chaparrones aislados");
+});

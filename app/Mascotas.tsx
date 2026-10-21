@@ -3,10 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { config } from "@/lomas.config.mjs";
 import { ESPECIES, type MascotaPublica } from "@/lib/mascotas-comun";
 import { Icono } from "./Iconos";
+import { haceCuanto } from "@/lib/hace";
 import { AvisarmeNuevos } from "./Notificaciones";
 import type { Push } from "./usePush";
 
-const fechaCorta = (iso: string) => new Date(iso).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "numeric", month: "long" });
 const tituloEspecie = (id: string) => ESPECIES.find((e) => e.id === id)?.titulo ?? id;
 
 export function MascotaCard({ m }: { m: MascotaPublica }) {
@@ -18,9 +18,9 @@ export function MascotaCard({ m }: { m: MascotaPublica }) {
       <img className="foto-mascota" src={m.foto} alt={`${tituloEspecie(m.especie)} ${perdido ? "perdido" : "encontrado"} en ${m.barrio}`} loading="lazy" />
       <div className="mascota-datos">
         <span className={`pildora ${perdido ? "grave" : "ok"}`}>{perdido ? "Perdido" : "Encontrado"}</span>
-        <b>{tituloEspecie(m.especie)} · {m.barrio}</b>
+        <b>{tituloEspecie(m.especie)}</b>
         <span>{m.descripcion}</span>
-        <small>Publicado el {fechaCorta(m.aprobada)}</small>
+        <small>📍 {m.barrio} · {haceCuanto(m.aprobada)}</small>
         <a className="btn whatsapp-chico" target="_blank" rel="noreferrer" href={`https://wa.me/${m.whatsapp}?text=${encodeURIComponent(texto)}`}><Icono nombre="whatsapp" tam={22} /> Escribir por WhatsApp</a>
       </div>
     </li>
@@ -29,7 +29,10 @@ export function MascotaCard({ m }: { m: MascotaPublica }) {
 
 export function ListaMascotas({ mascotas, push, onPublicar }: { mascotas: MascotaPublica[]; push: Push; onPublicar: () => void }) {
   const [filtro, setFiltro] = useState<"todos" | "perdido" | "encontrado">("todos");
-  const lista = mascotas.filter((m) => filtro === "todos" || m.estado === filtro);
+  const [barrio, setBarrio] = useState("");
+  const [barrios, setBarrios] = useState<string[]>([]);
+  useEffect(() => { fetch("/api/barrios").then((r) => r.json()).then((l) => Array.isArray(l) && setBarrios(l)).catch(() => {}); }, []);
+  const lista = mascotas.filter((m) => (filtro === "todos" || m.estado === filtro) && (!barrio || m.barrio === barrio));
   return (
     <>
       <AvisarmeNuevos push={push} tipo="mascotas" />
@@ -38,6 +41,12 @@ export function ListaMascotas({ mascotas, push, onPublicar }: { mascotas: Mascot
         {([["todos", "Todos"], ["perdido", "Perdidos"], ["encontrado", "Encontrados"]] as const).map(([id, t]) => (
           <button key={id} className={`filtro ${filtro === id ? "activo" : ""}`} aria-pressed={filtro === id} onClick={() => setFiltro(id)}>{t}</button>
         ))}
+      </div>
+      <div className="filtros-doble">
+        <select aria-label="Barrio" value={barrio} onChange={(e) => setBarrio(e.target.value)}>
+          <option value="">📍 Todo Lomas</option>
+          {barrios.map((b) => <option key={b}>{b}</option>)}
+        </select>
       </div>
       {lista.length === 0 ? <p className="vacio">Todavía no hay publicaciones.</p> : <ul className="lista">{lista.map((m) => <MascotaCard key={m.id} m={m} />)}</ul>}
     </>

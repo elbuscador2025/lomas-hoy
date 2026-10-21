@@ -18,3 +18,6 @@ export type PublicacionTrabajo = {
 
 export const vigenteTrabajo = (p: { vence: string }, ahora = Date.now()) => new Date(p.vence).getTime() > ahora;
 export const esNuevaTrabajo = (p: { aprobada: string }, dias: number, ahora = Date.now()) => ahora - new Date(p.aprobada).getTime() <= dias * 86400_000;
+
+// En Trabajo la "zona" puede ser un barrio de Lomas, la Capital u otra zona del Gran Buenos Aires
+export const ZONAS_EXTRA = ["Capital Federal", "Otra zona del Gran Buenos Aires"];

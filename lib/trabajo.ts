@@ -9,7 +9,7 @@ import { notificarSeguro } from "@/lib/push";
 import { normalizarWhatsapp } from "@/lib/mascotas-comun";
 import { posibleEstafa, datoProhibido } from "@/lib/estafas";
 import { estaBloqueado, huella } from "@/lib/moderacion";
-import type { PublicacionTrabajo, Modo } from "@/lib/trabajo-comun";
+import { ZONAS_EXTRA, type PublicacionTrabajo, type Modo } from "@/lib/trabajo-comun";
 
 type Registro = {
   id: string; modo: Modo; texto: string; rubro: string; barrio: string; tipo?: "changa" | "fijo"; horario: string; whatsapp: string;
@@ -56,7 +56,7 @@ export async function crearPendiente(form: FormData, dispositivo: string): Promi
   if (texto.length > max) return { ok: false, error: `El texto puede tener hasta ${max} caracteres.` };
   if (horario.length < 3) return { ok: false, error: modo === "ofrezco" ? "Poné el horario o los días." : "Poné tu disponibilidad." };
   if (!config.trabajo.rubros.includes(rubro)) return { ok: false, error: "Elegí el rubro." };
-  if (!(await barriosActuales()).includes(barrio)) return { ok: false, error: "Elegí el barrio." };
+  if (![...(await barriosActuales()), ...ZONAS_EXTRA].includes(barrio)) return { ok: false, error: "Elegí la zona." };
   if (modo === "ofrezco" && tipo !== "changa" && tipo !== "fijo") return { ok: false, error: "Elegí si es una changa o un trabajo fijo." };
   const prohibido = datoProhibido(texto, horario);
   if (prohibido) return { ok: false, error: prohibido };
