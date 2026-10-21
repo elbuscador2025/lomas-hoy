@@ -52,7 +52,7 @@ export function CartelInstalar() {
   if (cerrado || instalada || (!ios && !evento)) return null;
   return (
     <section className="cartel" aria-label="Instalar la app">
-      <b>Instalá Lomas Hoy en tu celular</b>
+      <span className="cartel-logo">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/icon-192.png" alt="" width={48} height={48} /><b>Instalá Lomas Hoy en tu celular</b></span>
       {ios ? (
         <ol className="pasos">
           <li>Tocá el botón <b>Compartir</b> (el cuadrado con una flecha hacia arriba).</li>

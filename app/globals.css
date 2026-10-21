@@ -264,3 +264,8 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 /* Denunciar una estafa */
 .btn.denuncia-estafa { width:100%; min-height:52px; margin:0 0 12px; background:#D32F2F; color:#fff; font-size:18px; }
 .modal-largo { max-height:90vh; overflow-y:auto; }
+
+/* Logo en el cartel de instalar */
+.cartel-logo { display:flex; align-items:center; gap:12px; }
+.cartel-logo img { border-radius:11px; flex:none; }
+.cartel > .cartel-logo b { font-size:18px; }

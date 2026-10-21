@@ -1,5 +1,5 @@
 // Guarda la app en el celu para que abra sin internet, y muestra las notificaciones.
-const CACHE = "lomas-hoy-v2";
+const CACHE = "lomas-hoy-v3";
 const AVISOS = "lomas-hoy-avisos"; // "Mis avisos": lo que llegó en los últimos 7 días, guardado en el propio celular
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.add("/")));
