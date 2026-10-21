@@ -44,6 +44,8 @@ export function validarSuscripcion(d: Record<string, unknown>): Suscripcion | st
   if (!/^[A-Za-z0-9_-]{20,200}$/.test(p256dh) || !/^[A-Za-z0-9_-]{8,100}$/.test(auth)) return "Suscripción inválida.";
   const t = (d.tipos ?? {}) as Record<string, unknown>;
   const tipos = Object.fromEntries(TIPOS.map((k) => [k, !!t[k] && config.push.tipos[k].activa])) as Record<Tipo, boolean>;
+  // Las alertas de tormenta están prendidas para todos: una versión vieja de la app (anterior a v2) las mandaba apagadas sin que la persona lo hubiera elegido
+  if (!(Number(d.v) >= 2)) tipos.tormenta = config.push.tipos.tormenta.activa;
   const localidad = localidadValida(d.localidad) ? d.localidad : undefined;
   return { endpoint, keys: { p256dh, auth }, tipos, localidad, creado: new Date().toISOString() };
 }

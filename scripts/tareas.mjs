@@ -3,6 +3,7 @@
 // Si una fuente falla, no se pisa el último dato bueno: solo se anota el error.
 import { config as cfg } from "../lomas.config.mjs";
 import { leerTren, leerLuz, leerRss, buscarParos, buscarAgua, leerProgramados, leerSubte } from "./fuentes.mjs";
+import { leerAlertas } from "./alertas.mjs";
 import { leerPronostico, urlOpenMeteo, leerPron5d, leerZipSmn, URL_SMN_5DIAS } from "./clima.mjs";
 
 const TIEMPO = 20000; // ninguna fuente puede demorar más que esto
@@ -44,6 +45,8 @@ export async function correrTareas({ guardar, env = process.env, log = console }
       for (const [n, r] of [["Capital", capital], ["SMN", smn]]) if (r.status !== "fulfilled") log.error(`pronostico: ${n} no respondió (${r.reason?.message})`);
       return { ...leerPronostico(lomas.value, extra), consultadoEn: new Date().toISOString() };
     },
+    // Alertas oficiales del SMN (tormentas, lluvias, viento) que alcanzan a Lomas o a la Ciudad
+    alertas: async () => leerAlertas((u) => traer(u, "text"), cfg),
     tren: async () => leerTren(await traer(cfg.tren.url, "text"), cfg),
     luz: async () => leerLuz(await traer(cfg.luz.url, "text"), cfg),
     programados: async () => leerProgramados(await traer(cfg.programados.url, "json"), cfg),

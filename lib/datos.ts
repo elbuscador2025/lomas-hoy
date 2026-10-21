@@ -43,7 +43,9 @@ export type Lugar = {
   telefonos: string[]; horario: string; etiqueta?: string; fuente: string; fuenteUrl: string; lat?: number; lng?: number;
 };
 export type Subte = { lineas: { id: string; estado: "normal" | "demora" | "interrumpida" | "paro"; texto: string; desde: string | null }[] };
-export type Todo = { subte?: Fila<Subte>; tren?: Fila<Tren>; luz?: Fila<Luz>; clima?: Fila<Clima>; colectivos?: Fila<Colectivos>; programados?: Fila<Programados>; agua?: Fila<Agua> };
+export type AlertaSmn = { id: string; evento: string; nivel: "amarilla" | "naranja" | "roja"; desde: string | null; hasta: string; descripcion: string; instruccion: string; zonas: string[] };
+export type Alertas = { alertas: AlertaSmn[]; leidas: number; fallidas: number };
+export type Todo = { alertas?: Fila<Alertas>; subte?: Fila<Subte>; tren?: Fila<Tren>; luz?: Fila<Luz>; clima?: Fila<Clima>; colectivos?: Fila<Colectivos>; programados?: Fila<Programados>; agua?: Fila<Agua> };
 
 const CLAVE_CACHE = "lomas-hoy:datos";
 const CLAVE_LUGARES = "lomas-hoy:lugares";

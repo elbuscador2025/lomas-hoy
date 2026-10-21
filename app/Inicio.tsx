@@ -194,6 +194,9 @@ export default function Inicio() {
   const maxMin = hoyDia ? { max: Math.round(hoyDia.max), min: Math.round(hoyDia.min) } : null;
   // Aviso propio por pronóstico (no oficial), mientras dure y si el pronóstico no está viejo
   const tormenta = clima?.tormenta && clima.tormenta.hasta >= ahora && (!d.clima?.ok_en || Date.now() - new Date(d.clima.ok_en).getTime() < 3 * 3600_000) ? clima.tormenta : null;
+  // Alerta oficial del SMN vigente (tormentas, lluvias o viento) para Lomas o la Ciudad: la más fuerte primero
+  const alerta = (d.alertas?.contenido?.alertas ?? []).filter((x) => x.hasta >= ahora)[0] ?? null;
+  const textoAlerta = alerta ? `Alerta ${alerta.nivel} por ${alerta.evento.toLowerCase()} del SMN para ${alerta.zonas.join(" y ")}, hasta las ${alerta.hasta.slice(11, 16)} hs.` : "";
   const transp = transporteDe(d);
   const hAR = Number(ahora.slice(11, 13));
   const saludo = hAR >= 6 && hAR < 12 ? "Buen día" : hAR >= 12 && hAR < 20 ? "Buenas tardes" : "Buenas noches";
@@ -380,8 +383,23 @@ export default function Inicio() {
   if (vista === "tormenta") {
     const hh = (f: string) => `${Number(f.slice(11, 13))}`;
     return (
-      <Detalle color="guardias" titulo="Aviso de tormenta" onVolver={volver}>
-        {!tormenta ? <p className="vacio">Ya no hay un aviso vigente.</p> : (
+      <Detalle color="guardias" titulo={alerta ? `Alerta ${alerta.nivel} del SMN` : "Aviso de tormenta"} onVolver={volver}>
+        {alerta ? (
+          <>
+            <p className="aviso-estafa" role="note">{textoAlerta}</p>
+            <h2>Cuándo</h2>
+            <p>{alerta.desde && alerta.desde > ahora ? `Desde las ${alerta.desde.slice(11, 16)} hs ` : ""}hasta las {alerta.hasta.slice(11, 16)} hs.</p>
+            <h2>Qué se espera</h2>
+            <p>{alerta.descripcion}</p>
+            <h2>Qué hacer</h2>
+            <ul className="lista">
+              {alerta.instruccion.split(/\s?\d-\s?/).map((x) => x.trim()).filter(Boolean).map((x) => <li key={x}>{x}</li>)}
+            </ul>
+            <BotonLlamar nombre="Defensa Civil" numero="103" />
+            <BotonLlamar nombre="Policía – Emergencias" numero="911" />
+            <p className="vacio">Fuente: alertas del Servicio Meteorológico Nacional. Más información en <a href="https://www.smn.gob.ar/alertas" target="_blank" rel="noreferrer">smn.gob.ar/alertas</a>.</p>
+          </>
+        ) : !tormenta ? <p className="vacio">Ya no hay un aviso vigente.</p> : (
           <>
             <p className="aviso-estafa" role="note">{tormenta.texto} Es un pronóstico, no una alerta oficial del Servicio Meteorológico Nacional.</p>
             <h2>Cuándo</h2>
@@ -731,9 +749,9 @@ export default function Inicio() {
           <b>{saludo} · {capitalizar(fechaLarga())}</b>
           {estadoFrase && <span>{estadoFrase}</span>}
         </div>
-        {tormenta && (
+        {(alerta || tormenta) && (
           <button className="banda-tormenta" onClick={(e) => { e.stopPropagation(); abrir("tormenta"); }}>
-            <Icono nombre="tormenta" tam={22} /> <span>{tormenta.texto} <u>Ver el detalle ›</u></span>
+            <Icono nombre="tormenta" tam={22} /> <span>{alerta ? textoAlerta : tormenta?.texto} <u>Ver el detalle ›</u></span>
           </button>
         )}
         <button className="clima-compacto" aria-label="Ver el clima: hora por hora y 5 días">

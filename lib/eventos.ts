@@ -1,7 +1,7 @@
 // Qué novedades merecen una notificación y cómo se identifica cada una (para no repetirla).
 import { createHash } from "node:crypto";
 import { config } from "@/lomas.config.mjs";
-import { clasificarTren, hoyMMDD, nombreLindo, type Tren, type Luz, type Subte } from "@/lib/datos";
+import { clasificarTren, hoyMMDD, nombreLindo, type Tren, type Luz, type Subte, type Alertas } from "@/lib/datos";
 import { notificarSeguro } from "@/lib/push";
 import { redis } from "@/lib/servidor";
 import { filaAgua, aguaVisible } from "@/lib/agua";
@@ -159,4 +159,24 @@ export async function evaluarTormenta(p: { horas: unknown[] }, prefijo = "") {
     tipo: "tormenta", clave: `tormenta:${a.desde.slice(0, 10)}:${a.franja}`, ttl: 86400, nocturna: true,
     titulo: prefijo + a.titulo, cuerpo: a.cuerpo, url: "/?v=tormenta",
   });
+}
+
+// Alerta oficial del SMN (tormentas, lluvias o viento) para Lomas o la Ciudad. Una sola notificación por alerta (evento + nivel + día).
+// De 23 a 7 solo sale si ya rige o empieza en las próximas 6 horas; si empieza más tarde, se espera sin gastar el aviso.
+export async function evaluarAlertasSmn(a: Alertas) {
+  const ahora = ahoraAR();
+  const hora = Number(ahora.slice(11, 13));
+  const silencio = hora >= config.push.silencioDesde || hora < config.push.silencioHasta;
+  const en6h = new Date(Date.now() + 6 * 3600_000 - 3 * 3600_000).toISOString().slice(0, 16);
+  for (const x of a.alertas) {
+    if (x.hasta < ahora) continue;
+    if (silencio && x.desde && x.desde > en6h) continue;
+    const evento = x.evento.toLowerCase();
+    await notificarSeguro({
+      tipo: "tormenta", clave: `alertaSmn:${evento}:${x.nivel}:${(x.desde ?? ahora).slice(0, 10)}`, ttl: 86400, nocturna: true,
+      titulo: `Alerta ${x.nivel} por ${evento}`,
+      cuerpo: `Alerta ${x.nivel} por ${evento} del SMN para ${x.zonas.join(" y ")}, hasta las ${x.hasta.slice(11, 16)} hs. ${x.instruccion.split(/\s\d-\s?/)[0].replace(/^1-\s?/, "")}`,
+      url: "/?v=tormenta",
+    });
+  }
 }

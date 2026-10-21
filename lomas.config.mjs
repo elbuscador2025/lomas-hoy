@@ -51,6 +51,16 @@ export const config = {
     comoLoInforma: { "Villa Albertina": "Lomas de Zamora" },
   },
 
+  // Alertas oficiales del SMN (feed CAP registrado en la OMM): tormentas, lluvias o viento que alcanzan a Lomas o a la Ciudad.
+  alertas: {
+    activa: true,
+    fuente: "Servicio Meteorológico Nacional (alertas CAP)",
+    url: "https://ssl.smn.gob.ar/CAP/AR.php",
+    paginaPublica: "https://www.smn.gob.ar/alertas",
+    horasAtras: 48, // solo se miran los avisos generados en las últimas horas
+    puntos: [{ nombre: "Lomas de Zamora", lat: -34.7609, lng: -58.4064 }, { nombre: "Capital", lat: -34.6037, lng: -58.3816 }],
+  },
+
   // Subte: estado de las líneas con la API de transporte de la Ciudad (hace falta una clave gratuita: SUBTE_CLIENT_ID y SUBTE_CLIENT_SECRET).
   subte: {
     activa: true,
