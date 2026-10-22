@@ -21,6 +21,7 @@ export const config = {
     trueque: { activa: true, titulo: "Trueque" },
     trabajo: { activa: true, titulo: "Trabajo para mayores de 50 años" },
     discapacidad: { activa: true, titulo: "Discapacidad" },
+    coop: { activa: true, titulo: "COOP" },
   },
 
   tren: {

@@ -17,6 +17,8 @@ import { cuandoAlerta } from "@/lib/alertas-texto";
 import IconoClima from "./IconoClima";
 import BotonLlamar from "./BotonLlamar";
 import Discapacidad from "./Discapacidad";
+import CoopPantalla from "./Coop";
+import { COOP_OFICIALES, PALABRAS_COOP, type Coop } from "@/lib/coop";
 import { TRAMITES } from "@/lib/discapacidad";
 import { estadoHorario, esDeNocheVet } from "@/lib/horarios";
 import { transporteDe, luzParaSaludo, estadoEnUnaFrase } from "@/lib/transporte";
@@ -89,6 +91,9 @@ export default function Inicio() {
   const [errorUbicacion, setErrorUbicacion] = useState(false);
   const [q, setQ] = useState("");
   const [vista, setVista] = useState<string | null>(null);
+  const [coop, setCoop] = useState<Coop[]>(COOP_OFICIALES);
+  const [coopElegida, setCoopElegida] = useState("");
+  useEffect(() => { fetch("/api/coop").then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.coop?.length) setCoop(j.coop); }).catch(() => {}); }, []);
   const [, setMinuto] = useState(0); // fuerza a redibujar cada minuto (las alertas vencidas desaparecen solas)
   useEffect(() => { const i = setInterval(() => setMinuto((m) => m + 1), 60_000); return () => clearInterval(i); }, []);
   const [diaClima, setDiaClima] = useState(0); // día elegido en la pantalla del clima (0 = hoy)
@@ -264,6 +269,7 @@ export default function Inicio() {
       trueque: s.trueque.activa ? trueque.publicaciones.filter((p) => coincide(`trueque cambio ${p.ofrezco} ${p.busco} ${p.categoria} ${p.barrio}`)) : [],
       trabajo: s.trabajo.activa ? trabajo.filter((p) => coincide(`trabajo empleo changa ofrezco busco ${p.texto} ${p.rubro} ${p.barrio} ${p.horario}`)) : [],
       discapacidad: s.discapacidad.activa && coincide(`discapacidad cud certificado pase de colectivo gratis autismo tea imdipam taller protegido pension simbolo estacionamiento ${TRAMITES.map((t) => `${t.titulo} ${t.palabras}`).join(" ")}`),
+      coop: s.coop.activa ? coop.filter((x) => coincide(`${PALABRAS_COOP} ${x.barrio} ${x.direccion}`)) : [],
       ferias: s.trueque.activa ? trueque.ferias.filter((f) => coincide(`trueque feria ferias de trueque ${f.lugar} ${f.direccion} ${f.barrio} ${f.dias}`)) : [],
       tren: s.tren.activa ? (d.tren?.contenido?.novedades ?? []).filter((n) => coincide(`${s.tren.titulo} tren roca ${n.ramal} ${n.motivo}`)) : [],
       paros: s.colectivos.activa ? paros.filter((p) => coincide(`colectivo colectivos paro uta ${p.titular}`)) : [],
@@ -275,8 +281,8 @@ export default function Inicio() {
       farmacias: s.farmacias.activa && coincide("farmacia farmacias turno turnos de turno remedios medicamentos"),
       clima: s.clima.activa && clima && coincide(`clima tiempo temperatura lluvia ${clima.ahora.etiqueta} ${clima.dias.map((d) => d.etiqueta).join(" ")}`) ? clima : null,
     };
-  }, [busqueda, lugares, mascotas, trueque, trabajo, rAnses.texto, d.tren, paros, cortes, programados, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
-  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.discapacidad || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
+  }, [busqueda, coop, lugares, mascotas, trueque, trabajo, rAnses.texto, d.tren, paros, cortes, programados, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
+  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.discapacidad || resultados.coop.length || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
 
   // ---- Estado de cada cuadradito ----
   const hayGrave = (v: Novedad["vista"]) => novedades.some((n) => n.vista === v && n.gravedad === "grave");
@@ -681,6 +687,13 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "coop")
+    return (
+      <Detalle color="coop" titulo={s.coop.titulo} onVolver={volver}>
+        <CoopPantalla lista={coop} inicial={coopElegida} />
+      </Detalle>
+    );
+
   if (vista === "discapacidad")
     return (
       <Detalle color="disc" titulo={s.discapacidad.titulo} onVolver={volver}>
@@ -777,6 +790,11 @@ export default function Inicio() {
             {resultados.trueque.length > 0 && (
               <div className="grupo"><h2>{s.trueque.titulo}</h2>
                 <ul className="lista">{resultados.trueque.map((p) => <PublicacionCard key={p.id} p={p} />)}</ul>
+              </div>)}
+            {resultados.coop.length > 0 && (
+              <div className="grupo"><h2>{s.coop.titulo}</h2>
+                {resultados.coop.length > 6 ? <button className="tarjeta muni" onClick={() => { setCoopElegida(""); abrir("coop"); }}><b>Elegí tu barrio</b><small>Luminarias, poda, árboles y arreglos del barrio</small></button>
+                  : resultados.coop.map((x) => <button key={x.id} className="tarjeta muni" onClick={() => { setCoopElegida(x.id); abrir("coop"); }}><b>COOP {x.barrio}</b><small>{x.direccion}</small></button>)}
               </div>)}
             {resultados.discapacidad && (
               <div className="grupo"><h2>{s.discapacidad.titulo}</h2>
@@ -887,6 +905,10 @@ export default function Inicio() {
                 <Tile color="trueque" icono="trueque" titulo={s.trueque.titulo} onClick={() => abrir("trueque")}
                   estado={nuevasTrueque ? plural(nuevasTrueque, "nueva", "nuevas") : "Ver"} tono={nuevasTrueque ? "aviso" : "neutro"}
                   resumen={trueque.publicaciones.length ? `${plural(trueque.publicaciones.length, "publicación", "publicaciones")} de vecinos` : "Cambios entre vecinos"} />
+              )}
+              {s.coop.activa && (
+                <Tile color="coop" icono="coop" titulo={s.coop.titulo} estado="Ver" tono="neutro" onClick={() => { setCoopElegida(""); abrir("coop"); }}
+                  resumen="Luminarias, poda, árboles y arreglos del barrio" />
               )}
               {s.discapacidad.activa && (
                 <Tile color="disc" icono="discapacidad" titulo={s.discapacidad.titulo} estado="Ver" tono="neutro" onClick={() => abrir("discapacidad")}

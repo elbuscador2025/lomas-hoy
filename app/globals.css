@@ -391,3 +391,8 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .transporte .renglon { transition: transform .09s ease, background-color .09s ease; border-radius:10px; }
 .transporte .renglon:active { transform: scale(.98); background-color: rgba(16, 33, 63, .1); }
 @media (prefers-reduced-motion: reduce) { .tile:active, .btn:active { transform:none; } }
+
+.c-coop { --c-bg:#F8E1F4; --c-fuerte:#9C1C8C; }
+.elegir-barrio { display:flex; flex-direction:column; gap:6px; font-weight:700; margin:4px 0 10px; }
+.elegir-barrio select { min-height:52px; font-size:18px; border-radius:14px; border:2px solid var(--c-fuerte); padding:0 12px; background:#fff; color:inherit; width:100%; }
+.para-que { background:var(--c-bg); border-radius:14px; padding:12px; margin:10px 0; line-height:1.4; }
