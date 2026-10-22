@@ -47,6 +47,7 @@ export function leerCap(xml, puntos) {
   return {
     id: campo(xml, "identifier"), evento, nivel, desde: aAR(campo(xml, "onset") || campo(xml, "effective") || campo(xml, "sent")), hasta: aAR(campo(xml, "expires")),
     descripcion: campo(xml, "description"), instruccion: campo(xml, "instruction"), zonas,
+    reemplaza: campo(xml, "references").split(/s+/).map((r) => r.split(",")[1]).filter(Boolean), // los avisos que esta actualización deja sin efecto
   };
 }
 
@@ -60,8 +61,16 @@ export async function leerAlertas(traer, cfg, ahora = new Date()) {
   const hoy = aAR(ahora.toISOString()), limite = aAR(new Date(ahora.getTime() + 12 * 3600_000).toISOString());
   const vigentes = lecturas.flatMap((l) => (l.status === "fulfilled" && l.value ? [l.value] : []))
     .filter((a) => a.hasta && a.hasta >= hoy && (!a.desde || a.desde <= limite));
-  // El mismo aviso se actualiza con identificadores nuevos: queda uno por evento y nivel (el más largo)
+  // Un aviso actualizado deja sin efecto al anterior (lo dice en "references"). Los que son iguales en evento, nivel y horario se juntan y suman sus zonas
+  // (por ejemplo, un polígono que toca Capital y otro que toca Lomas).
+  const reemplazados = new Set(vigentes.flatMap((a) => a.reemplaza));
   const unicas = new Map();
-  for (const a of vigentes) { const k = `${a.evento}|${a.nivel}`; if (!unicas.has(k) || a.hasta > unicas.get(k).hasta) unicas.set(k, a); }
-  return { alertas: [...unicas.values()].sort((a, b) => PESO[b.nivel] - PESO[a.nivel]), leidas: links.length, fallidas: lecturas.filter((l) => l.status === "rejected").length };
+  for (const { reemplaza: _r, ...a } of vigentes.filter((x) => !reemplazados.has(x.id))) {
+    const k = `${a.evento}|${a.nivel}|${a.desde}|${a.hasta}`;
+    const previa = unicas.get(k);
+    unicas.set(k, previa ? { ...previa, zonas: [...new Set([...previa.zonas, ...a.zonas])] } : a);
+  }
+  // Primero la que toca Lomas, después la más fuerte y la que empieza antes
+  const lista = [...unicas.values()].sort((a, b) => Number(b.zonas.includes("Lomas de Zamora")) - Number(a.zonas.includes("Lomas de Zamora")) || PESO[b.nivel] - PESO[a.nivel] || (a.desde ?? "").localeCompare(b.desde ?? ""));
+  return { alertas: lista, leidas: links.length, fallidas: lecturas.filter((l) => l.status === "rejected").length };
 }

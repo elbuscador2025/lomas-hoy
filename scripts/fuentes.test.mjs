@@ -85,3 +85,20 @@ test("clima: la lluvia no exagera, no usa \"a la mañana\" y no enumera todo el 
   assert.equal(fraseLluvia([h("14", 5, 45)]), "En Lomas no llueve. En Capital, probable lluvia a la tarde: llevá paraguas");
   assert.equal(fraseLluvia([h("14", 15, 15)]), "No se descartan chaparrones aislados");
 });
+
+import { leerAlertas } from "./alertas.mjs";
+test("alertas SMN: junta las zonas del mismo aviso, ignora las vencidas y las reemplazadas", async () => {
+  const cap = (id, refs, poligono, onset, expires, sev = "Moderate") => `<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2"><identifier>${id}</identifier><status>Actual</status><msgType>Update</msgType><references>${refs}</references><info><event>Tormentas</event><severity>${sev}</severity><onset>${onset}</onset><expires>${expires}</expires><description>d</description><instruction>1- Evitá salir.</instruction><area><polygon>${poligono}</polygon></area></info></alert>`;
+  const caja = (a, b, c, d) => `${a},${c} ${a},${d} ${b},${d} ${b},${c} ${a},${c}`; // lat1,lng1 ...
+  const lomas = caja(-34.9, -34.6, -58.6, -58.2), capital = caja(-34.65, -34.5, -58.6, -58.3);
+  const feed = `RSS CAP <a href="https://x/xml_generados/CAP_20261022091000_Tormenta_Llanura_alertas_1.xml">a</a><a href="https://x/xml_generados/CAP_20261022091000_Tormenta_Llanura_alertas_2.xml">b</a><a href="https://x/xml_generados/CAP_20261022091000_Tormenta_Llanura_alertas_3.xml">c</a><a href="https://x/xml_generados/CAP_20261022091000_Tormenta_Llanura_alertas_4.xml">d</a>`;
+  const archivos = {
+    "1": cap("id1", "", lomas, "2026-10-22T21:00:00-03:00", "2026-10-23T02:59:59-03:00"),
+    "2": cap("id2", "", capital, "2026-10-22T21:00:00-03:00", "2026-10-23T02:59:59-03:00"),
+    "3": cap("id3", "", lomas, "2026-10-22T09:00:00-03:00", "2026-10-22T18:00:00-03:00"), // vencida (son las 20)
+    "4": cap("id4", "smn,id1,2026-10-22T09:00:00-03:00", lomas, "2026-10-22T22:00:00-03:00", "2026-10-23T03:59:59-03:00"), // actualiza al id1
+  };
+  const traer = async (u) => (u.endsWith("AR.php") ? feed : archivos[u.match(/alertas_(\d)\.xml/)[1]]);
+  const r = await leerAlertas(traer, { alertas: { url: "https://x/AR.php", horasAtras: 48, puntos: [{ nombre: "Lomas de Zamora", lat: -34.76, lng: -58.4 }, { nombre: "Capital", lat: -34.6, lng: -58.38 }] } }, new Date("2026-10-22T23:00:00Z")); // 20:00 en Argentina
+  assert.deepEqual(r.alertas.map((a) => [a.id, a.zonas.join("+"), a.desde, a.hasta]), [["id4", "Lomas de Zamora", "2026-10-22T22:00", "2026-10-23T03:59"], ["id2", "Capital", "2026-10-22T21:00", "2026-10-23T02:59"]]);
+});
