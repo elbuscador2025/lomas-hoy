@@ -1,3 +1,4 @@
+import { config } from "@/lomas.config.mjs";
 import { vigenteMascota, type MascotaPublica } from "@/lib/mascotas-comun";
 import { vigenteTrueque, type TruequePublico } from "@/lib/trueque-comun";
 import { vigenteTrabajo, type PublicacionTrabajo } from "@/lib/trabajo-comun";
@@ -220,4 +221,25 @@ export function mapaBusqueda(texto: string, yo: { lat: number; lng: number } | n
   const q = yo ? texto : `${texto} en ${ciudad}`;
   const c = yo ?? centro;
   return `https://www.google.com/maps/search/${encodeURIComponent(q)}/@${c.lat.toFixed(5)},${c.lng.toFixed(5)},${yo ? 15 : 13}z`;
+}
+
+// Lo que el ENRE llama "Zona Rural" (o no dice) no es un barrio: se agrupa como "Otras zonas de Lomas". El resto, con el nombre real de la localidad.
+export const OTRAS_ZONAS = "Otras zonas de Lomas";
+const sinAcentos = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+export function nombreZonaLuz(loc: string | null | undefined) {
+  if (!loc || /rural|^s\/d$|sin dato|desconoc/i.test(loc)) return OTRAS_ZONAS;
+  const conocida = config.localidades.find((l: string) => sinAcentos(l) === sinAcentos(loc) || (sinAcentos(loc) === "lavallol" && sinAcentos(l) === "llavallol"));
+  return conocida ?? nombreLindo(loc).replace(/ De /g, " de ");
+}
+// Un renglón por lugar: total de usuarios sin luz y la hora estimada más tardía. Los lugares con más usuarios primero; "Otras zonas" al final.
+export function agruparCortes(cortes: Luz["cortes"]) {
+  const m = new Map<string, { nombre: string; usuarios: number; hasta: string | null }>();
+  for (const c of cortes) {
+    const nombre = nombreZonaLuz(c.localidad);
+    const a = m.get(nombre) ?? { nombre, usuarios: 0, hasta: null };
+    a.usuarios += c.usuarios;
+    if (c.normalizacion && (!a.hasta || c.normalizacion > a.hasta)) a.hasta = c.normalizacion;
+    m.set(nombre, a);
+  }
+  return [...m.values()].sort((a, b) => Number(a.nombre === OTRAS_ZONAS) - Number(b.nombre === OTRAS_ZONAS) || b.usuarios - a.usuarios);
 }

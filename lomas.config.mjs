@@ -48,8 +48,6 @@ export const config = {
     alertaDesdeUsuarios: 50,
     // Desde cuántos usuarios afectados en una localidad la alerta pasa a roja.
     graveDesdeUsuarios: 500,
-    // Villa Albertina no figura como localidad aparte en lo que publican Edesur/ENRE (no se pudo comprobar): se la asocia a Lomas de Zamora.
-    comoLoInforma: { "Villa Albertina": "Lomas de Zamora" },
   },
 
   // Alertas oficiales del SMN (feed CAP registrado en la OMM): tormentas, lluvias o viento que alcanzan a Lomas o a la Ciudad.

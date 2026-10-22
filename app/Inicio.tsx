@@ -4,21 +4,20 @@ import { config } from "@/lomas.config.mjs";
 import {
   cargarDatos, armarNovedades, type Anses, clasificarTren, fechaLarga, hora, hoyMMDD, nombreLindo, proximasHoras,
   CATEGORIAS, ordenarLugares, distanciaKm, distanciaTexto, normalizar, mapaBusqueda, mapaBuscador, ZONA,
-  type Todo, type Lugar, type Novedad,
+  type Todo, type Lugar, type Novedad, agruparCortes,
 } from "@/lib/datos";
 import { ahoraAR } from "@/lib/avisos";
 import { Icono } from "./Iconos";
 import Pie from "./Pie";
 import LugarCard from "./LugarCard";
-import Notificaciones, { CartelInstalar, CartelAvisos, PreguntaLocalidad } from "./Notificaciones";
+import Notificaciones, { CartelInstalar, CartelAvisos } from "./Notificaciones";
 import MisAvisos, { useAvisos } from "./MisAvisos";
 import MapaLuz from "./MapaLuz";
 import BotonLlamar from "./BotonLlamar";
 import Discapacidad from "./Discapacidad";
 import { TRAMITES } from "@/lib/discapacidad";
 import { estadoHorario, esDeNocheVet } from "@/lib/horarios";
-import { transporteDe, luzEnZona, estadoEnUnaFrase } from "@/lib/transporte";
-import { mismaLocalidad } from "@/lib/localidades";
+import { transporteDe, luzParaSaludo, estadoEnUnaFrase } from "@/lib/transporte";
 import { MascotaCard, ListaMascotas, FormularioMascota } from "./Mascotas";
 import { ListaTrabajo, FormularioTrabajo } from "./Trabajo";
 import { TrabajoCard } from "./Trabajo";
@@ -174,7 +173,9 @@ export default function Inicio() {
   const ahora = ahoraAR();
   const totalAlertas = novedades.length;
   const tren = d.tren?.contenido ? clasificarTren(d.tren.contenido.novedades, hoyMMDD()) : null;
-  const cortes = d.luz?.contenido?.cortes ?? [];
+  const luzVieja = !!d.luz?.ok_en && Date.now() - new Date(d.luz.ok_en).getTime() > 60 * 60_000; // si hace más de una hora que no se pudo leer, no se muestra como actual
+  const cortes = luzVieja ? [] : (d.luz?.contenido?.cortes ?? []);
+  const zonasLuz = agruparCortes(cortes);
   const alertasLuz = novedades.filter((n) => n.vista === "luz");
   const paros = (d.colectivos?.contenido?.paros ?? []).filter((p) => Date.now() - new Date(p.fecha).getTime() <= config.colectivos.diasMaximos * 86400_000);
   const clima = d.clima?.contenido ?? null;
@@ -203,7 +204,7 @@ export default function Inicio() {
   const transp = transporteDe(d);
   const hAR = Number(ahora.slice(11, 13));
   const saludo = hAR >= 6 && hAR < 12 ? "Buen día" : hAR >= 12 && hAR < 20 ? "Buenas tardes" : "Buenas noches";
-  const estadoFrase = estadoEnUnaFrase(transp, luzEnZona(d, push.prefs.localidad, ahora));
+  const estadoFrase = estadoEnUnaFrase(transp, luzParaSaludo(d, ahora, luzVieja));
   const filaHoras = clima ? proximasHoras(clima, ahora) : [];
   const hoyStr = ahora.slice(0, 10);
   const nuevasMascotas = mascotas.filter((m) => esNueva(m, config.mascotas.diasNuevas)).length;
@@ -259,7 +260,7 @@ export default function Inicio() {
       tren: s.tren.activa ? (d.tren?.contenido?.novedades ?? []).filter((n) => coincide(`${s.tren.titulo} tren roca ${n.ramal} ${n.motivo}`)) : [],
       paros: s.colectivos.activa ? paros.filter((p) => coincide(`colectivo colectivos paro uta ${p.titular}`)) : [],
       programados: s.luz.activa ? programados.filter((c) => coincide(`corte programado luz edesur ${c.localidad} ${c.motivo}`)) : [],
-      luz: s.luz.activa ? cortes.filter((c) => coincide(`${s.luz.titulo} luz corte edesur ${nombreLindo(c.localidad ?? "")}`)) : [],
+      luz: s.luz.activa ? zonasLuz.filter((z) => coincide(`${s.luz.titulo} luz corte edesur ${z.nombre}`)) : [],
       mascotas: s.mascotas.activa ? mascotas.filter((m) => coincide(`mascota mascotas perdida perdido encontrada encontrado ${m.especie} ${m.barrio} ${m.descripcion}`)) : [],
       agua: s.agua.activa && aguaVisible && coincide("agua aysa corte cortes de agua"),
       anses: s.anses.activa && coincide("anses cobran cobro hoy cobran jubilacion jubilaciones jubilados pension auh asignacion"),
@@ -504,29 +505,8 @@ export default function Inicio() {
     );
 
   if (vista === "luz") {
-    const miLoc = push.prefs.localidad;
-    const suyos = (l: string | null) => mismaLocalidad(miLoc, l);
-    const cortesOrden = [...cortes].sort((a, b) => Number(suyos(b.localidad)) - Number(suyos(a.localidad)));
-    const programadosOrden = [...programados].sort((a, b) => Number(suyos(b.localidad)) - Number(suyos(a.localidad)));
     return (
       <Detalle color="luz" titulo={s.luz.titulo} onVolver={volver}>
-        {!d.luz?.contenido ? <SinDatos error={d.luz?.error} /> : cortes.length === 0 ? (
-          <p>{programados.length === 0 ? "Sin cortes en Lomas." : "No hay cortes en este momento."}</p>
-        ) : (
-          <ul className="lista">
-            {cortesOrden.map((x, i) => (
-              <li key={i}>
-                {suyos(x.localidad) && <span className="pildora aviso">Tu zona</span>}{" "}
-                <b>{nombreLindo(x.localidad ?? config.ciudad)}</b> ·{" "}
-                {x.tension === "media" ? "Media tensión" : x.tension === "baja" ? "Baja tensión" : "Corte"} · {plural(x.usuarios, "usuario", "usuarios")}
-                <br />
-                {x.normalizacion ? `Normalización estimada: ${x.normalizacion.slice(11, 16)} hs` : "Sin hora estimada de normalización"}
-              </li>
-            ))}
-          </ul>
-        )}
-        <MapaLuz cortes={cortes} programados={programados} />
-        <Pie seccion="luz" fuente={config.luz.fuente} url={config.luz.paginaPublica} fila={d.luz} />
         {config.programados.activa && (
           <div className="bloque">
             <h2>Cortes programados</h2>
@@ -534,25 +514,20 @@ export default function Inicio() {
               <p>No hay cortes programados para los próximos días.</p>
             ) : (
               <ul className="lista">
-                {programadosOrden.map((c) => (
+                {programados.map((c) => (
                   <li key={c.id + c.inicio}>
-                    {suyos(c.localidad) && <span className="pildora aviso">Tu zona</span>}{" "}
                     <b>{c.localidad}</b>
                     <br />
                     {c.inicio.slice(0, 10) === c.fin.slice(0, 10)
                       ? `${diaCorto(c.inicio.slice(0, 10))}, de ${horaCorte(c.inicio)} a ${horaCorte(c.fin)} hs`
                       : `Desde el ${diaCorto(c.inicio.slice(0, 10))} a las ${horaCorte(c.inicio)} hasta el ${diaCorto(c.fin.slice(0, 10))} a las ${horaCorte(c.fin)} hs`}
                     <br /><small>{c.clientes != null ? `${plural(c.clientes, "cliente", "clientes")} · ` : ""}{c.motivo}</small>
-                    {c.lat != null && c.lng != null && (
-                      <div className="acciones">
-                        {yo && <small className="distancia">El corte está {distanciaTexto(distanciaKm(yo, { lat: c.lat, lng: c.lng }))} de vos</small>}
-                        <a className="btn claro" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`}>Ver la zona en el mapa</a>
-                      </div>
-                    )}
+                    {yo && c.lat != null && c.lng != null && <small className="distancia">El corte está {distanciaTexto(distanciaKm(yo, { lat: c.lat, lng: c.lng }))} de vos</small>}
                   </li>
                 ))}
               </ul>
             )}
+            <MapaLuz programados={programados} />
             {!yo && programados.some((c) => c.lat != null) && (
               <button className="btn claro ancho" onClick={pedirUbicacion}><Icono nombre="pin" tam={20} /> Ver a qué distancia está de mí</button>
             )}
@@ -561,6 +536,23 @@ export default function Inicio() {
             <Pie seccion="luz" fuente={config.programados.fuente} url={config.programados.paginaPublica} fila={d.programados} />
           </div>
         )}
+        <div className="bloque">
+          <h2>En este momento</h2>
+          {!d.luz?.contenido || luzVieja ? <SinDatos error={d.luz?.error} /> : zonasLuz.length === 0 ? (
+            <p>Sin cortes informados en Lomas.</p>
+          ) : (
+            <ul className="lista">
+              {zonasLuz.map((z) => (
+                <li key={z.nombre}>
+                  <b>{z.nombre}</b> · {plural(z.usuarios, "usuario", "usuarios")} sin luz
+                  <br />
+                  {z.hasta ? `Hora estimada de normalización: ${z.hasta.slice(11, 16)} hs` : "Sin hora estimada de normalización"}
+                </li>
+              ))}
+            </ul>
+          )}
+          <Pie seccion="luz" fuente={config.luz.fuente} url={config.luz.paginaPublica} fila={d.luz} />
+        </div>
       </Detalle>
     );
   }
@@ -828,7 +820,7 @@ export default function Inicio() {
               </div>)}
             {resultados.luz.length > 0 && (
               <div className="grupo"><h2>Cortes de luz</h2>
-                {resultados.luz.map((x, i) => <p key={i} className="tarjeta aviso"><b>{nombreLindo(x.localidad ?? config.ciudad)}</b><span>{plural(x.usuarios, "usuario", "usuarios")} · {x.normalizacion ? `hasta las ${x.normalizacion.slice(11, 16)} hs` : "sin hora estimada"}</span></p>)}
+                {resultados.luz.map((x) => <p key={x.nombre} className="tarjeta aviso"><b>{x.nombre}</b><span>{plural(x.usuarios, "usuario", "usuarios")} · {x.hasta ? `hasta las ${x.hasta.slice(11, 16)} hs` : "sin hora estimada"}</span></p>)}
               </div>)}
             {resultados.programados.length > 0 && (
               <div className="grupo"><h2>Cortes programados</h2>
@@ -868,18 +860,6 @@ export default function Inicio() {
           </section>
         ) : (
           <>
-            {totalAlertas > 0 && (
-              <div className="alertas">
-                <h2>{plural(totalAlertas, "alerta", "alertas")} hoy</h2>
-                {novedades.map((n) => (
-                  <button key={n.id} className={`tarjeta ${n.gravedad}`} onClick={() => abrir(n.vista)}>
-                    <b>{n.titulo}</b>
-                    <span>{n.detalle}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
             {(s.tren.activa || s.colectivos.activa) && (
               <section className="transporte coloreado c-tren" aria-label="Transporte">
                 <h2><Icono nombre="tren" tam={24} /> Transporte</h2>
@@ -896,7 +876,7 @@ export default function Inicio() {
             <div className="grilla">
               {s.luz.activa && (
                 <Tile color="luz" icono="luz" titulo="Luz" estado={luzEstado} tono={luzTono} onClick={() => abrir("luz")}
-                  resumen={(!d.luz?.contenido ? "Sin datos por ahora" : cortes.length === 0 ? "Sin cortes" : `${plural(cortes.length, "corte", "cortes")} · ${plural(usuariosSinLuz, "usuario", "usuarios")}`) + (programados.length ? ` · ${plural(programados.length, "programado", "programados")}` : "")} />
+                  resumen={(!d.luz?.contenido || luzVieja ? "Sin datos por ahora" : zonasLuz.length === 0 ? "Sin cortes" : zonasLuz.length === 1 ? `Corte en ${zonasLuz[0].nombre} · ${plural(zonasLuz[0].usuarios, "usuario", "usuarios")}` : `Cortes en ${zonasLuz.length} zonas`) + (programados.length ? ` · ${plural(programados.length, "programado", "programados")}` : "")} />
               )}
               {s.agua.activa && aguaVisible && (
                 <Tile color="agua" icono="gota" titulo="Agua" estado={aguaEstado} tono={aguaTono} onClick={() => abrir("agua")} resumen={aguaResumen} />
@@ -942,7 +922,7 @@ export default function Inicio() {
                   resumen="Policía, bomberos y reclamos" />
               )}
             </div>
-            <CartelInstalar /><CartelAvisos push={push} agua={aguaVisible} /><PreguntaLocalidad push={push} />
+            <CartelInstalar /><CartelAvisos push={push} agua={aguaVisible} />
             <button className="btn whatsapp" onClick={compartirDia}>Compartir por WhatsApp</button>
           </>
         )}

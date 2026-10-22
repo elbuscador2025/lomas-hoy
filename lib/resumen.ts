@@ -5,8 +5,8 @@ import { ahoraAR } from "@/lib/avisos";
 import { asegurarClima } from "@/lib/clima";
 import type { Todo } from "@/lib/datos";
 import { resumenAnses, terminaciones, type PagoAnses } from "@/lib/anses";
-import { transporteDe, luzEnZona, estadoEnUnaFrase } from "@/lib/transporte";
-import { notificarSeguro, type Suscripcion } from "@/lib/push";
+import { transporteDe, luzParaSaludo, estadoEnUnaFrase } from "@/lib/transporte";
+import { notificarSeguro } from "@/lib/push";
 
 const minuscula = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 const contenidoDe = (f: unknown) => (f ? (JSON.parse(f as string) as { contenido: unknown }).contenido : null);
@@ -36,12 +36,12 @@ const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const fechaLinda = (dia: string) => capitalizar(new Date(`${dia}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: config.zonaHoraria, weekday: "long", day: "numeric", month: "long" }).replace(",", ""));
 
 // Título: "Buen día · Miércoles 21 de octubre". Texto: clima, estado del transporte (o "Ojo: ..."), y quién cobra hoy.
-export function textoSaludo(d: Datos, localidad?: string) {
+export function textoSaludo(d: Datos) {
   const hoy = d.ahora.slice(0, 10);
   const temp = d.max ?? d.temp;
   const partes: string[] = [];
   if (temp != null) partes.push(`Hoy máx ${Math.round(temp)}°.${d.frase ? ` ${d.frase.split("\n").join(". ")}.` : ""}`);
-  const estado = estadoEnUnaFrase(transporteDe(d.todo), luzEnZona(d.todo, localidad, d.ahora));
+  const estado = estadoEnUnaFrase(transporteDe(d.todo), luzParaSaludo(d.todo, d.ahora));
   if (estado) partes.push(estado);
   if (d.alerta) partes.push(`Ojo: ${d.alerta}.`);
   else if (d.tormenta && d.tormenta.hasta >= d.ahora) partes.push(`Ojo: ${d.tormenta.texto.charAt(0).toLowerCase()}${d.tormenta.texto.slice(1)}`);
@@ -60,6 +60,6 @@ export async function evaluarResumen() {
   const d = await cargar();
   await notificarSeguro({
     tipo: "resumen", clave: `resumen:${ahora.slice(0, 10)}`, ttl: 2 * 86400,
-    titulo: textoSaludo(d).titulo, cuerpo: (s: Suscripcion) => textoSaludo(d, s.localidad).cuerpo, url: "/",
+    titulo: textoSaludo(d).titulo, cuerpo: textoSaludo(d).cuerpo, url: "/",
   });
 }

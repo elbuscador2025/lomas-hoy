@@ -4,7 +4,7 @@ import { mantener } from "@/lib/mascotas";
 import { mantener as mantenerTrueque } from "@/lib/trueque";
 import { mantener as mantenerTrabajo } from "@/lib/trabajo";
 import { evaluarResumen } from "@/lib/resumen";
-import { evaluarTren, evaluarLuz, evaluarProgramados, evaluarColectivos, evaluarAgua, evaluarSubte, evaluarTormenta, evaluarAlertasSmn } from "@/lib/eventos";
+import { evaluarTren, evaluarProgramados, evaluarColectivos, evaluarAgua, evaluarSubte, evaluarTormenta, evaluarAlertasSmn } from "@/lib/eventos";
 import { redis } from "@/lib/servidor";
 
 export const CLAVES_VALIDAS = ["tren", "luz", "colectivos", "programados", "agua", "pronostico", "mascotas", "subte", "alertas"];
@@ -24,7 +24,6 @@ export async function guardarDato(clave: string, contenido: any, error?: unknown
     if (clave === "alertas") after(() => evaluarAlertasSmn(contenido).catch((e) => console.error("push alertas", e)));
     if (clave === "pronostico") after(() => evaluarTormenta(contenido).catch((e) => console.error("push tormenta", e)));
     if (clave === "agua") after(() => evaluarAgua().catch((e) => console.error("push agua", e)));
-    if (clave === "luz") after(() => evaluarLuz(contenido).catch((e) => console.error("push luz", e)));
   } else {
     const [previo] = await redis([["GET", llave]]);
     const base = previo ? JSON.parse(previo as string) : { clave, contenido: null, ok_en: null };

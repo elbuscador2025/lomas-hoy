@@ -9,22 +9,12 @@ const hh = (f: string) => { const [h, m] = f.slice(11, 16).split(":"); return m 
 const diaCorto = (f: string) => new Date(`${f.slice(0, 10)}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "short", day: "numeric" }).replace(",", "");
 const globo = (texto: string) => { const e = document.createElement("span"); e.textContent = texto; return e; };
 
-// Mapa de cortes de luz (OpenStreetMap con Leaflet, gratis). Rojo: cortes del momento, uno por localidad. Naranja: programados, en su punto.
-export default function MapaLuz({ cortes, programados }: { cortes: Corte[]; programados: Programado[] }) {
+// Mapa de cortes programados (OpenStreetMap con Leaflet, gratis): cada uno en su punto exacto, en naranja.
+export default function MapaLuz({ programados }: { programados: Programado[] }) {
   const ref = useRef<HTMLDivElement>(null);
 
-  // un círculo por localidad: en el promedio de los puntos que informa el ENRE, con todos sus usuarios sumados
-  const porLocalidad = new Map<string, { usuarios: number; lat: number; lng: number; n: number }>();
-  for (const c of cortes) {
-    if (c.lat == null || c.lng == null) continue;
-    const k = nombreLindo(c.localidad ?? "Lomas");
-    const a = porLocalidad.get(k) ?? { usuarios: 0, lat: 0, lng: 0, n: 0 };
-    a.usuarios += c.usuarios; a.lat += c.lat; a.lng += c.lng; a.n++;
-    porLocalidad.set(k, a);
-  }
-  const rojos = [...porLocalidad].map(([nombre, a]) => ({ nombre, usuarios: a.usuarios, lat: a.lat / a.n, lng: a.lng / a.n }));
   const naranjas = programados.filter((p) => p.lat != null && p.lng != null);
-  const clave = JSON.stringify([rojos, naranjas]);
+  const clave = JSON.stringify(naranjas);
 
   useEffect(() => {
     let mapa: import("leaflet").Map | undefined;
@@ -36,11 +26,6 @@ export default function MapaLuz({ cortes, programados }: { cortes: Corte[]; prog
       mapa = L.map(ref.current, { scrollWheelZoom: false });
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "© OpenStreetMap" }).addTo(mapa);
       const puntos: [number, number][] = [];
-      for (const r of rojos) {
-        puntos.push([r.lat, r.lng]);
-        L.circleMarker([r.lat, r.lng], { radius: Math.min(46, 10 + Math.sqrt(r.usuarios) * 1.4), color: "#b71c1c", weight: 2, fillColor: "#e53935", fillOpacity: 0.45 })
-          .bindPopup(globo(`${r.nombre} · ${r.usuarios.toLocaleString("es-AR")} usuarios sin luz`)).addTo(mapa);
-      }
       for (const p of naranjas) {
         puntos.push([p.lat!, p.lng!]);
         L.circleMarker([p.lat!, p.lng!], { radius: 9, color: "#e65100", weight: 2, fillColor: "#fb8c00", fillOpacity: 0.85 })
@@ -52,11 +37,11 @@ export default function MapaLuz({ cortes, programados }: { cortes: Corte[]; prog
     return () => { vivo = false; mapa?.remove(); };
   }, [clave]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!rojos.length && !naranjas.length) return null;
+  if (!naranjas.length) return null;
   return (
     <>
-      <div ref={ref} className="mapa-luz" role="img" aria-label="Mapa de cortes de luz en Lomas" />
-      <p className="vacio">Edesur informa la localidad y la cantidad de usuarios, no las calles exactas.</p>
+      <div ref={ref} className="mapa-luz" role="img" aria-label="Mapa de cortes programados" />
+      <p className="vacio">Edesur marca el punto del corte; la zona afectada puede ser más grande.</p>
     </>
   );
 }

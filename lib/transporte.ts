@@ -1,7 +1,6 @@
 // Estado del transporte (Tren Roca, Colectivos, Subte): lo usan la pantalla principal y el saludo de la mañana.
 import { config } from "@/lomas.config.mjs";
 import { clasificarTren, hoyMMDD, type Todo } from "@/lib/datos";
-import { mismaLocalidad } from "@/lib/localidades";
 
 export type Punto = "ok" | "alerta" | "problema" | "sin"; // verde, amarillo, rojo, gris
 export type Renglon = {
@@ -51,20 +50,24 @@ export function transporteDe(d: Todo): Renglon[] {
   return [tren, col, subte];
 }
 
-// ¿Hay un corte de luz en la localidad elegida (ahora, o programado para hoy)?
-export function luzEnZona(d: Todo, localidad: string | undefined, ahoraAR: string) {
-  if (!localidad) return null; // no eligió localidad: no se sabe
-  const ahora = (d.luz?.contenido?.cortes ?? []).some((c) => mismaLocalidad(localidad, c.localidad));
-  const hoy = (d.programados?.contenido?.cortes ?? []).some((c) => mismaLocalidad(localidad, c.localidad) && c.inicio.slice(0, 10) === ahoraAR.slice(0, 10) && c.fin >= ahoraAR);
-  return ahora || hoy;
+// La luz en el saludo: el corte programado de hoy, o "sin cortes de luz informados" si no hay ninguno (ni ahora ni programado).
+// Si hay cortes en este momento no se dice nada de la luz (no se puede decir "sin cortes").
+export type LuzSaludo = { programado: string | null; sinCortes: boolean };
+const hhLuz = (f: string) => { const [h, m] = f.slice(11, 16).split(":"); return m === "00" ? String(Number(h)) : `${Number(h)}:${m}`; };
+export function luzParaSaludo(d: Todo, ahoraAR: string, viejo = false): LuzSaludo {
+  const hoy = ahoraAR.slice(0, 10);
+  const p = (d.programados?.contenido?.cortes ?? []).find((x) => x.inicio.slice(0, 10) === hoy && x.fin >= ahoraAR);
+  const programado = p ? `corte de luz programado hoy en ${p.localidad}, de ${hhLuz(p.inicio)} a ${hhLuz(p.fin)} hs` : null;
+  const sinCortes = !viejo && !!d.luz?.contenido && d.luz.contenido.cortes.length === 0 && !programado;
+  return { programado, sinCortes };
 }
 
 // Segunda línea del saludo (pantalla principal y notificación): "Tren, colectivos y subte normales[, sin cortes en tu zona]." o "Ojo: ...".
-export function estadoEnUnaFrase(r: Renglon[], luzZona: boolean | null) {
+export function estadoEnUnaFrase(r: Renglon[], luz: LuzSaludo) {
   const ojos = r.map((x) => x.ojo).filter((x): x is string => !!x);
-  if (luzZona) ojos.push("corte de luz en tu zona");
+  if (luz.programado) ojos.push(luz.programado);
   if (ojos.length) return `Ojo: ${ojos.join("; ")}.`;
   const normales = r.filter((x) => x.punto === "ok" || x.punto === "alerta").map((x) => (x.id === "tren" ? "Tren" : x.nombre.toLowerCase()));
   if (!normales.length) return "";
-  return `${unir(normales)} ${normales.length > 1 ? "normales" : "normal"}${luzZona === false ? ", sin cortes en tu zona" : ""}.`;
+  return `${unir(normales)} ${normales.length > 1 ? "normales" : "normal"}${luz.sinCortes ? ", sin cortes de luz informados" : ""}.`;
 }

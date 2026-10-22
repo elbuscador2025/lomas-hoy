@@ -5,19 +5,16 @@ import { createHash } from "node:crypto";
 import { config } from "@/lomas.config.mjs";
 import { redis, hoyArgentina } from "@/lib/servidor";
 import { ahoraAR } from "@/lib/avisos";
-import { localidadValida, mismaLocalidad } from "@/lib/localidades";
 
 export type Tipo = "tren" | "luz" | "agua" | "tormenta" | "colectivos" | "mascotas" | "trueque" | "trabajo" | "resumen" | "subte";
 export const TIPOS: Tipo[] = ["tren", "luz", "agua", "tormenta", "colectivos", "mascotas", "trueque", "trabajo", "resumen", "subte"];
 export type Suscripcion = {
   endpoint: string; keys: { p256dh: string; auth: string };
   tipos: Partial<Record<Tipo, boolean>>; creado: string; // sin nombre, teléfono, ni nada personal
-  localidad?: string; // la que eligió para los avisos de luz (sin ella no recibe avisos de luz)
 };
 export type Evento = {
   tipo: Tipo; clave: string; ttl: number; refrescar?: boolean; // clave = identifica la novedad para no repetirla
   titulo: string; cuerpo: string | ((s: Suscripcion) => string); url: string; nocturna?: boolean;
-  localidad?: string; // solo para quienes eligieron esta localidad
 };
 
 export const idDe = (endpoint: string) => createHash("sha256").update(endpoint).digest("base64url").slice(0, 22);
@@ -46,8 +43,7 @@ export function validarSuscripcion(d: Record<string, unknown>): Suscripcion | st
   const tipos = Object.fromEntries(TIPOS.map((k) => [k, !!t[k] && config.push.tipos[k].activa])) as Record<Tipo, boolean>;
   // Las alertas de tormenta están prendidas para todos: una versión vieja de la app (anterior a v2) las mandaba apagadas sin que la persona lo hubiera elegido
   if (!(Number(d.v) >= 2)) tipos.tormenta = config.push.tipos.tormenta.activa;
-  const localidad = localidadValida(d.localidad) ? d.localidad : undefined;
-  return { endpoint, keys: { p256dh, auth }, tipos, localidad, creado: new Date().toISOString() };
+  return { endpoint, keys: { p256dh, auth }, tipos, creado: new Date().toISOString() };
 }
 
 export async function guardarSuscripcion(s: Suscripcion) {
@@ -114,8 +110,7 @@ export async function notificar(ev: Evento) {
   prepararVapid();
   // 3) Quiénes la reciben: todos los que tienen ese tipo prendido (si todavía no eligieron, está prendido)
   // (mascotas, trueque y trabajo son opcionales: solo le llega a quien lo prendió)
-  const interesadas = (await todasLasSuscripciones()).filter((s) => (ev.tipo === "mascotas" || ev.tipo === "trueque" || ev.tipo === "trabajo" || ev.tipo === "subte" ? s.tipos?.[ev.tipo] === true : s.tipos?.[ev.tipo] !== false))
-    .filter((s) => !ev.localidad || mismaLocalidad(s.localidad, ev.localidad)); // luz: solo a quien eligió esa localidad
+  const interesadas = (await todasLasSuscripciones()).filter((s) => (ev.tipo === "mascotas" || ev.tipo === "trueque" || ev.tipo === "trabajo" || ev.tipo === "subte" ? s.tipos?.[ev.tipo] === true : s.tipos?.[ev.tipo] !== false));
   // 4) Máximo por día y por celular
   const dia = hoyArgentina();
   const [filas] = await redis([["HGETALL", `push:cuenta:${dia}`]]);
