@@ -176,6 +176,8 @@ export default function Inicio() {
   const luzVieja = !!d.luz?.ok_en && Date.now() - new Date(d.luz.ok_en).getTime() > 60 * 60_000; // si hace más de una hora que no se pudo leer, no se muestra como actual
   const cortes = luzVieja ? [] : (d.luz?.contenido?.cortes ?? []);
   const zonasLuz = agruparCortes(cortes);
+  // Cortes programados: si la última lectura falló o los datos tienen más de 3 horas, no se dice "no hay cortes"
+  const progFalla = !d.programados?.contenido || !!d.programados.error || !d.programados.ok_en || Date.now() - new Date(d.programados.ok_en).getTime() > 3 * 3600_000;
   const alertasLuz = novedades.filter((n) => n.vista === "luz");
   const paros = (d.colectivos?.contenido?.paros ?? []).filter((p) => Date.now() - new Date(p.fecha).getTime() <= config.colectivos.diasMaximos * 86400_000);
   const clima = d.clima?.contenido ?? null;
@@ -510,7 +512,9 @@ export default function Inicio() {
         {config.programados.activa && (
           <div className="bloque">
             <h2>Cortes programados</h2>
-            {!d.programados?.contenido ? <SinDatos error={d.programados?.error} /> : programados.length === 0 ? (
+            {progFalla ? (
+              <p>Edesur no está publicando los cortes programados en este momento. Volvé a mirar más tarde.</p>
+            ) : programados.length === 0 ? (
               <p>No hay cortes programados para los próximos días.</p>
             ) : (
               <ul className="lista">
@@ -527,13 +531,13 @@ export default function Inicio() {
                 ))}
               </ul>
             )}
-            <MapaLuz programados={programados} />
-            {!yo && programados.some((c) => c.lat != null) && (
+            {!progFalla && <MapaLuz programados={programados} />}
+            {!progFalla && !yo && programados.some((c) => c.lat != null) && (
               <button className="btn claro ancho" onClick={pedirUbicacion}><Icono nombre="pin" tam={20} /> Ver a qué distancia está de mí</button>
             )}
-            {errorUbicacion && <p className="aviso-pie">No pudimos obtener tu ubicación. Revisá el permiso del navegador.</p>}
-            <p className="vacio">Horario estimado, según Edesur. Puede reprogramarse. El mapa marca el punto que informa Edesur; la zona afectada puede ser más grande.</p>
-            <Pie seccion="luz" fuente={config.programados.fuente} url={config.programados.paginaPublica} fila={d.programados} />
+            {!progFalla && errorUbicacion && <p className="aviso-pie">No pudimos obtener tu ubicación. Revisá el permiso del navegador.</p>}
+            {!progFalla && programados.length > 0 && <p className="vacio">Horario estimado, según Edesur. Puede reprogramarse. El mapa marca el punto que informa Edesur; la zona afectada puede ser más grande.</p>}
+            {!progFalla && <Pie seccion="luz" fuente={config.programados.fuente} url={config.programados.paginaPublica} fila={d.programados} />}
           </div>
         )}
         <div className="bloque">
