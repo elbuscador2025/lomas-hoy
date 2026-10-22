@@ -7,6 +7,7 @@ import { redis } from "@/lib/servidor";
 import { filaAgua, aguaVisible } from "@/lib/agua";
 import { ahoraAR } from "@/lib/avisos";
 import { avisoTormenta } from "@/scripts/clima.mjs";
+import { cuandoAlerta } from "@/lib/alertas-texto";
 
 const hash = (s: string) => createHash("sha1").update(s).digest("hex").slice(0, 12);
 
@@ -154,7 +155,7 @@ export async function evaluarAlertasSmn(a: Alertas, prefijo = "") {
     await notificarSeguro({
       tipo: "tormenta", clave: `alertaSmn:${evento}:${x.nivel}:${(x.desde ?? ahora).slice(0, 10)}`, ttl: 86400, nocturna: true,
       titulo: `${prefijo}Alerta ${x.nivel} por ${evento}`,
-      cuerpo: `Alerta ${x.nivel} por ${evento} del SMN para ${x.zonas.join(" y ")}, hasta las ${x.hasta.slice(11, 16)} hs. ${x.instruccion.split(/\s\d-\s?/)[0].replace(/^1-\s?/, "")}`,
+      cuerpo: `Alerta ${x.nivel} por ${evento} del SMN para ${x.zonas.join(" y ")}: ${cuandoAlerta(x.desde, x.hasta, ahora).corto}. ${x.instruccion.split(/\s\d-\s?/)[0].replace(/^1-\s?/, "")}`,
       url: "/?v=tormenta",
     });
   }

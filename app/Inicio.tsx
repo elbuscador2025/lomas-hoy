@@ -13,6 +13,7 @@ import LugarCard from "./LugarCard";
 import Notificaciones, { CartelInstalar, CartelAvisos, SonidoAlTocar } from "./Notificaciones";
 import MisAvisos, { useAvisos } from "./MisAvisos";
 import MapaLuz from "./MapaLuz";
+import { cuandoAlerta } from "@/lib/alertas-texto";
 import IconoClima from "./IconoClima";
 import BotonLlamar from "./BotonLlamar";
 import Discapacidad from "./Discapacidad";
@@ -88,6 +89,8 @@ export default function Inicio() {
   const [errorUbicacion, setErrorUbicacion] = useState(false);
   const [q, setQ] = useState("");
   const [vista, setVista] = useState<string | null>(null);
+  const [, setMinuto] = useState(0); // fuerza a redibujar cada minuto (las alertas vencidas desaparecen solas)
+  useEffect(() => { const i = setInterval(() => setMinuto((m) => m + 1), 60_000); return () => clearInterval(i); }, []);
   const [diaClima, setDiaClima] = useState(0); // día elegido en la pantalla del clima (0 = hoy)
   const push = usePush();
   const avisosApp = useAvisos();
@@ -204,7 +207,8 @@ export default function Inicio() {
   const tormenta = clima?.tormenta && clima.tormenta.hasta >= ahora && (!d.clima?.ok_en || Date.now() - new Date(d.clima.ok_en).getTime() < 3 * 3600_000) ? clima.tormenta : null;
   // Alerta oficial del SMN vigente (tormentas, lluvias o viento) para Lomas o la Ciudad: la más fuerte primero
   const alerta = (d.alertas?.contenido?.alertas ?? []).filter((x) => x.hasta >= ahora)[0] ?? null;
-  const textoAlerta = alerta ? `Alerta ${alerta.nivel} por ${alerta.evento.toLowerCase()} del SMN para ${alerta.zonas.join(" y ")}, hasta las ${alerta.hasta.slice(11, 16)} hs.` : "";
+  const cuandoAl = alerta ? cuandoAlerta(alerta.desde, alerta.hasta, ahora) : null;
+  const textoAlerta = alerta && cuandoAl ? `Alerta ${alerta.nivel} por ${alerta.evento.toLowerCase()} del SMN para ${alerta.zonas.join(" y ")}: ${cuandoAl.corto}.` : "";
   const transp = transporteDe(d);
   const hAR = Number(ahora.slice(11, 13));
   const saludo = hAR >= 6 && hAR < 12 ? "Buen día" : hAR >= 12 && hAR < 20 ? "Buenas tardes" : "Buenas noches";
@@ -366,7 +370,7 @@ export default function Inicio() {
           <>
             <p className="aviso-estafa" role="note">{textoAlerta}</p>
             <h2>Cuándo</h2>
-            <p>{alerta.desde && alerta.desde > ahora ? `Desde las ${alerta.desde.slice(11, 16)} hs ` : ""}hasta las {alerta.hasta.slice(11, 16)} hs.</p>
+            <p>{cuandoAl?.largo}</p>
             <h2>Qué se espera</h2>
             <p>{alerta.descripcion}</p>
             <h2>Qué hacer</h2>
