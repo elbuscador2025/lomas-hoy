@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import FeedbackToque from "./FeedbackToque";
 
 export const metadata: Metadata = {
   title: "Lomas Hoy",
@@ -16,7 +17,7 @@ export const viewport: Viewport = { themeColor: "#1F5AD6", width: "device-width"
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es-AR">
-      <body>{children}</body>
+      <body>{children}<FeedbackToque /></body>
     </html>
   );
 }

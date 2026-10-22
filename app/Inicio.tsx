@@ -10,9 +10,10 @@ import { ahoraAR } from "@/lib/avisos";
 import { Icono } from "./Iconos";
 import Pie from "./Pie";
 import LugarCard from "./LugarCard";
-import Notificaciones, { CartelInstalar, CartelAvisos } from "./Notificaciones";
+import Notificaciones, { CartelInstalar, CartelAvisos, SonidoAlTocar } from "./Notificaciones";
 import MisAvisos, { useAvisos } from "./MisAvisos";
 import MapaLuz from "./MapaLuz";
+import IconoClima from "./IconoClima";
 import BotonLlamar from "./BotonLlamar";
 import Discapacidad from "./Discapacidad";
 import { TRAMITES } from "@/lib/discapacidad";
@@ -87,6 +88,7 @@ export default function Inicio() {
   const [errorUbicacion, setErrorUbicacion] = useState(false);
   const [q, setQ] = useState("");
   const [vista, setVista] = useState<string | null>(null);
+  const [diaClima, setDiaClima] = useState(0); // día elegido en la pantalla del clima (0 = hoy)
   const push = usePush();
   const avisosApp = useAvisos();
   const [panel, setPanel] = useState<string | null>(null); // adónde lleva el enlace del pie: mi panel
@@ -152,7 +154,7 @@ export default function Inicio() {
     if (history.state?.lomasHoy) history.back();
     else setVista(null);
   }, []);
-  useEffect(() => { window.scrollTo({ top: 0 }); }, [vista]);
+  useEffect(() => { window.scrollTo({ top: 0 }); if (vista === "clima") setDiaClima(0); }, [vista]);
 
   // Al empezar a escribir se anota un paso en el historial: el "atrás" del celular cierra la búsqueda en vez de salir de la app.
   const cambiarBusqueda = (texto: string) => {
@@ -288,102 +290,71 @@ export default function Inicio() {
   // ---- Pantallas de detalle ----
   if (vista === "clima") {
     const a = clima?.ahora;
+    const dias = clima?.porDia ?? [];
+    const dia = dias[Math.min(diaClima, Math.max(dias.length - 1, 0))];
+    const esHoy = !!dia && dia.fecha === hoyStr;
+    const nivel = (p: number | null | undefined) => ((p ?? 0) < 10 ? 0 : (p as number) < 30 ? 1 : (p as number) < 60 ? 2 : 3);
+    const PALABRA: Record<string, string> = { sol: "Despejado", solnube: "Parcialmente nublado", nube: "Nublado", lluvia: "Lluvia", tormenta: "Tormenta", niebla: "Niebla", nieve: "Nevada", luna: "Despejado", lunanube: "Parcialmente nublado" };
+    const mmTexto = (n: number) => String(n).replace(".", ",");
+    const horasDia = !dia ? [] : esHoy ? dia.horas.filter((h) => h.hora.slice(0, 13) > ahora.slice(0, 13)) : dia.horas;
+    const filas = [
+      ...(esHoy && a ? [{ hora: "Ahora", icono: a.icono, palabra: a.etiqueta, temp: Math.round(a.temp), lluvia: dia?.horas.find((h) => h.hora.slice(0, 13) === ahora.slice(0, 13))?.lluvia ?? null, lluviaCap: dia?.horas.find((h) => h.hora.slice(0, 13) === ahora.slice(0, 13))?.lluviaCap, mm: dia?.horas.find((h) => h.hora.slice(0, 13) === ahora.slice(0, 13))?.mm ?? 0 }] : []),
+      ...horasDia.map((h) => ({ hora: h.hora.slice(11, 16), icono: h.icono, palabra: h.etiqueta || PALABRA[h.icono] || "", temp: h.temp, lluvia: h.lluvia, lluviaCap: h.lluviaCap, mm: h.mm ?? 0 })),
+    ];
     return (
-      <Detalle titulo="Clima" onVolver={volver}>
-        {!clima || !a ? <SinDatos error={d.clima?.error} /> : (
-          <>
-            <div className="bloque-azul">
-              <p className="fecha-azul">{capitalizar(fechaLarga())}</p>
-              {filaHoras.length > 0 && (
-                <span className="horas-azul">
-                  {filaHoras.map((h) => (
-                    <span key={h.hora} className={h.hora === "Ahora" ? "ahora" : ""}>
-                      <small>{h.hora === "Ahora" ? "Ahora" : h.hora.slice(11, 16)}</small>
-                      <Icono nombre={h.icono} tam={22} />
-                      <b>{Math.round(h.temp)}°</b>
-                      {h.lluvia != null && h.lluvia >= 30 ? <small className="lluvia"><Icono nombre="gota" tam={11} ancho={2.4} />{h.lluvia}%</small> : <small className="lluvia">&nbsp;</small>}
-                    </span>
-                  ))}
-                </span>
-              )}
-            </div>
-            <div className="clima-detalle"><Icono nombre={a.icono} tam={64} />
-              <div><span className="temp-chica">{Math.round(a.temp)}°</span><br />{a.etiqueta}</div></div>
-            {clima.frase && <p className="frase">{clima.frase}</p>}
-            {clima.lluvia && <p className="lluvia-zonas"><b>Lluvia en Lomas:</b> {clima.lluvia.lomas}{clima.lluvia.capital && <><br /><b>Lluvia en Capital:</b> {clima.lluvia.capital}</>}</p>}
-            <p className="vacio">
-              {a.medidoEn ? `Medido en ${a.estacion} a las ${a.medidoEn} · SMN${d.clima?.ok_en ? ` · Actualizado ${hora(d.clima.ok_en)}` : ""}` : "Estimado por Open-Meteo (no hay una medición reciente del SMN)"}
-            </p>
-            <p>
-              {[a.sensacion != null && `Sensación ${Math.round(a.sensacion)}°`, a.humedad != null && `Humedad ${a.humedad}%`, a.viento != null && `Viento ${Math.round(a.viento)} km/h`]
-                .filter(Boolean).join(" · ")}
-            </p>
-            <h2>Próximas 24 horas</h2>
-            <ul className="lista">
-              {filaHoras.map((h) => (
-                <li key={h.hora} className="fila-hora">
-                  <b>{h.hora === "Ahora" ? "Ahora" : h.hora.slice(11, 16)}</b><Icono nombre={h.icono} tam={22} />
-                  <span>{h.etiqueta}</span><b>{Math.round(h.temp)}°</b>
-                  <small className="detalle-hora">
-                    {[h.lluvia != null ? `Lluvia Lomas ${h.lluvia}%${h.lluviaCap != null ? ` · Capital ${h.lluviaCap}%` : ""}` : null, h.viento != null ? `Viento ${Math.round(h.viento)} km/h` : null, h.sensacion != null ? `Sensación ${Math.round(h.sensacion)}°` : null]
-                      .filter(Boolean).join(" · ")}
-                  </small>
-                </li>
-              ))}
-            </ul>
-            <h2>Próximos 5 días</h2>
-            <ul className="lista">
-              {clima.dias.map((x) => (
-                <li key={x.fecha} className="fila-dia tocable" role="button" tabIndex={0} onClick={() => abrir(`dia:${x.fecha}`)} onKeyDown={(e) => e.key === "Enter" && abrir(`dia:${x.fecha}`)}>
-                  <b>{capitalizar(new Date(`${x.fecha}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "long", day: "numeric" }).replace(",", ""))}</b>
-                  <Icono nombre={x.icono} tam={22} /><span>{x.palabra}</span>
-                  <b>{Math.round(x.max)}° / {Math.round(x.min)}°</b>
-                </li>
-              ))}
-            </ul>
-            <p className="vacio">Pronóstico para {config.ciudad} y Capital. Fuente: SMN y Open-Meteo.</p>
-          </>
-        )}
-        <Pie seccion="clima" fuente={config.clima.fuente} url={config.clima.url} fila={d.clima} minutosViejo={config.clima.minutosParaAvisarViejo} />
-      </Detalle>
-    );
-  }
-
-  if (vista?.startsWith("dia:")) {
-    const lista = clima?.porDia ?? [];
-    const i = lista.findIndex((x) => x.fecha === vista.slice(4));
-    const dia = lista[i];
-    if (!dia) return <Detalle titulo="Clima" onVolver={volver}><SinDatos error={d.clima?.error} /></Detalle>;
-    const irADia = (k: number) => { if (k < 0 || k >= lista.length) return; const v = `dia:${lista[k].fecha}`; history.replaceState({ lomasHoy: v }, ""); setVista(v); };
-    const esHoy = dia.fecha === hoyStr;
-    const horasDia = esHoy ? dia.horas.filter((h) => h.hora.slice(0, 13) >= ahora.slice(0, 13)) : dia.horas;
-    const frase = esHoy ? (clima?.frase ?? dia.frase) : dia.frase;
-    let x0 = 0, y0 = 0;
-    return (
-      <Detalle titulo={capitalizar(new Date(`${dia.fecha}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "long", day: "numeric", month: "long" }).replace(",", ""))} onVolver={volver}>
-        <div onTouchStart={(e) => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }}
-          onTouchEnd={(e) => { const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; if (Math.abs(dx) > 60 && Math.abs(dy) < 40) irADia(i + (dx < 0 ? 1 : -1)); }}>
-          <div className="navegar-dia">
-            <button className="btn claro" disabled={i === 0} onClick={() => irADia(i - 1)} aria-label="Día anterior">‹ Anterior</button>
-            <button className="btn claro" disabled={i === lista.length - 1} onClick={() => irADia(i + 1)} aria-label="Día siguiente">Siguiente ›</button>
+      <main className="clima-pantalla">
+        <header className="clima-cab">
+          <div className="clima-cab-fila">
+            <button className="volver-claro" onClick={volver}><Icono nombre="volver" tam={22} ancho={2.5} /> Volver</button>
+            <b>Clima en Lomas</b>
           </div>
-          <div className="clima-detalle"><Icono nombre={dia.icono} tam={64} />
-            <div><span className="temp-chica">{Math.round(dia.max)}°</span> <small>/ {Math.round(dia.min)}°</small><br />Máxima y mínima</div></div>
-          {frase && <p className="frase">{frase}</p>}
-          {dia.lluviaTexto && <p className="lluvia-zonas"><b>Lluvia en Lomas:</b> {dia.lluviaTexto.lomas}{dia.lluviaTexto.capital && <><br /><b>Lluvia en Capital:</b> {dia.lluviaTexto.capital}</>}</p>}
-          <h2>Hora por hora</h2>
-          <ul className="lista">
-            {horasDia.map((h) => (
-              <li key={h.hora} className="fila-hora">
-                <b>{h.hora.slice(11, 16)}</b><Icono nombre={h.icono} tam={22} />
-                <span>{h.lluvia != null ? `Lluvia Lomas ${h.lluvia}%` : "—"}</span><b>{h.temp}°</b>
-                <small className="detalle-hora">{[h.lluviaCap != null ? `Lluvia Capital ${h.lluviaCap}%` : null, h.viento != null ? `Viento ${h.viento} km/h` : null, h.sensacion != null ? `Sensación ${h.sensacion}°` : null].filter(Boolean).join(" · ")}</small>
-              </li>
+          {!clima || !a ? <p className="clima-sin">{d.clima?.error ? "Sin datos por ahora. La fuente no respondió." : "Sin datos por ahora."}</p> : (
+            <>
+              <div className="clima-ahora">
+                <IconoClima nombre={a.icono} tam={96} />
+                <span className="clima-grande">{Math.round(a.temp)}°</span>
+              </div>
+              <p className="clima-resumen">{a.etiqueta}{maxMin ? ` · Máx ${maxMin.max}° · Mín ${maxMin.min}°` : ""}</p>
+              {clima.frase && <div className="clima-frases">{clima.frase.split("\n").map((l) => <p key={l}>{l}</p>)}</div>}
+              <p className="clima-datos">{[a.viento != null && `Viento ${Math.round(a.viento)} km/h`, a.humedad != null && `Humedad ${a.humedad}%`, a.sensacion != null && `Sensación ${Math.round(a.sensacion)}°`].filter(Boolean).join(" · ")}</p>
+            </>
+          )}
+        </header>
+        {dias.length > 0 && (
+          <nav className="clima-dias" aria-label="Elegí un día">
+            {dias.slice(0, 5).map((x, i) => (
+              <button key={x.fecha} className={i === diaClima ? "activo" : ""} aria-pressed={i === diaClima} onClick={() => setDiaClima(i)}>
+                <small>{i === 0 ? "Hoy" : nombreDiaCorto(x.fecha).split(" ")[0]}</small>
+                <b>{i === 0 ? nombreDiaCorto(x.fecha).split(" ")[1] : nombreDiaCorto(x.fecha).split(" ")[1]}</b>
+              </button>
             ))}
-          </ul>
-          <p className="vacio">Pronóstico para {config.ciudad} y Capital. Fuente: SMN y Open-Meteo.</p>
-        </div>
-      </Detalle>
+          </nav>
+        )}
+        <ul className="clima-horas">
+          {filas.map((h) => {
+            const llueve = nivel(h.lluvia) >= 2 || h.mm >= 0.2;
+            const poca = !llueve && nivel(h.lluvia) === 1;
+            const capDistinta = h.lluviaCap != null && nivel(h.lluviaCap) !== nivel(h.lluvia);
+            return (
+              <li key={h.hora} className={`clima-hora${llueve ? " llueve" : ""}`}>
+                <b className="ch-hora">{h.hora}</b>
+                <IconoClima nombre={h.icono} tam={52} />
+                <span className="ch-medio">
+                  <span className="ch-palabra">{h.palabra}</span>
+                  {llueve && <span className="ch-lluvia">💧 {h.lluvia ?? 0}%{h.mm > 0 ? ` · ${mmTexto(h.mm)} mm` : ""}</span>}
+                  {poca && <small className="ch-poca">Chance de lluvia {h.lluvia}%</small>}
+                  {capDistinta && <small className="ch-cap">En Capital, {h.lluviaCap}%</small>}
+                </span>
+                <b className="ch-temp">{h.temp}°</b>
+              </li>
+            );
+          })}
+        </ul>
+        {dias.length === 0 && clima && <p className="vacio clima-pie">El hora por hora se actualiza en unos minutos.</p>}
+        <p className="clima-pie">
+          {a?.medidoEn ? `Medido en ${a.estacion} (SMN) a las ${a.medidoEn}` : "Estimado por Open-Meteo"}{d.clima?.ok_en ? ` · Actualizado ${hora(d.clima.ok_en)}` : ""}. Pronóstico para {config.ciudad} y Capital: SMN y Open-Meteo.
+        </p>
+      </main>
     );
   }
 
@@ -694,6 +665,7 @@ export default function Inicio() {
   if (vista === "notificaciones")
     return (
       <Detalle titulo="Configurar avisos" onVolver={volver}>
+        <SonidoAlTocar />
         <Notificaciones push={push} agua={aguaVisible} />
       </Detalle>
     );

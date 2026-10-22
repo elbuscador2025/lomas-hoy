@@ -231,7 +231,7 @@ export function leerPronostico(json, extra = {}) {
     const horasDia = h.time.map((hora, k) => ({ hora, k })).filter((x) => x.hora.startsWith(fecha)).map(({ hora, k }) => ({
       hora, temp: h.temperature_2m[k], sensacion: h.apparent_temperature[k], viento: h.wind_speed_10m[k],
       lluvia: lluviaLomas(k), lluviaCap: lluviaCap(hora), mm: h.precipitation[k], codigo: h.weather_code[k],
-      icono: (desdeCodigo(h.weather_code[k]) ?? { icono: "nube" }).icono,
+      icono: (desdeCodigo(h.weather_code[k]) ?? { icono: "nube" }).icono, etiqueta: (desdeCodigo(h.weather_code[k]) ?? { etiqueta: "" }).etiqueta,
     }));
     const lomas = horasDia.length ? textoLluvia(horasDia, "lluvia") : null, cap = horasDia.length ? textoLluvia(horasDia, "lluviaCap") : null;
     const max = Math.max(lomas?.max ?? 0, cap?.max ?? 0);
@@ -241,7 +241,7 @@ export function leerPronostico(json, extra = {}) {
       ...(desdeCodigo(d.weather_code[i]) ?? { icono: "nube", etiqueta: "—" }),
       lluviaTexto: lomas ? { lomas: lomas.texto, capital: cap?.texto ?? null } : null,
       frase: horasDia.length ? fraseDia(horasDia) : null,
-      horas: horasDia.map((x) => ({ hora: x.hora, temp: Math.round(x.temp), sensacion: x.sensacion == null ? null : Math.round(x.sensacion), viento: x.viento == null ? null : Math.round(x.viento), lluvia: x.lluvia, lluviaCap: x.lluviaCap, icono: esDeNoche(sol, x.hora) ? deNoche(x.icono) : x.icono })),
+      horas: horasDia.map((x) => ({ hora: x.hora, temp: Math.round(x.temp), sensacion: x.sensacion == null ? null : Math.round(x.sensacion), viento: x.viento == null ? null : Math.round(x.viento), lluvia: x.lluvia, lluviaCap: x.lluviaCap, mm: Math.round((x.mm ?? 0) * 10) / 10, etiqueta: x.etiqueta, icono: esDeNoche(sol, x.hora) ? deNoche(x.icono) : x.icono })),
     };
   });
   const dias = porDia.slice(1, 6).map((x) => ({ fecha: x.fecha, min: x.min, max: x.max, lluvia: x.lluvia, palabra: x.palabra, icono: x.icono, etiqueta: x.etiqueta }));

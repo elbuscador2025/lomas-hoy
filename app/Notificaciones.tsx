@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { config } from "@/lomas.config.mjs";
 import { Icono } from "./Iconos";
 import { useInstalar, type Push } from "./usePush";
+import { sonidoActivo, guardarSonido } from "./FeedbackToque";
 
 function PasosIPhone() {
   return (
@@ -149,4 +150,11 @@ export function AvisarmeNuevos({ push, tipo }: { push: Push; tipo: string }) {
       {msg && <p className="error">{msg}</p>}
     </>
   );
+}
+
+// "Sonido al tocar": el clic suave de los botones grandes (prendido de entrada)
+export function SonidoAlTocar() {
+  const [on, setOn] = useState(true);
+  useEffect(() => setOn(sonidoActivo()), []);
+  return <Interruptor titulo="Sonido al tocar" activo={on} onCambio={(v) => { setOn(v); guardarSonido(v); }} />;
 }

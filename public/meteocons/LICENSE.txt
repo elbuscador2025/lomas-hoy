@@ -1,0 +1,2 @@
+Meteocons - iconos del tiempo (versión estática "flat")
+Copyright (c) Bas Milius. Licencia MIT. https://github.com/basmilius/weather-icons
