@@ -1,5 +1,5 @@
 // Guarda la app en el celu para que abra sin internet, y muestra las notificaciones.
-const CACHE = "lomas-hoy-v4";
+const CACHE = "lomas-hoy-v5";
 const AVISOS = "lomas-hoy-avisos"; // "Mis avisos": lo que llegó en los últimos 7 días, guardado en el propio celular
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.add("/")));
@@ -66,4 +66,17 @@ self.addEventListener("notificationclick", (e) => {
       return v ? v.navigate(destino).then(() => v.focus()) : self.clients.openWindow(destino);
     })
   );
+});
+
+// Si el navegador cambia o vence la suscripción, se renueva sola y se avisa al servidor (que pasa las preferencias de la anterior).
+self.addEventListener("pushsubscriptionchange", (e) => {
+  e.waitUntil((async () => {
+    try {
+      const vieja = e.oldSubscription;
+      const key = vieja?.options?.applicationServerKey;
+      const nueva = e.newSubscription || (key ? await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }) : null);
+      if (!nueva) return;
+      await fetch("/api/push/suscribir", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accion: "renovar", subscription: nueva.toJSON(), anterior: vieja ? vieja.endpoint : "" }) });
+    } catch {}
+  })());
 });

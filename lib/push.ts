@@ -10,7 +10,7 @@ export type Tipo = "tren" | "luz" | "agua" | "tormenta" | "colectivos" | "mascot
 export const TIPOS: Tipo[] = ["tren", "luz", "agua", "tormenta", "colectivos", "mascotas", "trueque", "trabajo", "resumen", "subte"];
 export type Suscripcion = {
   endpoint: string; keys: { p256dh: string; auth: string };
-  tipos: Partial<Record<Tipo, boolean>>; creado: string; // sin nombre, teléfono, ni nada personal
+  tipos: Partial<Record<Tipo, boolean>>; creado: string; equipo?: string; renovado?: string; // sin nombre, teléfono, ni nada personal
 };
 export type Evento = {
   tipo: Tipo; clave: string; ttl: number; refrescar?: boolean; // clave = identifica la novedad para no repetirla
@@ -44,14 +44,14 @@ export function validarSuscripcion(d: Record<string, unknown>): Suscripcion | st
   const tipos = Object.fromEntries(TIPOS.map((k) => [k, !!t[k] && config.push.tipos[k].activa])) as Record<Tipo, boolean>;
   // Las alertas de tormenta están prendidas para todos: una versión vieja de la app (anterior a v2) las mandaba apagadas sin que la persona lo hubiera elegido
   if (!(Number(d.v) >= 2)) tipos.tormenta = config.push.tipos.tormenta.activa;
-  return { endpoint, keys: { p256dh, auth }, tipos, creado: new Date().toISOString() };
+  return { endpoint, keys: { p256dh, auth }, tipos, creado: new Date().toISOString(), equipo: d.equipo === "celular" ? "celular" : d.equipo === "compu" ? "compu" : undefined };
 }
 
 export async function guardarSuscripcion(s: Suscripcion) {
   const id = idDe(s.endpoint);
   const [previo] = await redis([["HGET", "push:subs", id]]);
   const creado = previo ? (JSON.parse(previo as string) as Suscripcion).creado : s.creado;
-  await redis([["HSET", "push:subs", id, JSON.stringify({ ...s, creado })]]);
+  await redis([["HSET", "push:subs", id, JSON.stringify({ ...s, creado, renovado: new Date().toISOString() })]]);
 }
 export async function borrarSuscripcion(endpoint: string) {
   await redis([["HDEL", "push:subs", idDe(endpoint)]]);

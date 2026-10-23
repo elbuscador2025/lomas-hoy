@@ -46,7 +46,12 @@ export function usePush() {
       if (!("serviceWorker" in navigator && "PushManager" in window && "Notification" in window) || !PUBLICA) return setEstado("noSoportado");
       if (Notification.permission === "denied") return setEstado("denegado");
       try {
-        const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+        const reg = await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+        const eligio = !!localStorage.getItem(CLAVE);
+        // Cada vez que se abre la app, la suscripción se renueva sola (y si el navegador la perdió, se vuelve a crear)
+        if (!sub && eligio && Notification.permission === "granted") sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: aBytes(PUBLICA) }).catch(() => null);
+        if (sub && eligio) await enviar(sub, leerPrefs()).catch(() => {});
         setEstado(sub ? "activo" : "inactivo");
       } catch {
         setEstado("noSoportado");
@@ -55,7 +60,7 @@ export function usePush() {
   }, []);
 
   const enviar = async (sub: PushSubscription, p: Prefs) => {
-    const r = await fetch("/api/push/suscribir", { method: "POST", headers: json, body: JSON.stringify({ subscription: sub.toJSON(), ...p }) });
+    const r = await fetch("/api/push/suscribir", { method: "POST", headers: json, body: JSON.stringify({ subscription: sub.toJSON(), ...p, equipo: /android|iphone|ipad|mobile/i.test(navigator.userAgent) ? "celular" : "compu" }) });
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? "No se pudo guardar.");
     localStorage.setItem(CLAVE, JSON.stringify(p));
     setPrefs(p);
