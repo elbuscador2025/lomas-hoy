@@ -53,14 +53,14 @@ export function textoSaludo(d: Datos) {
 
 // Lo llama el reloj de las 7 (ver app/api/cron/saludo) y, de respaldo, cada vuelta del proceso automático:
 // el primero después de las 7 lo manda, una sola vez por día.
-export async function evaluarResumen() {
+export async function evaluarResumen(sufijo = "") {
   const ahora = ahoraAR();
   const hm = ahora.slice(11, 16);
   const v = config.push.horaResumen;
   if (hm < v.desde || hm >= v.hasta) return;
   const d = await cargar();
   await notificarSeguro({
-    tipo: "resumen", clave: `resumen:${ahora.slice(0, 10)}`, ttl: 2 * 86400,
+    tipo: "resumen", clave: `resumen:${ahora.slice(0, 10)}${sufijo}`, ttl: 2 * 86400, urgente: true,
     titulo: textoSaludo(d).titulo, cuerpo: textoSaludo(d).cuerpo, url: "/",
   });
 }

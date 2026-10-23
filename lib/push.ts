@@ -15,6 +15,7 @@ export type Suscripcion = {
 export type Evento = {
   tipo: Tipo; clave: string; ttl: number; refrescar?: boolean; // clave = identifica la novedad para no repetirla
   titulo: string; cuerpo: string | ((s: Suscripcion) => string); url: string; nocturna?: boolean;
+  urgente?: boolean; // prioridad alta: el celular lo recibe aunque esté en reposo (el saludo de las 7 llegó con 48 minutos de atraso)
 };
 
 export const idDe = (endpoint: string) => createHash("sha256").update(endpoint).digest("base64url").slice(0, 22);
@@ -73,9 +74,9 @@ async function registrar(entrada: Record<string, unknown>, enviados = 0, fallido
 }
 
 type Resultado = { ok: boolean; estado?: number; mensaje?: string; borrar?: boolean };
-async function enviarUna(s: Suscripcion, carga: object): Promise<Resultado> {
+async function enviarUna(s: Suscripcion, carga: object, urgente = false): Promise<Resultado> {
   try {
-    await webpush.sendNotification({ endpoint: s.endpoint, keys: s.keys }, JSON.stringify(carga), { TTL: 3600, urgency: "normal" });
+    await webpush.sendNotification({ endpoint: s.endpoint, keys: s.keys }, JSON.stringify(carga), { TTL: 3600, urgency: urgente ? "high" : "normal" });
     return { ok: true };
   } catch (e) {
     const err = e as { statusCode?: number; body?: string; message?: string };
@@ -84,10 +85,10 @@ async function enviarUna(s: Suscripcion, carga: object): Promise<Resultado> {
   }
 }
 
-async function enviarATodas(subs: Suscripcion[], cargaDe: (s: Suscripcion) => object) {
+async function enviarATodas(subs: Suscripcion[], cargaDe: (s: Suscripcion) => object, urgente = false) {
   const resultados: Resultado[] = [];
   for (let i = 0; i < subs.length; i += 10) {
-    resultados.push(...(await Promise.all(subs.slice(i, i + 10).map((s) => enviarUna(s, cargaDe(s))))));
+    resultados.push(...(await Promise.all(subs.slice(i, i + 10).map((s) => enviarUna(s, cargaDe(s), urgente)))));
   }
   return resultados;
 }
@@ -120,7 +121,7 @@ export async function notificar(ev: Evento) {
   const destino = interesadas.filter((s) => (cuenta.get(idDe(s.endpoint)) ?? 0) < config.push.maximoPorDia);
 
   const carga = { titulo: corto(ev.titulo, 60), url: ev.url, tag: ev.clave };
-  const res = await enviarATodas(destino, (s) => ({ ...carga, tipo: ev.tipo, cuerpo: corto(typeof ev.cuerpo === "function" ? ev.cuerpo(s) : ev.cuerpo, 240) }));
+  const res = await enviarATodas(destino, (s) => ({ ...carga, tipo: ev.tipo, cuerpo: corto(typeof ev.cuerpo === "function" ? ev.cuerpo(s) : ev.cuerpo, 240) }), ev.urgente);
 
   const ok = destino.filter((_, i) => res[i].ok), mal = res.filter((r) => !r.ok);
   const aBorrar = destino.filter((_, i) => res[i].borrar);

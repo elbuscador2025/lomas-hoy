@@ -25,3 +25,23 @@ export async function vieneDelDespertador(req: Request) {
   const cuerpo = await req.clone().text();
   return [process.env.QSTASH_CURRENT_SIGNING_KEY, process.env.QSTASH_NEXT_SIGNING_KEY].some((k) => !!k && firmaValida(jwt, k, cuerpo));
 }
+
+// El saludo de las 7:00 lo dispara el despertador (QStash) con hora de Argentina; el reloj de Vercel queda de respaldo
+// (las dos vías usan la misma clave por día, así que el saludo sale una sola vez). Se comprueba una vez por día que la programación exista y, si falta, se crea.
+export async function asegurarSaludo() {
+  const token = process.env.QSTASH_TOKEN;
+  if (!token) return;
+  const { redis } = await import("@/lib/servidor");
+  const [marca] = await redis([["GET", "qstash:saludo"]]);
+  if (marca) return;
+  const base = (process.env.QSTASH_URL ?? "https://qstash.upstash.io").replace(//$/, "");
+  const destino = "https://lomas-hoy.vercel.app/api/cron/saludo";
+  const h = { Authorization: `Bearer ${token}` };
+  const lista = await (await fetch(`${base}/v2/schedules`, { headers: h })).json().catch(() => []);
+  const hay = (Array.isArray(lista) ? lista : []).some((s: { destination?: string }) => s.destination === destino);
+  if (!hay) {
+    const r = await fetch(`${base}/v2/schedules/${destino}`, { method: "POST", headers: { ...h, "Upstash-Cron": "CRON_TZ=America/Argentina/Buenos_Aires 0 7 * * *", "Content-Type": "application/json" }, body: "{}" });
+    if (!r.ok) throw new Error(`QStash ${r.status}`);
+  }
+  await redis([["SET", "qstash:saludo", "1", "EX", 86400]]);
+}
