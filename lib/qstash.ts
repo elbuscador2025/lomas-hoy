@@ -34,7 +34,7 @@ export async function asegurarSaludo() {
   const { redis } = await import("@/lib/servidor");
   const [marca] = await redis([["GET", "qstash:saludo"]]);
   if (marca) return;
-  const base = (process.env.QSTASH_URL ?? "https://qstash.upstash.io").replace(//$/, "");
+  const base = (process.env.QSTASH_URL ?? "https://qstash.upstash.io").replace(/\/$/, "");
   const destino = "https://lomas-hoy.vercel.app/api/cron/saludo";
   const h = { Authorization: `Bearer ${token}` };
   const lista = await (await fetch(`${base}/v2/schedules`, { headers: h })).json().catch(() => []);
