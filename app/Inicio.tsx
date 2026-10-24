@@ -25,7 +25,7 @@ import { OFICINAS_ANSES, PALABRAS_ANSES_OF, ordenarOficinas, type OficinaAnses }
 import { COOP_OFICIALES, PALABRAS_COOP, type Coop } from "@/lib/coop";
 import { TRAMITES } from "@/lib/discapacidad";
 import { estadoHorario, esDeNocheVet } from "@/lib/horarios";
-import { transporteDe, luzParaSaludo, estadoEnUnaFrase } from "@/lib/transporte";
+import { transporteDe } from "@/lib/transporte";
 import { MascotaCard, ListaMascotas, FormularioMascota } from "./Mascotas";
 import { ListaTrabajo, FormularioTrabajo } from "./Trabajo";
 import { TrabajoCard } from "./Trabajo";
@@ -225,7 +225,6 @@ export default function Inicio() {
   const transp = transporteDe(d);
   const hAR = Number(ahora.slice(11, 13));
   const saludo = hAR >= 6 && hAR < 12 ? "Buen día" : hAR >= 12 && hAR < 20 ? "Buenas tardes" : "Buenas noches";
-  const estadoFrase = estadoEnUnaFrase(transp, luzParaSaludo(d, ahora, luzVieja));
   const filaHoras = clima ? proximasHoras(clima, ahora) : [];
   const hoyStr = ahora.slice(0, 10);
   const nuevasMascotas = mascotas.filter((m) => esNueva(m, config.mascotas.diasNuevas)).length;
@@ -765,7 +764,6 @@ export default function Inicio() {
         </div>
         <div className="saludo-azul">
           <b>{saludo} · {capitalizar(fechaLarga())}</b>
-          {estadoFrase && <span>{estadoFrase}</span>}
         </div>
         {(alerta || tormenta) && (
           <button className="banda-tormenta" onClick={(e) => { e.stopPropagation(); abrir("tormenta"); }}>
