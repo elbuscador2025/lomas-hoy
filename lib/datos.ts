@@ -101,6 +101,7 @@ export async function cargarDatos(): Promise<{ datos: Todo; lugares: Lugar[]; ma
     anses = a.value;
     guardarCache(CLAVE_ANSES, anses);
   } else anses = leerCache<Anses>(CLAVE_ANSES, { entradas: [], actualizado: null });
+  lugares = lugares.map((x) => (x.localidad === "General Lamadrid" ? { ...x, localidad: "Villa Lamadrid" } : x)); // así lo conocen los vecinos
   return { datos, lugares, mascotas, trueque, trabajo, anses, sinConexion: d.status === "rejected" && l.status === "rejected" };
 }
 
