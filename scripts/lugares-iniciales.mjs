@@ -109,6 +109,7 @@ export const lugaresIniciales = [
   caps("19 de Diciembre", "Bolonia y Manuel de Lavarden", "Villa Albertina", "4285-4607", `${L} 7 a 18 hs`),
   caps("Villa Independencia", "Bustos 773", "Parque Barón", "4283-0343", "Guardia 24 hs"),
   caps("Dr. Ángel A. Tullio", "Dr. Indalecio Gómez 702", "Temperley Este", "4239-9663", `${L} 7 a 19 hs`),
+  caps("Salón Usos Múltiples – Arroyo del Rey", "Dávila s/n e/ Bouchard y Arroyo del Rey", "Llavallol", "4293-8257", `${L} 7 a 18 hs`),
   caps("José M. Oliveras", "Carhué 850", "San José", "4264-8377", "Guardia 24 hs"),
   caps("Néstor Kirchner", "Martín Rodríguez 1861", "Villa Albertina", "4273-0294", `${L} 8 a 17 hs · Sáb 8 a 14 hs`),
   caps("Villa Urbana", "Fallières 2328 e/ Baradero y Campana", "Villa Fiorito", "4267-3873", `${L} 7 a 17 hs · Sáb 8 a 13 hs`),
