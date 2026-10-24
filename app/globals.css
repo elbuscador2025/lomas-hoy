@@ -417,3 +417,12 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .cobro-grilla li.hoy { background:var(--c-fuerte); color:#fff; }
 .cobro-grilla li.prox { outline:2px solid var(--c-fuerte); }
 .cobro-grilla em { font-style:normal; font-size:12px; font-weight:800; text-transform:uppercase; }
+
+.c-salitas { --c-bg:#D0F5F5; --c-fuerte:#0097A7; }
+.emergencia { display:flex; flex-direction:column; gap:10px; background:#FFE5E5; border:2px solid #C62828; border-radius:18px; padding:16px; margin:4px 0 12px; }
+.emergencia-t { font-size:24px; line-height:1.2; color:#8E1B1B; }
+.emergencia-911 { font-size:18px; }
+.salud-card .salud-dir { font-size:20px; line-height:1.25; }
+.salud-card .salud-km { font-weight:700; color:var(--c-fuerte); }
+.salud-card .salud-llegar { min-height:52px; font-weight:800; }
+.salud-aviso { background:var(--c-bg); border-radius:14px; padding:12px; margin:4px 0 10px; line-height:1.4; font-weight:600; }

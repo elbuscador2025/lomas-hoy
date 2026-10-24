@@ -19,6 +19,7 @@ import BotonLlamar from "./BotonLlamar";
 import Discapacidad from "./Discapacidad";
 import CoopPantalla from "./Coop";
 import HoyCobran from "./HoyCobran";
+import { GuardiasPantalla, SalitasPantalla, tieneGuardia24, esSalita } from "./Salud";
 import OficinasAnses from "./OficinasAnses";
 import { OFICINAS_ANSES, PALABRAS_ANSES_OF, ordenarOficinas, type OficinaAnses } from "@/lib/ansesof";
 import { COOP_OFICIALES, PALABRAS_COOP, type Coop } from "@/lib/coop";
@@ -41,10 +42,10 @@ type Tono = "ok" | "aviso" | "grave" | "neutro";
 const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
 const CATEGORIAS_DE: Record<string, string[]> = {
-  guardias: ["guardias", "salitas"], vets: ["veterinarias"], otros: ["comisarias", "bomberos", "servicios"],
+  guardias: ["guardias"], vets: ["veterinarias"], otros: ["comisarias", "bomberos", "servicios"],
 };
 const TITULO_DE: Record<string, string> = {
-  guardias: "Guardias y salitas", vets: "Veterinarias y salud animal", otros: "Emergencias y servicios",
+  guardias: "Guardias 24 hs", salitas: "Salitas", vets: "Veterinarias y salud animal", otros: "Emergencias y servicios",
 };
 
 function Tile({ icono, titulo, resumen, estado, tono, onClick, color }: {
@@ -646,10 +647,20 @@ export default function Inicio() {
     );
   }
 
-  if (vista === "guardias" || vista === "otros") {
+  if (vista === "guardias" || vista === "salitas")
+    return (
+      <Detalle color={vista} titulo={TITULO_DE[vista]} onVolver={volver}>
+        {vista === "guardias"
+          ? <GuardiasPantalla lugares={lugares} yo={yo} km={km} onUbicacion={pedirUbicacion} errorUbicacion={errorUbicacion} ahora={ahora} />
+          : <SalitasPantalla lugares={lugares} yo={yo} km={km} onUbicacion={pedirUbicacion} errorUbicacion={errorUbicacion} ahora={ahora} />}
+        {lugares.length === 0 && <SinDatos />}
+      </Detalle>
+    );
+
+  if (vista === "otros") {
     const cats = CATEGORIAS.filter((c) => CATEGORIAS_DE[vista].includes(c.id));
     return (
-      <Detalle color={vista === "guardias" ? "guardias" : "otros"} titulo={TITULO_DE[vista]} onVolver={volver}>
+      <Detalle color="otros" titulo={TITULO_DE[vista]} onVolver={volver}>
         {yo
           ? <p className="vacio">Ordenado por cercanía a tu ubicación.</p>
           : <button className="btn claro ancho" onClick={pedirUbicacion}><Icono nombre="pin" tam={20} /> Ordenar por cercanía</button>}
@@ -889,8 +900,10 @@ export default function Inicio() {
               )}
               {s.urgencias.activa && (
                 <>
-                  <Tile color="guardias" icono="guardia" titulo="Guardias y salitas" estado={plural(lugaresDe("guardias").length, "lugar", "lugares")} tono="neutro" onClick={() => abrir("guardias")}
-                    resumen="Hospitales, guardias y centros de salud" />
+                  <Tile color="guardias" icono="guardia" titulo="Guardias 24 hs" estado={plural(lugares.filter(tieneGuardia24).length, "lugar", "lugares")} tono="neutro" onClick={() => abrir("guardias")}
+                    resumen="Hospitales y guardias las 24 horas" />
+                  <Tile color="salitas" icono="guardia" titulo="Salitas" estado={plural(lugares.filter(esSalita).length, "salita", "salitas")} tono="neutro" onClick={() => abrir("salitas")}
+                    resumen="Centros de salud del barrio" />
                   <Tile color="vets" icono="patita" titulo="Veterinarias" estado={`${vets.length} en total`} tono="neutro" onClick={() => abrir("vets")}
                     resumen={abiertas24 ? `${abiertas24} de guardia 24 hs` : "Veterinarias y salud animal"} />
                 </>
