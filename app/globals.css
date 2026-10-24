@@ -396,3 +396,12 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .elegir-barrio { display:flex; flex-direction:column; gap:6px; font-weight:700; margin:4px 0 10px; }
 .elegir-barrio select { min-height:52px; font-size:18px; border-radius:14px; border:2px solid var(--c-fuerte); padding:0 12px; background:#fff; color:inherit; width:100%; }
 .para-que { background:var(--c-bg); border-radius:14px; padding:12px; margin:10px 0; line-height:1.4; }
+
+.c-ansesof { --c-bg:#F3DEE3; --c-fuerte:#8E1B3A; }
+.anses-turno { display:flex; flex-direction:column; gap:12px; background:var(--c-bg); border-radius:18px; padding:16px; margin:4px 0 12px; }
+.anses-solo { font-size:22px; line-height:1.25; }
+.anses-turno .btn { min-height:60px; font-size:20px; background:var(--c-fuerte); color:#fff; text-align:center; }
+.oficina-anses { display:flex; flex-direction:column; gap:4px; }
+.oficina-anses .of-nombre { color:var(--suave); }
+.oficina-anses .of-dir { font-size:22px; line-height:1.25; }
+.oficina-anses .of-loc { font-size:16px; }

@@ -22,6 +22,7 @@ export const config = {
     trabajo: { activa: true, titulo: "Trabajo para mayores de 50 años" },
     discapacidad: { activa: true, titulo: "Discapacidad" },
     coop: { activa: true, titulo: "COOP" },
+    ansesof: { activa: true, titulo: "ANSES" },
   },
 
   tren: {
