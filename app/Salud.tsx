@@ -11,7 +11,8 @@ type Props = { lugares: Lugar[]; yo: Coord | null; km: (l: Lugar) => number | un
 
 // Guardia 24 hs: los hospitales y UPA, y los centros de salud cuyo horario dice "Guardia 24 hs". Si no se sabe, va a Salitas.
 export const tieneGuardia24 = (l: Lugar) => l.categoria === "guardias" || (l.categoria === "salitas" && /24\s*hs/i.test(l.horario));
-export const esSalita = (l: Lugar) => l.categoria === "salitas" && !tieneGuardia24(l);
+// Toda salita (centro de salud) está en Salitas; las que además tienen guardia 24 hs también salen en Guardias.
+export const esSalita = (l: Lugar) => l.categoria === "salitas";
 
 const distancia = (km?: number) => (km != null && Number.isFinite(km) ? ` · a ${km < 10 ? km.toFixed(1).replace(".", ",") : Math.round(km)} km` : "");
 
