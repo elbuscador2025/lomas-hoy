@@ -21,7 +21,7 @@ export type AvisoTormenta = { desde: string; hasta: string; hastaHora: number; p
 export type Clima = {
   ahora: {
     temp: number; sensacion: number | null; humedad: number | null; viento: number | null;
-    medidoEn: string | null; estacion: string | null; // si vino del SMN: "HH:MM" y estación
+    medidoEn: string | null; estacion: string | null; medidoISO?: string | null; estaciones?: string[] | null; // si vino del SMN: "HH:MM" y estación
   } & EstadoClima;
   frase: string | null; // "Llueve a la tarde, llevá paraguas"
   lluvia?: { lomas: string; capital: string | null } | null; // la lluvia de lo que queda de hoy, en Lomas y en Capital

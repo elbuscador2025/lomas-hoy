@@ -1,4 +1,5 @@
-// Clima: "ahora" medido por el SMN (Ezeiza) si se puede leer bien; si no, el servicio Open-Meteo.
+// Clima: "ahora" = promedio de las estaciones del SMN que rodean Lomas (Ezeiza, El Palomar, Morón, Observatorio Central y Aeroparque) si hay al menos 2 con datos de menos de 1 hora;
+// si no, el servicio Open-Meteo para el punto de Lomas. Nunca se muestra un dato de más de 1 hora.
 // Las horas y los días siguientes son pronóstico de Open-Meteo. Si algo no se puede leer, queda vacío: no se inventa.
 import { inflateRawSync } from "node:zlib";
 
@@ -20,6 +21,7 @@ export function desdeCodigo(c) {
 }
 
 // ---- Observación del SMN (datos abiertos de "tiempo presente") ----
+const MAX_MINUTOS = 60; // nunca se muestra un dato de más de 1 hora
 export const URL_SMN = "https://ssl.smn.gob.ar/dpd/zipopendata.php?dato=tiepre";
 
 // Frase del SMN ("Cubierto con lluvia") -> ícono y palabra. Lluvia "en la hora anterior" o "a la vista" no cuenta como ahora.
@@ -54,7 +56,7 @@ export function leerObservacionSmn(txt, estacion, ahora = new Date()) {
   if (!mes || !/^\d{2}:\d{2}$/.test(hhmm)) return null;
   const medidoEn = new Date(`${f[3]}-${String(mes).padStart(2, "0")}-${f[1].padStart(2, "0")}T${hhmm}:00-03:00`);
   const minutos = (ahora - medidoEn) / 60000;
-  if (Number.isNaN(minutos) || minutos > 120 || minutos < -10) return null; // vieja o con fecha rara
+  if (Number.isNaN(minutos) || minutos > MAX_MINUTOS || minutos < -10) return null; // vieja (más de 1 hora) o con fecha rara
   const temp = Number(tempTxt);
   const estado = desdeTextoSmn(estadoTxt);
   if (!Number.isFinite(temp) || tempTxt === "" || !estado) return null;
@@ -66,7 +68,24 @@ export function leerObservacionSmn(txt, estacion, ahora = new Date()) {
     viento: /calma/i.test(vientoTxt) ? 0 : num(vientoTxt.match(/(\d+)\s*$/)?.[1] ?? ""),
     ...estado,
     medidoEn: hhmm,
+    medidoISO: medidoEn.toISOString(),
     estacion,
+  };
+}
+
+// Varias estaciones: la temperatura es el promedio de las que tienen datos de menos de 1 hora (hacen falta al menos 2).
+// El estado del tiempo, la humedad y el viento salen de la primera de la lista que tenga datos (la más cercana a Lomas).
+export function leerEstacionesSmn(txt, estaciones, ahora = new Date()) {
+  const obs = estaciones.map((e) => leerObservacionSmn(txt, e, ahora)).filter(Boolean);
+  if (obs.length < 2) return null;
+  const prom = (xs) => { const v = xs.filter((x) => x != null); return v.length ? Math.round((v.reduce((a, b) => a + b, 0) / v.length) * 10) / 10 : null; };
+  const mas_vieja = obs.reduce((a, b) => (a.medidoISO < b.medidoISO ? a : b));
+  const [p] = obs;
+  return {
+    temp: prom(obs.map((o) => o.temp)), sensacion: prom(obs.map((o) => o.sensacion)),
+    humedad: p.humedad ?? prom(obs.map((o) => o.humedad)), viento: p.viento ?? prom(obs.map((o) => o.viento)),
+    icono: p.icono, etiqueta: p.etiqueta,
+    medidoEn: mas_vieja.medidoEn, medidoISO: mas_vieja.medidoISO, estacion: null, estaciones: obs.map((o) => o.estacion),
   };
 }
 
@@ -88,7 +107,7 @@ export function ahoraDesdeOpenMeteo(c) {
     : llueve ? { icono: "lluvia", etiqueta: mm < 0.5 ? "Llovizna" : "Lluvia" }
     : base;
   if (!estado) return null;
-  return { temp: c.temperature_2m, sensacion: c.apparent_temperature, humedad: c.relative_humidity_2m, viento: c.wind_speed_10m, ...estado, medidoEn: null, estacion: null };
+  return { temp: c.temperature_2m, sensacion: c.apparent_temperature, humedad: c.relative_humidity_2m, viento: c.wind_speed_10m, ...estado, medidoEn: c.time ? c.time.slice(11, 16) : null, medidoISO: c.time ? new Date(`${c.time}:00-03:00`).toISOString() : null, estacion: null, estaciones: null, openMeteo: true };
 }
 
 // De noche (entre la puesta y la salida del sol) el sol pasa a ser luna
@@ -324,7 +343,7 @@ export function armarFrase({ horas, ahora, ahoraEstado }) {
 export async function consultarSmn(cfg, traer = fetch) {
   const r = await traer(URL_SMN, { headers: { "User-Agent": "Mozilla/5.0 (LomasHoy)" }, signal: AbortSignal.timeout(7000) });
   if (!r.ok) throw new Error(`SMN ${r.status}`);
-  return leerObservacionSmn(leerZipSmn(Buffer.from(await r.arrayBuffer())), cfg.clima.estacionSmn);
+  return leerEstacionesSmn(leerZipSmn(Buffer.from(await r.arrayBuffer())), cfg.clima.estacionesSmn);
 }
 
 // Lluvia de lo que queda de hoy (o de mañana, después de las 20) en Lomas y en Capital, para mostrar en el detalle
@@ -358,6 +377,8 @@ export function avisoTormenta(horas, ahora) {
 // Junta lo medido (SMN, si hay) con el pronóstico guardado. ahoraAR: "YYYY-MM-DDTHH:mm".
 export function componerClima(pron, medido, ahoraAR) {
   const base = medido ?? pron.actual;
+  const medidoISO = base.medidoISO ?? pron.consultadoEn;
+  if (!medidoISO || Date.now() - new Date(medidoISO).getTime() > MAX_MINUTOS * 60000) throw new Error("El dato del clima de ahora tiene más de 1 hora"); // se conserva lo anterior y la pantalla lo oculta
   const ahora = esDeNoche(pron.sol, ahoraAR) ? { ...base, icono: deNoche(base.icono) } : base; // de noche, luna en vez de sol
   return {
     ahora,

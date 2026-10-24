@@ -190,7 +190,9 @@ export default function Inicio() {
   const progFalla = !d.programados?.contenido || !!d.programados.error || !d.programados.ok_en || Date.now() - new Date(d.programados.ok_en).getTime() > 3 * 3600_000;
   const alertasLuz = novedades.filter((n) => n.vista === "luz");
   const paros = (d.colectivos?.contenido?.paros ?? []).filter((p) => Date.now() - new Date(p.fecha).getTime() <= config.colectivos.diasMaximos * 86400_000);
-  const clima = d.clima?.contenido ?? null;
+  // Nunca se muestra un dato de más de 1 hora
+  const medidoISO = d.clima?.contenido?.ahora?.medidoISO ?? d.clima?.contenido?.pronosticoEn;
+  const clima = d.clima?.contenido && (!medidoISO || Date.now() - new Date(medidoISO).getTime() <= 60 * 60000) ? d.clima.contenido : null;
   const programados = (d.programados?.contenido?.cortes ?? []).filter((c) => c.fin >= ahora).sort((a, b) => a.inicio.localeCompare(b.inicio));
   const diaCorto = (f: string) => capitalizar(new Date(`${f}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "long", day: "numeric", month: "long" }).replace(",", ""));
   const horaCorte = (f: string) => f.slice(11, 16);
@@ -362,7 +364,7 @@ export default function Inicio() {
         </ul>
         {dias.length === 0 && clima && <p className="vacio clima-pie">El hora por hora se actualiza en unos minutos.</p>}
         <p className="clima-pie">
-          {a?.medidoEn ? `Medido en ${a.estacion} (SMN) a las ${a.medidoEn}` : "Estimado por Open-Meteo"}{d.clima?.ok_en ? ` · Actualizado ${hora(d.clima.ok_en)}` : ""}. Pronóstico para {config.ciudad} y Capital: SMN y Open-Meteo.
+          {a?.estaciones ? `Temperatura de ahora: promedio de ${a.estaciones.length} estaciones del SMN (${a.estaciones.join(", ")}), medido a las ${a.medidoEn}` : a?.medidoEn && a.estacion ? `Medido en ${a.estacion} (SMN) a las ${a.medidoEn}` : `Temperatura de ahora: estimada por Open-Meteo para ${config.ciudad}${a?.medidoEn ? `, de las ${a.medidoEn}` : ""}`}{d.clima?.ok_en ? ` · Actualizado ${hora(d.clima.ok_en)}` : ""}. Pronóstico para {config.ciudad} y Capital: SMN y Open-Meteo.
         </p>
       </main>
     );

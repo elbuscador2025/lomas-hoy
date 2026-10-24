@@ -178,7 +178,8 @@ export const config = {
     latitud: -34.76,
     longitud: -58.4,
     // Estación del Servicio Meteorológico Nacional más cercana (datos abiertos de "tiempo presente").
-    estacionSmn: "Ezeiza",
+    // "Ahora" = promedio de estas estaciones (Ezeiza, a campo abierto, daba más frío que Lomas); la primera es la más cercana.
+    estacionesSmn: ["Ezeiza", "El Palomar", "Morón", "Buenos Aires", "Aeroparque Buenos Aires"],
     // La lluvia se mira también en la Ciudad de Buenos Aires. Pronóstico a 5 días del SMN (modelo): estaciones de Lomas (Ezeiza) y de Capital (Aeroparque).
     capital: { latitud: -34.6037, longitud: -58.3816 },
     pronSmn: { estacionLomas: "EZEIZA_AERO", estacionCapital: "AEROPARQUE" },

@@ -102,3 +102,12 @@ test("alertas SMN: junta las zonas del mismo aviso, ignora las vencidas y las re
   const r = await leerAlertas(traer, { alertas: { url: "https://x/AR.php", horasAtras: 48, puntos: [{ nombre: "Lomas de Zamora", lat: -34.76, lng: -58.4 }, { nombre: "Capital", lat: -34.6, lng: -58.38 }] } }, new Date("2026-10-22T23:00:00Z")); // 20:00 en Argentina
   assert.deepEqual(r.alertas.map((a) => [a.id, a.zonas.join("+"), a.desde, a.hasta]), [["id4", "Lomas de Zamora", "2026-10-22T22:00", "2026-10-23T03:59"], ["id2", "Capital", "2026-10-22T21:00", "2026-10-23T02:59"]]);
 });
+
+import { leerEstacionesSmn } from "./clima.mjs";
+test("clima: la temperatura de ahora es el promedio de las estaciones con datos de menos de 1 hora", () => {
+  const txt = [" Ezeiza;23-octubre-2026;18:00;Parcialmente nublado;10 km;21;No se calcula; 50;Sur  9;1010 /", " Morón;23-octubre-2026;18:00;Algo nublado;10 km;24;No se calcula; 45;Sur  14;1009 /",
+    " Buenos Aires;23-octubre-2026;18:00;Algo nublado;10 km;25;No se calcula; 44;Sur  11;1009 /", " El Palomar;23-octubre-2026;15:00;Despejado;10 km;30;No se calcula; 40;Sur  13;1011 /"].join("\n");
+  const o = leerEstacionesSmn(txt, ["Ezeiza", "El Palomar", "Morón", "Buenos Aires"], new Date("2026-10-23T21:10:00Z")); // 18:10 en Argentina; El Palomar tiene 3 horas: no entra
+  assert.deepEqual([o.temp, o.estaciones, o.etiqueta], [23.3, ["Ezeiza", "Morón", "Buenos Aires"], "Parcialmente nublado"]);
+  assert.equal(leerEstacionesSmn(txt, ["Ezeiza", "El Palomar"], new Date("2026-10-23T21:10:00Z")), null); // con una sola estación vigente no alcanza
+});
