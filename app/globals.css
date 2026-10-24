@@ -405,3 +405,15 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .oficina-anses .of-nombre { color:var(--suave); }
 .oficina-anses .of-dir { font-size:22px; line-height:1.25; }
 .oficina-anses .of-loc { font-size:16px; }
+
+.cobro-botones { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:4px 0 10px; }
+.btn.cobro-boton { min-height:56px; padding:0 4px; font-size:17px; background:#fff; color:var(--c-fuerte); border:2px solid var(--c-fuerte); box-shadow:none; }
+.btn.cobro-boton.activo { background:var(--c-fuerte); color:#fff; }
+.cobro-tarjeta { background:#fff; border:1px solid var(--linea); border-radius:18px; padding:12px; margin:8px 0; }
+.cobro-tarjeta h2 { font-size:22px; margin:0 0 8px; }
+.cobro-grilla { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.cobro-grilla li { display:flex; flex-wrap:wrap; align-items:center; gap:2px 6px; padding:8px 8px; border-radius:10px; background:var(--c-bg); font-size:16px; }
+.cobro-grilla li.paso { background:#EEF0F3; color:#8A93A0; }
+.cobro-grilla li.hoy { background:var(--c-fuerte); color:#fff; }
+.cobro-grilla li.prox { outline:2px solid var(--c-fuerte); }
+.cobro-grilla em { font-style:normal; font-size:12px; font-weight:800; text-transform:uppercase; }

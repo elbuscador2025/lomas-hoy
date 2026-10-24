@@ -18,6 +18,7 @@ import IconoClima from "./IconoClima";
 import BotonLlamar from "./BotonLlamar";
 import Discapacidad from "./Discapacidad";
 import CoopPantalla from "./Coop";
+import HoyCobran from "./HoyCobran";
 import OficinasAnses from "./OficinasAnses";
 import { OFICINAS_ANSES, PALABRAS_ANSES_OF, ordenarOficinas, type OficinaAnses } from "@/lib/ansesof";
 import { COOP_OFICIALES, PALABRAS_COOP, type Coop } from "@/lib/coop";
@@ -597,20 +598,9 @@ export default function Inicio() {
     );
 
   if (vista === "anses") {
-    const porPrestacion = [...new Set(rAnses.delMes.map((p) => p.prestacion))];
     return (
       <Detalle color="anses" titulo={s.anses.titulo} onVolver={volver}>
-        <p className="frase">{rAnses.texto}</p>
-        {rAnses.sinDatos ? null : porPrestacion.map((pr) => (
-          <div key={pr}>
-            <h2>{pr}</h2>
-            <ul className="lista">
-              {rAnses.delMes.filter((p) => p.prestacion === pr).map((p) => (
-                <li key={p.id} className="pago"><b>DNI terminado en {terminaciones(p.dnis)}</b><br />{capitalizar(fechaPago(p.fecha))}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
+        <HoyCobran entradas={anses.entradas} hoy={hoyStr} />
         <a className="btn claro ancho" target="_blank" rel="noreferrer" href={URL_ANSES}>Ver el calendario oficial en ANSES</a>
         <Pie seccion="anses" fuente="ANSES" url={URL_ANSES} minutosViejo={60 * 24 * 60}
           fila={anses.actualizado ? { clave: "anses", contenido: null, ok_en: anses.actualizado, intento_en: null, error: null } : undefined} />
