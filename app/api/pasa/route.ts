@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   const form = await req.formData().catch(() => null);
   const dispositivo = String(form?.get("dispositivo") ?? "");
   if (!form || dispositivo.length < 8 || dispositivo.length > 64) return Response.json({ ok: false, error: "No se pudo enviar." }, { status: 400 });
-  // Primero se validan los datos (un aviso rechazado no gasta uno de los 3 del día)
+  // Cada intento cuenta para el máximo de 3 por día
   if (!(await limitePorDia(dispositivo, ipDe(req)))) return Response.json({ ok: false, error: `Ya publicaste ${MAX_POR_DIA_PASA} avisos hoy. Probá mañana.` }, { status: 429 });
   const r = await publicar(form, dispositivo);
   return Response.json(r, { status: r.ok ? 200 : 400 });

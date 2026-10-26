@@ -42,7 +42,7 @@ async function barrioCercano(lat: number, lng: number) {
     const k = distanciaKm({ lat, lng }, { lat: l.lat, lng: l.lng });
     if (k < d) { d = k; mejor = l.localidad; }
   }
-  return d < 3 ? mejor : "";
+  return d < 3 ? (mejor === "General Lamadrid" ? "Villa Lamadrid" : mejor) : ""; // así lo conocen los vecinos
 }
 
 export async function publicar(form: FormData, dispositivo: string): Promise<{ ok: true } | { ok: false; error: string }> {
