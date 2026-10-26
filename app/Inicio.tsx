@@ -5,6 +5,7 @@ import {
   cargarDatos, armarNovedades, type Anses, clasificarTren, fechaLarga, hora, hoyMMDD, nombreLindo, proximasHoras,
   CATEGORIAS, ordenarLugares, distanciaKm, distanciaTexto, normalizar, mapaBusqueda, mapaBuscador, ZONA,
   type Todo, type Lugar, type Novedad, agruparCortes,
+  textoCorteAgua,
 } from "@/lib/datos";
 import { ahoraAR } from "@/lib/avisos";
 import { haceCuanto } from "@/lib/hace";
@@ -224,7 +225,7 @@ export default function Inicio() {
   const [aguaEstado, aguaTono, aguaResumen]: [string, Tono, string] = !d.agua?.contenido ? ["Sin datos", "neutro", "Sin cortes informados"]
     : aguaAhora.length ? [plural(aguaAhora.length, "corte", "cortes"), "aviso", `Corte en ${aguaAhora[0].localidad}${aguaAhora[0].hasta ? ` hasta las ${horaCorta(aguaAhora[0].hasta)} hs` : ""}${aguaAhora.length > 1 ? ` y ${aguaAhora.length - 1} más` : ""}`]
     : aguaProx.length ? ["Programado", "aviso", `Corte en ${aguaProx[0].localidad}: ${diaCorto((aguaProx[0].desde ?? "").slice(0, 10))}, desde las ${horaCorta(aguaProx[0].desde ?? "")} hs`]
-    : aguaNotas.length ? ["Aviso", "aviso", `${aguaNotas[0].zona} · ${haceCuanto(aguaNotas[0].fecha)}`]
+    : aguaNotas.length ? ["Aviso", "aviso", textoCorteAgua(aguaNotas[0]).linea]
     : ["Normal", "ok", "Sin cortes informados"];
   const nombreDiaCorto = (f: string) => capitalizar(new Date(`${f}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "short", day: "numeric" }).replace(/[.,]/g, ""));
   const hoyDia = clima?.porDia?.find((x) => x.fecha === ahora.slice(0, 10)) ?? clima?.porDia?.[0];
@@ -580,10 +581,10 @@ export default function Inicio() {
             {[...aguaAhora, ...aguaProx, ...aguaNotas].map((c) => (
               <li key={c.id} className="lugar">
                 <b>{c.localidad}</b>
-                <span>{c.zona}</span>
+                {c.desde ? <span>{c.zona}</span> : <><b>{textoCorteAgua(c).linea}</b><small>{c.zona}</small></>}
                 {c.desde && <small>{cuandoAgua(c)}{c.motivo ? ` · ${c.motivo}` : ""}</small>}
                 <small>{c.fuente} · {c.desde ? "Cargado" : "Publicado"} {fechaCarga(c.fecha)} hs · {haceCuanto(c.fecha)}</small>
-                {c.link && <a className="btn claro" href={c.link} target="_blank" rel="noreferrer">Ver días y zonas</a>}
+                {c.link && <a className="btn claro" href={c.link} target="_blank" rel="noreferrer">Ver nota completa</a>}
               </li>
             ))}
           </ul>

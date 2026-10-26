@@ -1,7 +1,7 @@
 // Qué novedades merecen una notificación y cómo se identifica cada una (para no repetirla).
 import { createHash } from "node:crypto";
 import { config } from "@/lomas.config.mjs";
-import { clasificarTren, hoyMMDD, nombreLindo, type Tren, type Subte, type Alertas } from "@/lib/datos";
+import { clasificarTren, hoyMMDD, nombreLindo, textoCorteAgua, type Tren, type Subte, type Alertas } from "@/lib/datos";
 import { notificarSeguro } from "@/lib/push";
 import { redis } from "@/lib/servidor";
 import { filaAgua, aguaVisible } from "@/lib/agua";
@@ -112,7 +112,7 @@ export async function evaluarAgua() {
       if (primero !== "OK") continue;
       await notificarSeguro({
         tipo: "agua", clave: `agua:${c.id}`, ttl: 4 * 86400,
-        titulo: `${c.localidad}: corte de agua`, cuerpo: `${c.zona} (${c.fuente})`, url: "/?v=agua",
+        titulo: textoCorteAgua(c).notif, cuerpo: `${c.zona}${c.cuando ? ` · ${c.cuando}` : ""} (${c.fuente})`, url: "/?v=agua",
       });
     }
   }

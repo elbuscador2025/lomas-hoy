@@ -7,6 +7,7 @@ import { mantener as mantenerPasa } from "@/lib/pasa";
 import { evaluarResumen } from "@/lib/resumen";
 import { evaluarTren, evaluarProgramados, evaluarColectivos, evaluarAgua, evaluarSubte, evaluarTormenta, evaluarAlertasSmn } from "@/lib/eventos";
 import { redis } from "@/lib/servidor";
+import { enriquecerAgua } from "@/lib/agua";
 
 export const CLAVES_VALIDAS = ["tren", "luz", "colectivos", "programados", "agua", "pronostico", "mascotas", "subte", "alertas", "noticias"];
 
@@ -15,6 +16,7 @@ export async function guardarDato(clave: string, contenido: any, error?: unknown
   const ahora = new Date().toISOString();
   const llave = `datos:${clave}`;
   if (contenido) {
+    if (clave === "agua") contenido = await enriquecerAgua(contenido).catch(() => contenido); // lee el texto completo de las notas nuevas (barrios y horario)
     await redis([["SET", llave, JSON.stringify({ clave, contenido, ok_en: ahora, intento_en: ahora, error: null })]]);
     // Los avisos salen después de responder: si fallan, el dato ya quedó guardado.
     if (clave === "tren") after(() => evaluarTren(contenido).catch((e) => console.error("push tren", e)));

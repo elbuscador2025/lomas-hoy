@@ -3,9 +3,11 @@
 import { createHash } from "node:crypto";
 import { redis } from "@/lib/servidor";
 import type { Agua, CorteAgua, Fila } from "@/lib/datos";
+import { config } from "@/lomas.config.mjs";
+import { textoDeNota, barriosEnTexto, cuandoEnTexto } from "@/scripts/fuentes.mjs";
 
 export type CorteManual = { id: string; localidad: string; zona: string; desde: string; hasta: string; motivo: string; creado: string };
-type Noticia = { titular: string; medio: string; link: string; fecha: string; localidad: string };
+type Noticia = { titular: string; medio: string; link: string; fecha: string; localidad: string; barrios?: string[]; cuando?: string | null; leida?: boolean };
 
 export const FUENTE_MANUAL = "Carga manual de Lomas Hoy";
 
@@ -24,11 +26,33 @@ export async function filaAgua(): Promise<Fila<Agua>> {
     ...manuales.map((c) => ({ id: c.id, localidad: c.localidad, zona: c.zona, desde: c.desde, hasta: c.hasta, motivo: c.motivo, fuente: FUENTE_MANUAL, fecha: c.creado })),
     ...notas.map((x) => ({
       id: createHash("sha1").update(x.link).digest("hex").slice(0, 12), localidad: x.localidad, zona: x.titular, desde: null, hasta: null,
-      motivo: "", fuente: x.medio, fecha: x.fecha, link: x.link,
+      motivo: "", fuente: x.medio, fecha: x.fecha, link: x.link, barrios: x.barrios ?? [], cuando: x.cuando ?? null,
     })),
   ];
   return {
     clave: "agua", contenido: { cortes, diariosSinLeer: lectura?.contenido?.diariosSinLeer ?? [] },
     ok_en: lectura?.ok_en ?? null, intento_en: lectura?.intento_en ?? null, error: lectura?.error ?? null,
   };
+}
+
+// Para cada nota de corte de agua se descarga el texto completo UNA sola vez: lo ya leído se toma de lo guardado en la corrida anterior.
+// Si la descarga falla, se reintenta en la próxima corrida (mientras la nota siga vigente).
+export async function enriquecerAgua<T extends { noticias: Noticia[] }>(contenido: T): Promise<T> {
+  const [previo] = await redis([["GET", "datos:agua"]]);
+  const guardadas = new Map<string, Noticia>();
+  try { for (const n of (JSON.parse(String(previo))?.contenido?.noticias ?? []) as Noticia[]) if (n.leida) guardadas.set(n.link, n); } catch {}
+  const noticias = await Promise.all(contenido.noticias.map(async (n) => {
+    const antes = guardadas.get(n.link);
+    if (antes) return { ...n, barrios: antes.barrios ?? [], cuando: antes.cuando ?? null, leida: true };
+    try {
+      if (!/^https:\/\//.test(n.link)) return n;
+      const r = await fetch(n.link, { headers: { "User-Agent": "Mozilla/5.0 (LomasHoy)" }, signal: AbortSignal.timeout(10000) });
+      if (!r.ok) return n;
+      const texto = textoDeNota((await r.text()).slice(0, 2_000_000));
+      return { ...n, barrios: barriosEnTexto(texto, config), cuando: cuandoEnTexto(texto), leida: true };
+    } catch {
+      return n;
+    }
+  }));
+  return { ...contenido, noticias };
 }

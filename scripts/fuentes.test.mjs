@@ -137,3 +137,13 @@ test("agua: solo notas que anuncian un corte o falta de agua en Lomas o sus loca
   ], cfgAgua, ahora);
   assert.deepEqual(r.map((x) => x.localidad), ["Lomas de Zamora", "Llavallol"]);
 });
+
+import { textoDeNota, barriosEnTexto, cuandoEnTexto } from "./fuentes.mjs";
+test("agua: barrios de Lomas y horario que nombra la nota completa", () => {
+  const html = `<html><nav>Lomas Banfield</nav><article><p>Zonas de Lomas de Zamora y Temperley podrían tener cortes.</p><p>El martes 27, de 8 a 12, en Villa Lamadrid y Banfield Oeste. También Lanús y Almirante Brown.</p><p>Afectaría a Budge y Lomas centro.</p></article><aside>Lomas: retiro de muebles</aside></html>`;
+  const t = textoDeNota(html);
+  assert.deepEqual(barriosEnTexto(t, cfgAgua), ["Temperley", "Villa Lamadrid", "Banfield", "Ingeniero Budge", "Lomas"]);
+  assert.equal(cuandoEnTexto(t), "martes 27 de 8 a 12 hs");
+  assert.equal(cuandoEnTexto("Habrá corte en Lanús"), null);
+  assert.deepEqual(barriosEnTexto("Corte en Lanús y Esteban Echeverría", cfgAgua), []);
+});

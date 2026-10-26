@@ -37,7 +37,14 @@ export type Colectivos = {
 };
 export type Programados = { cortes: { id: string; localidad: string; lat?: number; lng?: number; inicio: string; fin: string; clientes: number | null; motivo: string }[] };
 // Cortes de agua: cargados a mano (con desde y hasta) o notas de diarios (sin horario: desde y hasta vacíos).
-export type CorteAgua = { id: string; localidad: string; zona: string; desde: string | null; hasta: string | null; motivo: string; fuente: string; fecha: string; link?: string };
+export type CorteAgua = { id: string; localidad: string; zona: string; desde: string | null; hasta: string | null; motivo: string; fuente: string; fecha: string; link?: string; barrios?: string[]; cuando?: string | null };
+// Cómo se dice un aviso de corte de agua de un diario: los barrios que nombra la nota (hasta 4 y "y otros") y el día u horario si lo dice.
+export function textoCorteAgua(c: { barrios?: string[]; cuando?: string | null }) {
+  const b = c.barrios ?? [];
+  if (!b.length) return { linea: "💧 Corte de agua en Lomas · tocá para ver las zonas", notif: "💧 Corte de agua en Lomas: tocá para ver las zonas" };
+  const lista = b.length > 4 ? `${b.slice(0, 4).join(", ")} y otros` : b.join(", ");
+  return { linea: `💧 Corte de agua: ${lista}${c.cuando ? ` · ${c.cuando}` : ""}`, notif: `💧 Corte de agua: ${lista}` };
+}
 export type Agua = { cortes: CorteAgua[]; diariosSinLeer: string[] };
 export type Lugar = {
   id: string; categoria: string; nombre: string; direccion: string; localidad: string;

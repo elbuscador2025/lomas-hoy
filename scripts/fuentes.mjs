@@ -223,3 +223,40 @@ export function armarNoticias(porDiario, maximo = 30) {
     .sort((a, b) => b.fecha.localeCompare(a.fecha));
   return notas.slice(0, maximo);
 }
+
+// ---- Cortes de agua: qué barrios y qué día/horario nombra la nota completa (reglas fijas, sin IA) ----
+// Nombres con los que se reconoce cada localidad (además de su nombre completo). "Lomas" solo cuenta si no es "Lomas de Zamora" (el partido).
+const ALIAS_BARRIOS = {
+  "Villa Lamadrid": ["villa lamadrid", "lamadrid"], "Villa Fiorito": ["villa fiorito", "fiorito"], "Ingeniero Budge": ["ingeniero budge", "ing budge", "budge"],
+  "Villa Centenario": ["villa centenario", "centenario"], "Villa Albertina": ["villa albertina", "albertina"], "Parque Barón": ["parque baron"],
+};
+// El texto de la nota: solo el cuerpo (no el menú ni las notas relacionadas)
+export function textoDeNota(html) {
+  const region = html.match(/<article[\s\S]*?<\/article>/i)?.[0] ?? html;
+  const parrafos = [...region.matchAll(/<p[\s>][\s\S]*?<\/p>/gi)].map((m) => m[0]);
+  const cuerpo = parrafos.length ? parrafos.join(" ") : region;
+  return decodificar(cuerpo.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+}
+export function barriosEnTexto(texto, cfg) {
+  const t = sinTildes(texto);
+  const hallados = [];
+  const buscar = (nombre, nombres) => {
+    const pos = Math.min(...nombres.map((n) => { const m = new RegExp(`(?<![a-z0-9])${escapar(n)}(?![a-z0-9])`).exec(t); return m ? m.index : Infinity; }));
+    if (pos !== Infinity) hallados.push({ nombre, pos });
+  };
+  for (const n of cfg.localidades) if (n !== "Lomas de Zamora") buscar(n, ALIAS_BARRIOS[n] ?? [sinTildes(n)]);
+  const lomas = /(?<![a-z0-9])lomas(?! de zamora)(?![a-z0-9])/.exec(t); // el centro: "Lomas" a secas
+  if (lomas) hallados.push({ nombre: "Lomas", pos: lomas.index });
+  return hallados.sort((a, b) => a.pos - b.pos).map((x) => x.nombre);
+}
+// "martes 27 de 8 a 18 hs" (el primer día con horario que nombra la nota), o solo el horario, o nada
+export function cuandoEnTexto(texto) {
+  const t = sinTildes(texto);
+  const hs = (h, m) => (m ? `${Number(h)}:${m}` : String(Number(h)));
+  const rango = /(?:(hoy|manana|lunes|martes|miercoles|jueves|viernes|sabado|domingo)(?:\s+(\d{1,2}))?[^.\d]{0,14})?\bde\s+(\d{1,2})(?::(\d{2}))?\s*(?:a|hasta)\s*(?:las\s+)?(\d{1,2})(?::(\d{2}))?\s*(?:h\b|hs|horas)?/.exec(t);
+  if (!rango) return null;
+  const [, dia, num, h1, m1, h2, m2] = rango;
+  if (Number(h1) > 23 || Number(h2) > 24) return null;
+  const nombreDia = dia ? { manana: "mañana", miercoles: "miércoles", sabado: "sábado" }[dia] ?? dia : "";
+  return `${nombreDia}${nombreDia && num ? " " + num : ""}${nombreDia ? " " : ""}de ${hs(h1, m1)} a ${hs(h2, m2)} hs`;
+}
