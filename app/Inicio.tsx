@@ -19,6 +19,7 @@ import BotonLlamar from "./BotonLlamar";
 import Discapacidad from "./Discapacidad";
 import CoopPantalla from "./Coop";
 import HoyCobran from "./HoyCobran";
+import Sos from "./Sos";
 import { GuardiasPantalla, SalitasPantalla, tieneGuardia24, esSalita } from "./Salud";
 import OficinasAnses from "./OficinasAnses";
 import { OFICINAS_ANSES, PALABRAS_ANSES_OF, ordenarOficinas, type OficinaAnses } from "@/lib/ansesof";
@@ -698,6 +699,13 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "sos")
+    return (
+      <Detalle color="guardias" titulo="Emergencias" onVolver={volver}>
+        <Sos />
+      </Detalle>
+    );
+
   if (vista === "ansesof")
     return (
       <Detalle color="ansesof" titulo={s.ansesof.titulo} onVolver={volver}>
@@ -760,11 +768,14 @@ export default function Inicio() {
       <header className="azul compacto" onClick={() => abrir("clima")}>
         <div className="azul-fila">
           <span className="marca">Lomas Hoy</span>
+          <span className="azul-botones">
+          <button className="sos" aria-label="Emergencias: números para llamar" onClick={(e) => { e.stopPropagation(); abrir("sos"); }}>SOS</button>
           <button className="campana" aria-label={avisosApp.sinVer ? `Mis avisos: ${avisosApp.sinVer} sin ver` : "Mis avisos"} onClick={(e) => { e.stopPropagation(); abrir("avisos"); }}>
             <Icono nombre="campana" tam={22} />
             {avisosApp.sinVer > 0 ? <span className="num-rojo">{avisosApp.sinVer > 9 ? "9+" : avisosApp.sinVer}</span>
               : (push.estado === "inactivo" || push.estado === "iosSinInstalar") && <span className="punto" />}
           </button>
+          </span>
         </div>
         <div className="saludo-azul">
           <b>{saludo} · {capitalizar(fechaLarga())}</b>

@@ -130,7 +130,7 @@ export const lugaresIniciales = [
   lugar("bomberos", "Bomberos Voluntarios – Destacamento San José", "Av. Eva Perón 3165", "San José", [], "", BVLZ),
 
   // --- Servicios y reclamos (ex "Teléfonos útiles") ---
-  lugar("servicios", "Emergencias médicas (SAME)", "", "", ["107"], "24 hs", MUNI),
+  lugar("servicios", "Emergencias médicas (107 · Ambulancia)", "", "", ["107"], "24 hs", MUNI),
   lugar("servicios", "Defensa Civil", "", "", ["103"], "", MUNI),
   lugar("servicios", "Violencia de género", "", "", ["144"], "", MUNI),
   lugar("servicios", "Municipio – Atención a la Comunidad", "", "", ["0800 666 6666", "0800 122 5662"], "", MUNI),

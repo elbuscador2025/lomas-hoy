@@ -381,11 +381,11 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 
 /* Botones que se sienten: sombra en reposo, se hunden al apretar */
 button, a, .tile { -webkit-tap-highlight-color: transparent; }
-.tile, .transporte, .noche-btn, .btn.llamar, .btn.grande-btn, .btn.whatsapp, .btn.whatsapp-chico, .btn.llamar-si, .tarjeta-publicar {
+.tile, .transporte, .noche-btn, .sos, .btn.llamar, .btn.grande-btn, .btn.whatsapp, .btn.whatsapp-chico, .btn.llamar-si, .tarjeta-publicar {
   box-shadow: 0 2px 6px rgba(16, 33, 63, .16), 0 1px 2px rgba(16, 33, 63, .10);
   transition: transform .09s ease, filter .09s ease, box-shadow .09s ease;
 }
-.tile:active, .noche-btn:active, .btn.llamar:active, .btn.grande-btn:active, .btn.whatsapp:active, .btn.whatsapp-chico:active, .btn.llamar-si:active, .tarjeta-publicar:active {
+.tile:active, .noche-btn:active, .sos:active, .btn.llamar:active, .btn.grande-btn:active, .btn.whatsapp:active, .btn.whatsapp-chico:active, .btn.llamar-si:active, .tarjeta-publicar:active {
   transform: scale(.96); filter: brightness(.9); box-shadow: 0 1px 2px rgba(16, 33, 63, .18);
 }
 .transporte .renglon { transition: transform .09s ease, background-color .09s ease; border-radius:10px; }
@@ -437,3 +437,11 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .salud-card.grande > b:first-child { font-size:19px; }
 .salud-card.grande .salud-dir { font-size:23px; }
 .salud-card.grande .salud-llegar { min-height:56px; }
+
+.azul-botones { display:flex; gap:8px; align-items:center; }
+.sos { width:44px; height:44px; border-radius:50%; border:0; background:#D32F2F; color:#fff; font:inherit; font-size:13px; font-weight:900; letter-spacing:.3px; display:grid; place-items:center; cursor:pointer; }
+.azul.compacto .sos { width:40px; height:40px; }
+.sos-lista { list-style:none; margin:0 0 8px; padding:0; display:flex; flex-direction:column; gap:10px; }
+.sos-fila { display:flex; flex-direction:column; gap:6px; background:#fff; border:1px solid var(--linea); border-radius:16px; padding:12px; }
+.sos-num { font-size:26px; line-height:1.2; }
+.sos-num.sos-local { font-size:19px; }

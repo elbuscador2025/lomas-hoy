@@ -48,8 +48,8 @@ export function GuardiasPantalla(p: Props) {
   return (
     <>
       <section className="emergencia" aria-label="Emergencia">
-        <b className="emergencia-t">Emergencia: llamá al 107 (SAME)</b>
-        <BotonLlamar nombre="SAME" numero="107" />
+        <b className="emergencia-t">Emergencia: llamá al 107 · Ambulancia</b>
+        <BotonLlamar nombre="Ambulancia" numero="107" />
         <span className="emergencia-911">Policía y emergencias: <b>911</b></span>
         <BotonLlamar nombre="Emergencias" numero="911" />
       </section>
