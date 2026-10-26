@@ -10,7 +10,7 @@ import { TIPOS_PASA, MAX_TEXTO_PASA, HORAS_PASA, motivoProhibidoPasa, type Aviso
 export const MAX_POR_DIA_PASA = 3;
 type Registro = {
   id: string; tipo: string; texto: string; barrio: string; donde: string; lat?: number; lng?: number; foto: { url: string } | null;
-  creado: string; vence: string; disp: string; situacion: "aprobada"; oculta?: boolean; denuncias?: { motivo: string; disp: string; t: string }[];
+  creado: string; vence: string; disp: string; situacion: "aprobada"; solucionado?: boolean; oculta?: boolean; denuncias?: { motivo: string; disp: string; t: string }[];
 };
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 const limpio = (v: unknown, max: number) => String(v ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "").trim().slice(0, max);
@@ -33,7 +33,7 @@ export async function limitePorDia(dispositivo: string, ip: string) {
 }
 
 // El barrio: el de la salita o guardia más cercana al punto (sirve para decir "en Santa Catalina")
-async function barrioCercano(lat: number, lng: number) {
+export async function barrioCercano(lat: number, lng: number) {
   const [x] = await redis([["HVALS", "lugares"]]);
   let mejor = "", d = Infinity;
   for (const j of x as string[]) {
@@ -58,15 +58,15 @@ export async function publicar(form: FormData, dispositivo: string): Promise<{ o
 
   let lat = Number(form.get("lat")), lng = Number(form.get("lng"));
   const calle = limpio(form.get("calle"), 80);
-  let donde = calle, tieneGPS = Number.isFinite(lat) && Number.isFinite(lng) && form.get("lat") !== null && form.get("lat") !== "";
-  if (tieneGPS && !dentro(lat, lng)) return { ok: false, error: "Tu ubicación parece estar fuera de Lomas. Escribí la calle y la altura." };
+  if (calle.length < 3) return { ok: false, error: "Contanos dónde: la calle y la altura, o la esquina." };
+  const donde = calle;
+  // El barrio sale de la ubicación del celular (si la dio) o, si no, de buscar la calle en el mapa; si no se encuentra, el aviso se publica igual sin barrio
+  let tieneGPS = Number.isFinite(lat) && Number.isFinite(lng) && form.get("lat") !== null && form.get("lat") !== "" && dentro(lat, lng);
   if (!tieneGPS) {
-    if (calle.length < 3) return { ok: false, error: "Poné dónde: usá tu ubicación o escribí la calle y la altura." };
-    const g = await geocodificar(calle, "Lomas de Zamora").catch(() => null); // si no la encuentra, el aviso se publica igual, sin punto en el mapa
+    const g = await geocodificar(calle, "Lomas de Zamora").catch(() => null);
     if (g && dentro(g.lat, g.lng)) { lat = g.lat; lng = g.lng; tieneGPS = true; }
   }
   const barrio = tieneGPS ? await barrioCercano(lat, lng).catch(() => "") : "";
-  if (!donde) donde = barrio || "Lomas";
 
   const id = randomUUID().slice(0, 10);
   let foto: Registro["foto"] = null;
@@ -91,25 +91,29 @@ export async function publicar(form: FormData, dispositivo: string): Promise<{ o
   return { ok: true };
 }
 
-// Lo que se ve en la app: lo que no venció ni fue ocultado por denuncias, el más nuevo arriba
+// Lo que se ve en la app: lo que no venció ni fue ocultado por denuncias; los vigentes arriba (el más nuevo primero) y los ya solucionados abajo
 export async function publicos(): Promise<AvisoPasa[]> {
   const ahora = Date.now();
-  const lista = (await todos()).filter((r) => !r.oculta && new Date(r.vence).getTime() > ahora).sort((a, b) => b.creado.localeCompare(a.creado));
-  const cuentas = lista.length ? await redis(lista.map((r) => ["SCARD", `pasa:vistos:${r.id}`])) : [];
-  return lista.map((r, i) => ({
+  const lista = (await todos()).filter((r) => !r.oculta && new Date(r.vence).getTime() > ahora)
+    .sort((a, b) => Number(!!a.solucionado) - Number(!!b.solucionado) || b.creado.localeCompare(a.creado));
+  return lista.map((r) => ({
     id: r.id, tipo: r.tipo, texto: r.texto, barrio: r.barrio, donde: r.donde, lat: r.lat, lng: r.lng, foto: r.foto?.url,
-    creado: r.creado, vistos: Number(cuentas[i] ?? 0),
+    creado: r.creado, solucionado: !!r.solucionado,
   }));
 }
 
-// "Yo también lo vi": una vez por celular por aviso
-export async function marcarVisto(id: string, dispositivo: string) {
+// "Ya se solucionó": un toque por celular por aviso. Si lo toca quien lo publicó, o 2 celulares distintos, el aviso queda como solucionado.
+export async function marcarSolucionado(id: string, dispositivo: string) {
   const [j] = await redis([["HGET", "pasa", id]]);
   if (!j) return null;
-  const clave = `pasa:vistos:${id}`;
-  await redis([["SADD", clave, huella(dispositivo)], ["EXPIRE", clave, 2 * 86400]]);
+  const r = JSON.parse(j as string) as Registro;
+  const quien = huella(dispositivo);
+  const clave = `pasa:sol:${id}`;
+  await redis([["SADD", clave, quien], ["EXPIRE", clave, 2 * 86400]]);
   const [n] = await redis([["SCARD", clave]]);
-  return Number(n);
+  const listo = !!r.solucionado || quien === r.disp || Number(n) >= 2;
+  if (listo && !r.solucionado) await redis([["HSET", "pasa", id, JSON.stringify({ ...r, solucionado: true })]]);
+  return listo;
 }
 
 // Mantenimiento (lo corre el proceso automático): a las 24 horas se borra el aviso y su foto
@@ -121,7 +125,7 @@ export async function quitar(id: string) {
   const [j] = await redis([["HGET", "pasa", id]]);
   if (!j) return false;
   await borrarFoto(JSON.parse(j as string) as Registro);
-  await redis([["HDEL", "pasa", id], ["DEL", `pasa:vistos:${id}`]]);
+  await redis([["HDEL", "pasa", id], ["DEL", `pasa:sol:${id}`]]);
   return true;
 }
 

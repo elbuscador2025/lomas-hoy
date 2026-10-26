@@ -94,7 +94,7 @@ export default function Panel() {
         <button className={`btn ${pestana === "mascotas" ? "" : "claro"}`} onClick={() => setPestana("mascotas")}>Mascotas</button>
         <button className={`btn ${pestana === "anses" ? "" : "claro"}`} onClick={() => setPestana("anses")}>ANSES</button>
         <button className={`btn ${pestana === "ansesof" ? "" : "claro"}`} onClick={() => setPestana("ansesof")}>Oficinas ANSES</button>
-        <button className={`btn ${pestana === "pasa" ? "" : "claro"}`} onClick={() => setPestana("pasa")}>Pasa en Lomas</button>
+        <button className={`btn ${pestana === "pasa" ? "" : "claro"}`} onClick={() => setPestana("pasa")}>Enterate lo que pasa en Lomas</button>
         <button className={`btn ${pestana === "sugerencias" ? "" : "claro"}`} onClick={() => setPestana("sugerencias")}>Sugerencias</button>
         <button className={`btn ${pestana === "coop" ? "" : "claro"}`} onClick={() => setPestana("coop")}>COOP</button>
         <button className={`btn ${pestana === "agua" ? "" : "claro"}`} onClick={() => setPestana("agua")}>Agua</button>

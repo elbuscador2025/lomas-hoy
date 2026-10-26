@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TIPOS_PASA, MAX_TEXTO_PASA, motivoProhibidoPasa, type AvisoPasa } from "@/lib/pasa-comun";
 import { haceCuanto } from "@/lib/hace";
 import { Icono } from "./Iconos";
@@ -7,61 +7,63 @@ import { achicar } from "./Mascotas";
 import Denunciar from "./Denunciar";
 import { Cancelar } from "./Trueque";
 
+export const NOMBRE_PASA = "Enterate lo que pasa en Lomas";
 const dispositivo = () => { try { return localStorage.getItem("lomas-hoy:id") ?? ""; } catch { return ""; } };
-const CLAVE_VISTOS = "lomas-hoy:pasa-vistos";
-const yaVistos = (): string[] => { try { return JSON.parse(localStorage.getItem(CLAVE_VISTOS) ?? "[]"); } catch { return []; } };
+const CLAVE_SOL = "lomas-hoy:pasa-solucionado";
+const yaMarcados = (): string[] => { try { return JSON.parse(localStorage.getItem(CLAVE_SOL) ?? "[]"); } catch { return []; } };
 const tipoDe = (id: string) => TIPOS_PASA.find((t) => t.id === id) ?? TIPOS_PASA[TIPOS_PASA.length - 1];
 
-// Botón a lo ancho de la pantalla principal: muestra el último aviso (o invita a avisar)
-export function BotonPasa({ ultimo, onClick }: { ultimo?: AvisoPasa; onClick: () => void }) {
-  const t = ultimo && tipoDe(ultimo.tipo);
+// Botón a lo ancho de la pantalla principal: el título y, abajo en letra chica, el aviso más reciente que sigue vigente.
+export function BotonPasa({ avisos, onClick }: { avisos: AvisoPasa[]; onClick: () => void }) {
+  const vigentes = avisos.filter((a) => !a.solucionado);
+  const ultimo = vigentes[0], t = ultimo && tipoDe(ultimo.tipo);
   return (
     <button className="boton-pasa" onClick={onClick}>
       <span className="pasa-texto">
-        <b>📢 Pasa en Lomas</b>
-        <span>{ultimo && t ? ` · ${t.emoji} ${t.nombre}${ultimo.donde ? ` en ${ultimo.donde}` : ""} · ${haceCuanto(ultimo.creado)}` : " · ¿Viste algo en el barrio? Avisá a los vecinos"}</span>
+        <b>📢 {NOMBRE_PASA}</b>
+        {ultimo && t && (
+          <span className="pasa-ultimo">
+            <span className="pasa-ultimo-texto">{t.emoji} {t.nombre} en {ultimo.donde} · {haceCuanto(ultimo.creado)}</span>
+            {vigentes.length > 1 && <span className="pasa-ultimo-mas"> · {vigentes.length} avisos hoy</span>}
+          </span>
+        )}
       </span>
       <span className="pasa-flecha" aria-hidden>›</span>
     </button>
   );
 }
 
-function Aviso({ a, vistoPorMi, onVisto }: { a: AvisoPasa; vistoPorMi: boolean; onVisto: (id: string, n: number) => void }) {
+function Aviso({ a, marcado, onSolucionado }: { a: AvisoPasa; marcado: boolean; onSolucionado: (id: string, listo: boolean) => void }) {
   const t = tipoDe(a.tipo);
-  const mapa = a.lat != null && a.lng != null
-    ? `https://www.google.com/maps/search/?api=1&query=${a.lat},${a.lng}`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${a.donde}, Lomas de Zamora, Buenos Aires`)}`;
-  async function yoTambien() {
-    const r = await fetch("/api/pasa/visto", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: a.id, dispositivo: dispositivo() || crypto.randomUUID() }) }).catch(() => null);
+  async function solucionado() {
+    const r = await fetch("/api/pasa/solucionado", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: a.id, dispositivo: dispositivo() || crypto.randomUUID() }) }).catch(() => null);
     const d = await r?.json().catch(() => null);
-    if (d?.ok) onVisto(a.id, d.vistos);
+    if (d?.ok) onSolucionado(a.id, !!d.solucionado);
   }
   return (
-    <li className="mascota aviso-pasa">
+    <li className={`mascota aviso-pasa${a.solucionado ? " resuelto" : ""}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       {a.foto && <img className="foto-mascota" src={a.foto} alt="" loading="lazy" />}
       <div className="mascota-datos">
         <span className="pildora neutro">{t.emoji} {t.nombre}</span>
-        <small>📍 {a.barrio || a.donde} · {haceCuanto(a.creado)}</small>
+        <small>📍 {a.donde}{a.barrio ? ` · ${a.barrio}` : ""} · {haceCuanto(a.creado)}</small>
         <b className="pasa-aviso-texto">{a.texto}</b>
-        <span className="pasa-vistos">👀 {a.vistos === 1 ? "1 vecino lo vio" : `${a.vistos} vecinos lo vieron`}</span>
-        <div className="acciones">
-          <button className="btn claro" disabled={vistoPorMi} onClick={yoTambien}>{vistoPorMi ? "👀 Ya lo marcaste" : "👀 Yo también lo vi"}</button>
-          <a className="btn claro" href={mapa} target="_blank" rel="noreferrer">Ver en el mapa</a>
-        </div>
+        {a.solucionado
+          ? <span className="pildora ok">✅ Ya se solucionó</span>
+          : <div className="acciones"><button className="btn claro" disabled={marcado} onClick={solucionado}>{marcado ? "✅ Ya lo marcaste" : "✅ Ya se solucionó"}</button></div>}
         <Denunciar seccion="pasa" id={a.id} />
       </div>
     </li>
   );
 }
 
-export function PantallaPasa({ avisos, onAvisar, onVisto }: { avisos: AvisoPasa[]; onAvisar: () => void; onVisto: (id: string, n: number) => void }) {
-  const [mios, setMios] = useState<string[]>(yaVistos);
-  function visto(id: string, n: number) {
+export function PantallaPasa({ avisos, onAvisar, onSolucionado }: { avisos: AvisoPasa[]; onAvisar: () => void; onSolucionado: (id: string, listo: boolean) => void }) {
+  const [mios, setMios] = useState<string[]>(yaMarcados);
+  function marcado(id: string, listo: boolean) {
     const lista = [...new Set([...mios, id])];
     setMios(lista);
-    try { localStorage.setItem(CLAVE_VISTOS, JSON.stringify(lista.slice(-100))); } catch {}
-    onVisto(id, n);
+    try { localStorage.setItem(CLAVE_SOL, JSON.stringify(lista.slice(-100))); } catch {}
+    onSolucionado(id, listo);
   }
   return (
     <>
@@ -69,7 +71,7 @@ export function PantallaPasa({ avisos, onAvisar, onVisto }: { avisos: AvisoPasa[
       <p className="aviso-publicar">Solo lo que pasa en la calle. Sin nombres, fotos de personas, acusaciones ni política. Se borra a las 24 horas.</p>
       {avisos.length === 0
         ? <p className="vacio">Todo tranquilo en Lomas por ahora. ¿Viste algo? Avisá a los vecinos.</p>
-        : <ul className="lista">{avisos.map((a) => <Aviso key={a.id} a={a} vistoPorMi={mios.includes(a.id)} onVisto={visto} />)}</ul>}
+        : <ul className="lista">{avisos.map((a) => <Aviso key={a.id} a={a} marcado={mios.includes(a.id)} onSolucionado={marcado} />)}</ul>}
     </>
   );
 }
@@ -79,22 +81,29 @@ export function FormularioPasa({ onListo }: { onListo: (publicado: boolean) => v
   const [texto, setTexto] = useState("");
   const [calle, setCalle] = useState("");
   const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
-  const [buscandoGps, setBuscandoGps] = useState(false);
+  const [estasEn, setEstasEn] = useState("");
   const [foto, setFoto] = useState<Blob | null>(null);
   const [vista, setVista] = useState("");
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
   const camara = useRef<HTMLInputElement>(null), galeria = useRef<HTMLInputElement>(null);
 
-  function usarUbicacion() {
-    setError(""); setBuscandoGps(true);
+  // Al abrir el formulario la app toma la ubicación sola. Si no se puede, no se muestra nada ni se avisa ningún error.
+  useEffect(() => {
+    let vivo = true;
     navigator.geolocation?.getCurrentPosition(
-      (p) => { setGps({ lat: p.coords.latitude, lng: p.coords.longitude }); setBuscandoGps(false); },
-      () => { setBuscandoGps(false); setError("No pudimos obtener tu ubicación. Escribí la calle y la altura."); },
+      (p) => {
+        const g = { lat: p.coords.latitude, lng: p.coords.longitude };
+        if (!vivo) return;
+        setGps(g);
+        fetch(`/api/pasa/barrio?lat=${g.lat}&lng=${g.lng}`).then((r) => r.json()).then((d) => { if (vivo && d?.barrio) setEstasEn(d.barrio); }).catch(() => {});
+      },
+      () => {},
       { enableHighAccuracy: true, timeout: 12000 },
     );
-    if (!navigator.geolocation) { setBuscandoGps(false); setError("Tu celular no permite usar la ubicación. Escribí la calle y la altura."); }
-  }
+    return () => { vivo = false; };
+  }, []);
+
   async function elegirFoto(e: React.ChangeEvent<HTMLInputElement>) {
     const archivo = e.target.files?.[0];
     e.target.value = "";
@@ -113,7 +122,7 @@ export function FormularioPasa({ onListo }: { onListo: (publicado: boolean) => v
     if (texto.trim().length < 3) return setError("Contá qué pasa en pocas palabras.");
     const prohibido = motivoProhibidoPasa(texto);
     if (prohibido) return setError(prohibido);
-    if (!gps && calle.trim().length < 3) return setError("Poné dónde: usá tu ubicación o escribí la calle y la altura.");
+    if (calle.trim().length < 3) return setError("Contanos dónde: la calle y la altura, o la esquina.");
     setEnviando(true);
     try {
       const f = new FormData();
@@ -142,12 +151,9 @@ export function FormularioPasa({ onListo }: { onListo: (publicado: boolean) => v
         <textarea rows={3} maxLength={MAX_TEXTO_PASA} value={texto} onChange={(e) => setTexto(e.target.value)} />
       </label>
       <div>
-        <b>Dónde</b>
-        <button type="button" className="btn claro ancho" onClick={usarUbicacion} disabled={buscandoGps}>
-          <Icono nombre="pin" tam={20} /> {buscandoGps ? "Buscando tu ubicación…" : gps ? "✓ Ubicación lista (tocá para actualizar)" : "Usar mi ubicación"}
-        </button>
-        <label>O escribí la calle y la altura
-          <input value={calle} maxLength={80} placeholder="Ej: Newton y Bustos" onChange={(e) => setCalle(e.target.value)} />
+        {estasEn && <p className="pasa-estas-en">📍 Estás en {estasEn}</p>}
+        <label>¿Dónde? Calle y altura, o esquina
+          <input value={calle} maxLength={80} required placeholder="ej: Homero y Limay" onChange={(e) => setCalle(e.target.value)} />
         </label>
       </div>
       <div>

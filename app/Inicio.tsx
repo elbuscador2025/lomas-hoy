@@ -22,7 +22,7 @@ import Discapacidad from "./Discapacidad";
 import CoopPantalla from "./Coop";
 import HoyCobran from "./HoyCobran";
 import Sos from "./Sos";
-import { BotonPasa, PantallaPasa, FormularioPasa } from "./Pasa";
+import { BotonPasa, PantallaPasa, FormularioPasa, NOMBRE_PASA } from "./Pasa";
 import Sugerir from "./Sugerir";
 import NoticiasLomas from "./Noticias";
 import type { AvisoPasa } from "@/lib/pasa-comun";
@@ -713,8 +713,8 @@ export default function Inicio() {
 
   if (vista === "pasa")
     return (
-      <Detalle color="pasa" titulo="Pasa en Lomas" onVolver={volver}>
-        <PantallaPasa avisos={avisosPasa} onAvisar={() => abrir("pasa-avisar")} onVisto={(id, n) => setAvisosPasa((l) => l.map((a) => (a.id === id ? { ...a, vistos: n } : a)))} />
+      <Detalle color="pasa" titulo={NOMBRE_PASA} onVolver={volver}>
+        <PantallaPasa avisos={avisosPasa} onAvisar={() => abrir("pasa-avisar")} onSolucionado={(id, listo) => { if (listo) cargarPasa(); }} />
       </Detalle>
     );
 
@@ -940,7 +940,7 @@ export default function Inicio() {
           </section>
         ) : (
           <>
-            <BotonPasa ultimo={avisosPasa[0]} onClick={() => abrir("pasa")} />
+            <BotonPasa avisos={avisosPasa} onClick={() => abrir("pasa")} />
             {(s.tren.activa || s.colectivos.activa) && (
               <section className="transporte coloreado c-tren" aria-label="Transporte">
                 <h2><Icono nombre="tren" tam={24} /> Transporte</h2>

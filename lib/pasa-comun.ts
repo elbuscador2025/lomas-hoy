@@ -14,7 +14,7 @@ export const HORAS_PASA = 24;
 
 export type AvisoPasa = {
   id: string; tipo: string; texto: string; barrio: string; donde: string; lat?: number; lng?: number;
-  foto?: string; creado: string; vistos: number;
+  foto?: string; creado: string; solucionado: boolean;
 };
 
 const sinTildes = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
