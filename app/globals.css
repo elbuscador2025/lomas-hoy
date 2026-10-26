@@ -472,3 +472,4 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .pasa-estas-en { margin:0 0 6px; font-weight:700; }
 .aviso-pasa.resuelto { opacity:.6; filter:grayscale(1); }
 .pasa-texto { flex:1; }
+.cobro-ya { color:#8A93A0; font-size:14px; margin:6px 2px; line-height:1.35; }
