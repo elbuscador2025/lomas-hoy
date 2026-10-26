@@ -97,6 +97,7 @@ export default function Inicio() {
   const [vista, setVista] = useState<string | null>(null);
   const [oficinasAnses, setOficinasAnses] = useState<OficinaAnses[]>(ordenarOficinas(OFICINAS_ANSES));
   useEffect(() => { fetch("/api/ansesof").then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.oficinas?.length) setOficinasAnses(j.oficinas); }).catch(() => {}); }, []);
+  const [verTodas, setVerTodas] = useState(false);
   const [coop, setCoop] = useState<Coop[]>(COOP_OFICIALES);
   const [coopElegida, setCoopElegida] = useState("");
   useEffect(() => { fetch("/api/coop").then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.coop?.length) setCoop(j.coop); }).catch(() => {}); }, []);
@@ -169,6 +170,8 @@ export default function Inicio() {
     else setVista(null);
   }, []);
   useEffect(() => { window.scrollTo({ top: 0 }); if (vista === "clima") setDiaClima(0); }, [vista]);
+  // Guardias y veterinarias de guardia: se ordenan por cercanía solas (la primera vez el navegador pide el permiso)
+  useEffect(() => { setVerTodas(false); if ((vista === "guardias" || vista === "vets") && !yo) pedirUbicacion(); }, [vista]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Al empezar a escribir se anota un paso en el historial: el "atrás" del celular cierra la búsqueda en vez de salir de la app.
   const cambiarBusqueda = (texto: string) => {
@@ -633,7 +636,8 @@ export default function Inicio() {
         {guardia.length > 0 && (
           <section className="guardia24" aria-label="Guardia 24 horas">
             <h2>{noche ? "Atienden ahora" : "Guardia 24 horas"}</h2>
-            <ul className="lista">{guardia.map((l) => <LugarCard key={l.id} lugar={l} km={km(l)} estado={estados.get(l.id)} />)}</ul>
+            <ul className="lista">{(verTodas ? guardia : guardia.slice(0, 3)).map((l) => <LugarCard key={l.id} lugar={l} km={km(l)} estado={estados.get(l.id)} grande />)}</ul>
+            {!verTodas && guardia.length > 3 && <button className="btn claro ancho" onClick={() => setVerTodas(true)}>Ver todas ({guardia.length})</button>}
           </section>
         )}
         {yo
@@ -650,7 +654,7 @@ export default function Inicio() {
     return (
       <Detalle color={vista} titulo={TITULO_DE[vista]} onVolver={volver}>
         {vista === "guardias"
-          ? <GuardiasPantalla lugares={lugares} yo={yo} km={km} onUbicacion={pedirUbicacion} errorUbicacion={errorUbicacion} ahora={ahora} />
+          ? <GuardiasPantalla lugares={lugares} yo={yo} km={km} onUbicacion={pedirUbicacion} errorUbicacion={errorUbicacion} ahora={ahora} verTodas={verTodas} onVerTodas={() => setVerTodas(true)} />
           : <SalitasPantalla lugares={lugares} yo={yo} km={km} onUbicacion={pedirUbicacion} errorUbicacion={errorUbicacion} ahora={ahora} />}
         {lugares.length === 0 && <SinDatos />}
       </Detalle>

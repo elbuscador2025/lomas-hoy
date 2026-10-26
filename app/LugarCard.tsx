@@ -5,9 +5,9 @@ import BotonLlamar from "./BotonLlamar";
 import { Icono } from "./Iconos";
 import Pie from "./Pie";
 
-export default function LugarCard({ lugar: l, km, estado }: { lugar: Lugar; km?: number; estado?: EstadoHorario }) {
+export default function LugarCard({ lugar: l, km, estado, grande }: { lugar: Lugar; km?: number; estado?: EstadoHorario; grande?: boolean }) {
   return (
-    <li className="lugar">
+    <li className={`lugar${grande ? " salud-card grande" : ""}`}>
       <b>{l.nombre}</b>
       {estado && <span className={`pildora estado-horario ${estado.tipo}`}>{estado.texto}</span>}
       {l.etiqueta && <span className="pildora ok etiqueta">{l.etiqueta}</span>}

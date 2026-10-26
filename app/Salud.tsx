@@ -7,11 +7,10 @@ import { Icono } from "./Iconos";
 import Pie from "./Pie";
 
 type Coord = { lat: number; lng: number };
-type Props = { lugares: Lugar[]; yo: Coord | null; km: (l: Lugar) => number | undefined; onUbicacion: () => void; errorUbicacion: boolean; ahora: string };
+type Props = { lugares: Lugar[]; yo: Coord | null; km: (l: Lugar) => number | undefined; onUbicacion: () => void; errorUbicacion: boolean; ahora: string; verTodas?: boolean; onVerTodas?: () => void };
 
-// Guardia 24 hs: los hospitales y UPA, y los centros de salud cuyo horario dice "Guardia 24 hs". Si no se sabe, va a Salitas.
-export const tieneGuardia24 = (l: Lugar) => l.categoria === "guardias" || (l.categoria === "salitas" && /24\s*hs/i.test(l.horario));
-// Toda salita (centro de salud) está en Salitas; las que además tienen guardia 24 hs también salen en Guardias.
+// Guardias 24 hs: solo hospitales y la UPA. Los CAPS y salitas (aunque tengan guardia) van únicamente en Salitas.
+export const tieneGuardia24 = (l: Lugar) => l.categoria === "guardias"; // solo hospitales y UPA: los CAPS y salitas van únicamente en Salitas
 export const esSalita = (l: Lugar) => l.categoria === "salitas";
 
 const distancia = (km?: number) => (km != null && Number.isFinite(km) ? ` · a ${km < 10 ? km.toFixed(1).replace(".", ",") : Math.round(km)} km` : "");
@@ -27,9 +26,9 @@ function Ubicacion({ yo, onUbicacion, errorUbicacion }: Pick<Props, "yo" | "onUb
   );
 }
 
-function Tarjeta({ l, km, horario, estado }: { l: Lugar; km?: number; horario?: boolean; estado?: ReturnType<typeof estadoHorario> }) {
+function Tarjeta({ l, km, horario, estado, grande }: { l: Lugar; km?: number; horario?: boolean; estado?: ReturnType<typeof estadoHorario>; grande?: boolean }) {
   return (
-    <li className="lugar salud-card">
+    <li className={`lugar salud-card${grande ? " grande" : ""}`}>
       <b>{l.nombre}</b>
       <b className="salud-dir">{l.direccion || "Sin dirección cargada"}{l.localidad ? `, ${l.localidad}` : ""}</b>
       {km != null && <span className="salud-km">{distancia(km).replace(" · ", "")}</span>}
@@ -54,8 +53,9 @@ export function GuardiasPantalla(p: Props) {
         <span className="emergencia-911">Policía y emergencias: <b>911</b></span>
         <BotonLlamar nombre="Emergencias" numero="911" />
       </section>
-      <Ubicacion {...p} />
-      <ul className="lista">{lista.map((l) => <Tarjeta key={l.id} l={l} km={p.km(l)} />)}</ul>
+      {p.yo ? <p className="vacio">Ordenado por cercanía a tu ubicación.</p> : <p className="aviso-pie">Activá tu ubicación para ver la más cercana</p>}
+      <ul className="lista">{(p.verTodas ? lista : lista.slice(0, 3)).map((l) => <Tarjeta key={l.id} l={l} km={p.km(l)} grande />)}</ul>
+      {!p.verTodas && lista.length > 3 && <button className="btn claro ancho" onClick={p.onVerTodas}>Ver todas ({lista.length})</button>}
       {lista.length === 0 && <p className="vacio">No hay guardias cargadas por ahora.</p>}
     </>
   );
