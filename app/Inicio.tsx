@@ -107,8 +107,8 @@ export default function Inicio() {
   const [verTodas, setVerTodas] = useState(false);
   const [avisosPasa, setAvisosPasa] = useState<AvisoPasa[]>([]);
   const cargarPasa = useCallback((fresco = false) => { fetch(fresco ? `/api/pasa?t=${Date.now()}` : "/api/pasa").then((r) => (r.ok ? r.json() : null)).then((j) => { if (Array.isArray(j)) setAvisosPasa(j); }).catch(() => {}); }, []); // "fresco" salta la caché de la red: así lo que acaba de pasar se ve enseguida
-  useEffect(() => { cargarPasa(); }, [cargarPasa]);
-  useEffect(() => { if (vista === "pasa") cargarPasa(true); }, [vista, cargarPasa]);
+  useEffect(() => { if (config.secciones.pasa.activa) cargarPasa(); }, [cargarPasa]);
+  useEffect(() => { if (config.secciones.pasa.activa && vista === "pasa") cargarPasa(true); }, [vista, cargarPasa]);
   const [coop, setCoop] = useState<Coop[]>(COOP_OFICIALES);
   const [coopElegida, setCoopElegida] = useState("");
   useEffect(() => { fetch("/api/coop").then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.coop?.length) setCoop(j.coop); }).catch(() => {}); }, []);
@@ -711,14 +711,14 @@ export default function Inicio() {
       </Detalle>
     );
 
-  if (vista === "pasa")
+  if (vista === "pasa" && s.pasa.activa)
     return (
       <Detalle color="pasa" titulo={NOMBRE_PASA} onVolver={volver}>
         <PantallaPasa avisos={avisosPasa} onAvisar={() => abrir("pasa-avisar")} onSolucionado={(id, listo) => { setAvisosPasa((l) => [...l.map((a) => (a.id === id && listo ? { ...a, solucionado: true } : a))].sort((a, b) => Number(a.solucionado) - Number(b.solucionado))); cargarPasa(true); }} />
       </Detalle>
     );
 
-  if (vista === "pasa-avisar")
+  if (vista === "pasa-avisar" && s.pasa.activa)
     return (
       <Detalle color="pasa" titulo="Avisar algo" onVolver={volver}>
         <FormularioPasa onListo={(publicado) => { if (publicado) cargarPasa(true); volver(); }} />
@@ -940,7 +940,7 @@ export default function Inicio() {
           </section>
         ) : (
           <>
-            <BotonPasa avisos={avisosPasa} onClick={() => abrir("pasa")} />
+            {s.pasa.activa && <BotonPasa avisos={avisosPasa} onClick={() => abrir("pasa")} />}
             {(s.tren.activa || s.colectivos.activa) && (
               <section className="transporte coloreado c-tren" aria-label="Transporte">
                 <h2><Icono nombre="tren" tam={24} /> Transporte</h2>

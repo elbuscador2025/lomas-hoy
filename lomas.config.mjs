@@ -24,6 +24,8 @@ export const config = {
     coop: { activa: true, titulo: "COOP" },
     ansesof: { activa: true, titulo: "ANSES" },
     noticias: { activa: true, titulo: "Noticias de Lomas" },
+    // Apagada por ahora (el código y los datos siguen): para volver a mostrarla, poner activa: true.
+    pasa: { activa: false, titulo: "Enterate lo que pasa en Lomas" },
   },
 
   tren: {

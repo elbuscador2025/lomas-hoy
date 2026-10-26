@@ -1,3 +1,4 @@
+import { config } from "@/lomas.config.mjs";
 import { after } from "next/server";
 import { denunciar } from "@/lib/moderacion";
 import { redis } from "@/lib/servidor";
@@ -8,6 +9,7 @@ export async function POST(req: Request) {
   const c = await req.json().catch(() => ({}));
   const seccion = c.seccion === "trabajo" ? "trabajo" : c.seccion === "trueque" ? "trueque" : c.seccion === "pasa" ? "pasa" : null;
   const id = String(c.id ?? "").slice(0, 20), dispositivo = String(c.dispositivo ?? "");
+  if (seccion === "pasa" && !config.secciones.pasa.activa) return Response.json({ ok: false }, { status: 404 });
   if (!seccion || !id || dispositivo.length < 8 || dispositivo.length > 64) return Response.json({ ok: false }, { status: 400 });
   const [j] = await redis([["HGET", seccion, id]]);
   if (!j) return Response.json({ ok: false }, { status: 404 });

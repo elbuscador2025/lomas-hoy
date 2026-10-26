@@ -1,7 +1,9 @@
+import { config } from "@/lomas.config.mjs";
 import { marcarSolucionado } from "@/lib/pasa";
 
 // "Ya se solucionó": un toque por celular por aviso. Con el toque de quien lo publicó, o de 2 celulares distintos, el aviso queda solucionado.
 export async function POST(req: Request) {
+  if (!config.secciones.pasa.activa) return Response.json({ ok: false }, { status: 404 }); // sección apagada
   if (!req.headers.get("content-type")?.includes("application/json")) return Response.json({ ok: false }, { status: 415 });
   const c = await req.json().catch(() => ({}));
   const id = String(c.id ?? "").slice(0, 20), dispositivo = String(c.dispositivo ?? "");

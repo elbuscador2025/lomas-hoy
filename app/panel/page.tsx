@@ -10,6 +10,7 @@ import AvisarmeAqui from "./AvisarmeAqui";
 import PanelPush from "./PanelPush";
 import PanelMascotas from "./PanelMascotas";
 import PanelAnses from "./PanelAnses";
+import { config } from "@/lomas.config.mjs";
 import PanelCoop from "./PanelCoop";
 import PanelPasa from "./PanelPasa";
 import PanelSugerencias from "./PanelSugerencias";
@@ -94,7 +95,7 @@ export default function Panel() {
         <button className={`btn ${pestana === "mascotas" ? "" : "claro"}`} onClick={() => setPestana("mascotas")}>Mascotas</button>
         <button className={`btn ${pestana === "anses" ? "" : "claro"}`} onClick={() => setPestana("anses")}>ANSES</button>
         <button className={`btn ${pestana === "ansesof" ? "" : "claro"}`} onClick={() => setPestana("ansesof")}>Oficinas ANSES</button>
-        <button className={`btn ${pestana === "pasa" ? "" : "claro"}`} onClick={() => setPestana("pasa")}>Enterate lo que pasa en Lomas</button>
+        {config.secciones.pasa.activa && <button className={`btn ${pestana === "pasa" ? "" : "claro"}`} onClick={() => setPestana("pasa")}>Enterate lo que pasa en Lomas</button>}
         <button className={`btn ${pestana === "sugerencias" ? "" : "claro"}`} onClick={() => setPestana("sugerencias")}>Sugerencias</button>
         <button className={`btn ${pestana === "coop" ? "" : "claro"}`} onClick={() => setPestana("coop")}>COOP</button>
         <button className={`btn ${pestana === "agua" ? "" : "claro"}`} onClick={() => setPestana("agua")}>Agua</button>
@@ -113,7 +114,7 @@ export default function Panel() {
       {pestana === "mascotas" && <PanelMascotas />}
       {pestana === "anses" && <PanelAnses />}
       {pestana === "coop" && <PanelCoop />}
-      {pestana === "pasa" && <PanelPasa />}
+      {pestana === "pasa" && config.secciones.pasa.activa && <PanelPasa />}
       {pestana === "sugerencias" && <PanelSugerencias />}
       {pestana === "ansesof" && <PanelOficinasAnses />}
       {pestana === "agua" && <PanelAgua />}

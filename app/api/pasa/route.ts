@@ -1,8 +1,10 @@
+import { config } from "@/lomas.config.mjs";
 import { publicos, publicar, limitePorDia, MAX_POR_DIA_PASA } from "@/lib/pasa";
 import { ipDe } from "@/lib/cuentas";
 
 // Público: los avisos de las últimas 24 horas (sin los ocultos por denuncias).
 export async function GET() {
+  if (!config.secciones.pasa.activa) return Response.json([]); // sección apagada
   try {
     return Response.json(await publicos(), { headers: { "Cache-Control": "public, s-maxage=15" } });
   } catch {
@@ -12,6 +14,7 @@ export async function GET() {
 
 // Publicar sin registro y sin aprobación. Máximo 3 por día por celular.
 export async function POST(req: Request) {
+  if (!config.secciones.pasa.activa) return Response.json({ ok: false }, { status: 404 }); // sección apagada
   const form = await req.formData().catch(() => null);
   const dispositivo = String(form?.get("dispositivo") ?? "");
   if (!form || dispositivo.length < 8 || dispositivo.length > 64) return Response.json({ ok: false, error: "No se pudo enviar." }, { status: 400 });
