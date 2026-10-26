@@ -784,7 +784,7 @@ export default function Inicio() {
           </span>
         </button>
         {(hAR >= 20 || hAR < 8) && (
-          <section className="bloque-noche" aria-label="Necesitás algo esta noche">
+          <section className="bloque-noche" aria-label="Necesitás algo esta noche" onClick={(e) => e.stopPropagation()}>
             <b>¿Necesitás algo esta noche?</b>
             <div className="noche-botones">
               <button className="noche-btn" onClick={() => abrir("guardias")}>Guardias 24 hs</button>
