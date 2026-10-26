@@ -121,3 +121,19 @@ test("noticias: mezcla los diarios, la más nueva arriba, sin repetidos ni enlac
   ]);
   assert.deepEqual(r.map((x) => [x.titulo, x.medio]), [["Nota de B", "B"], ["Aysa quiere subir la tarifa", "A"], ["Nota vieja", "A"]]);
 });
+
+import { buscarAgua } from "./fuentes.mjs";
+import { config as cfgAgua } from "../lomas.config.mjs";
+test("agua: solo notas que anuncian un corte o falta de agua en Lomas o sus localidades", () => {
+  const ahora = new Date("2026-10-26T15:00:00Z");
+  const n = (titular, medio = "Diario Lomas") => ({ titular, link: `https://x.com/${encodeURIComponent(titular)}`, fecha: new Date("2026-10-26T04:00:00Z"), medio });
+  const r = buscarAgua([
+    n("AySA anunció cortes de agua en Lomas de Zamora: días y zonas afectadas"),
+    n("Barrio sin agua hace 4 días en Llavallol"),
+    n("AySA quiere subir un 22% la tarifa en todo el AMBA"),
+    n("AySA: aumento de la tarifa y cortes de agua en Lomas"),
+    n("Vecinos de Lomas reclaman por una obra de AySA"),
+    n("Corte de agua en Córdoba"),
+  ], cfgAgua, ahora);
+  assert.deepEqual(r.map((x) => x.localidad), ["Lomas de Zamora", "Llavallol"]);
+});

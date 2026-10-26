@@ -7,6 +7,7 @@ import {
   type Todo, type Lugar, type Novedad, agruparCortes,
 } from "@/lib/datos";
 import { ahoraAR } from "@/lib/avisos";
+import { haceCuanto } from "@/lib/hace";
 import { Icono } from "./Iconos";
 import Pie from "./Pie";
 import LugarCard from "./LugarCard";
@@ -223,7 +224,7 @@ export default function Inicio() {
   const [aguaEstado, aguaTono, aguaResumen]: [string, Tono, string] = !d.agua?.contenido ? ["Sin datos", "neutro", "Sin cortes informados"]
     : aguaAhora.length ? [plural(aguaAhora.length, "corte", "cortes"), "aviso", `Corte en ${aguaAhora[0].localidad}${aguaAhora[0].hasta ? ` hasta las ${horaCorta(aguaAhora[0].hasta)} hs` : ""}${aguaAhora.length > 1 ? ` y ${aguaAhora.length - 1} más` : ""}`]
     : aguaProx.length ? ["Programado", "aviso", `Corte en ${aguaProx[0].localidad}: ${diaCorto((aguaProx[0].desde ?? "").slice(0, 10))}, desde las ${horaCorta(aguaProx[0].desde ?? "")} hs`]
-    : aguaNotas.length ? ["Aviso", "aviso", `Nota de ${aguaNotas[0].fuente}: corte en ${aguaNotas[0].localidad}`]
+    : aguaNotas.length ? ["Aviso", "aviso", `${aguaNotas[0].zona} · ${haceCuanto(aguaNotas[0].fecha)}`]
     : ["Normal", "ok", "Sin cortes informados"];
   const nombreDiaCorto = (f: string) => capitalizar(new Date(`${f}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "short", day: "numeric" }).replace(/[.,]/g, ""));
   const hoyDia = clima?.porDia?.find((x) => x.fecha === ahora.slice(0, 10)) ?? clima?.porDia?.[0];
@@ -579,10 +580,10 @@ export default function Inicio() {
             {[...aguaAhora, ...aguaProx, ...aguaNotas].map((c) => (
               <li key={c.id} className="lugar">
                 <b>{c.localidad}</b>
-                <span>{c.desde ? c.zona : `“${c.zona}”`}</span>
-                <small>{cuandoAgua(c)}{c.motivo ? ` · ${c.motivo}` : ""}</small>
-                <small>Fuente: {c.fuente} · {c.desde ? "Cargado" : "Publicado"} el {fechaCarga(c.fecha)} hs</small>
-                {c.link && <a className="btn claro" href={c.link} target="_blank" rel="noreferrer">Leer la nota en {c.fuente}</a>}
+                <span>{c.zona}</span>
+                {c.desde && <small>{cuandoAgua(c)}{c.motivo ? ` · ${c.motivo}` : ""}</small>}
+                <small>{c.fuente} · {c.desde ? "Cargado" : "Publicado"} {fechaCarga(c.fecha)} hs · {haceCuanto(c.fecha)}</small>
+                {c.link && <a className="btn claro" href={c.link} target="_blank" rel="noreferrer">Ver días y zonas</a>}
               </li>
             ))}
           </ul>
@@ -590,7 +591,7 @@ export default function Inicio() {
         {d.agua?.contenido && d.agua.contenido.diariosSinLeer.length > 0 && (
           <p className="aviso-pie">No se pudo leer: {d.agua.contenido.diariosSinLeer.join(", ")}.</p>
         )}
-        <p className="vacio">AySA no publica los cortes en una fuente que se pueda leer sola. Acá se muestran los que cargamos a mano y las notas de diarios que nombran un corte de agua en Lomas o sus localidades. Para saber si tu domicilio está afectado, consultá en AySA.</p>
+        <p className="vacio">Información de AySA publicada por medios locales.</p>
         <a className="btn claro ancho" target="_blank" rel="noreferrer" href={config.agua.paginaPublica}>Consultar en AySA</a>
         <Pie seccion="agua" fuente={config.agua.fuente} fila={d.agua} />
       </Detalle>
@@ -942,7 +943,7 @@ export default function Inicio() {
             {(s.tren.activa || s.colectivos.activa) && (
               <section className="transporte coloreado c-tren" aria-label="Transporte">
                 <h2><Icono nombre="tren" tam={24} /> Transporte</h2>
-                {transp.map((r) => (
+                {transp.filter((r) => !(r.id === "subte" && r.punto === "sin")).map((r) => (
                   <button key={r.id} className="renglon" onClick={() => abrir(r.id)}>
                     <span className={`punto-estado ${r.punto}`} aria-hidden />
                     <b>{r.nombre}</b>
@@ -1022,6 +1023,12 @@ export default function Inicio() {
         )}
         <button className="boton-sugerir" onClick={() => abrir("sugerir")}>💡 ¿Qué le agregarías a Lomas Hoy?</button>
         <p className="pie-ingresar"><a href={panel ?? "/entrar"}>{panel ? "Mi panel" : "Ingresar"}</a></p>
+        {config.contacto.whatsapp && (
+          <div className="hecho-por">
+            <small>Hecho por Ramón, vecino de Lomas</small>
+            <a className="btn whatsapp-chico" target="_blank" rel="noreferrer" href={`https://wa.me/${config.contacto.whatsapp}?text=${encodeURIComponent("Hola Ramón, vi Lomas Hoy y quiero consultarte por una app para mi negocio.")}`}><Icono nombre="whatsapp" tam={22} /> ¿Querés una app para tu negocio?</a>
+          </div>
+        )}
       </section>
     </main>
   );

@@ -72,6 +72,9 @@ export const config = {
     lineas: ["A", "B", "C", "D", "E", "H", "Premetro"],
   },
 
+  // Contacto de quien hizo la app (botón del pie de la pantalla principal). Con el número vacío, el botón no se muestra.
+  contacto: { whatsapp: "" }, // con 54 9 11 adelante, sin espacios ni signos
+
   // Noticias de Lomas: solo título, diario y enlace (nunca la nota). Diarios locales con RSS público.
   noticias: {
     diarios: [
@@ -151,10 +154,12 @@ export const config = {
   agua: {
     fuente: "Notas de diarios y cortes cargados por Lomas Hoy",
     paginaPublica: "https://cortes.web.aysa.com.ar/",
-    palabrasCorte: ["corte de agua", "cortes de agua", "sin agua", "falta de agua", "AySA"],
+    // Solo notas que anuncian un corte o falta de agua (no tarifas, boletas ni reclamos).
+    palabrasCorte: ["corte de agua", "cortes de agua", "corte de suministro", "cortes de suministro", "corte del suministro de agua", "sin agua", "falta de agua", "sin suministro de agua"],
+    palabrasExcluir: ["tarifa", "tarifas", "aumento", "boleta", "boletas", "factura", "facturas", "precio", "precios"],
     // Además de las localidades de arriba, "Lomas" a secas (por ejemplo "en Lomas hay corte de agua").
     palabrasLugar: ["Lomas"],
-    diasMaximos: 2, // una nota de diario deja de mostrarse a los 2 días
+    diasMaximos: 3, // una nota de diario deja de mostrarse a los 3 días
   },
 
   // Notificaciones al celular (web push).

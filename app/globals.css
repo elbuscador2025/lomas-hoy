@@ -460,3 +460,7 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .noticia a small { color:var(--suave); }
 .boton-sugerir { display:block; width:100%; margin:14px 0 4px; padding:12px; border-radius:14px; border:1px dashed var(--suave); background:none; color:inherit; font:inherit; font-size:15px; font-weight:700; cursor:pointer; }
 .vista-previa { display:block; max-width:100%; max-height:220px; border-radius:12px; margin:8px 0; }
+
+.hecho-por { display:flex; flex-direction:column; align-items:center; gap:8px; margin:18px 0 6px; text-align:center; }
+.hecho-por small { color:var(--suave); font-size:13px; }
+.hecho-por .btn { width:100%; }

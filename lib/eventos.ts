@@ -107,6 +107,9 @@ export async function evaluarAgua() {
         cuerpo: `Corte de agua en ${c.zona}, ${cuando({ inicio: c.desde, fin: c.hasta })}.${c.motivo ? ` ${c.motivo}.` : ""}`, url: "/?v=agua",
       });
     } else if (Date.now() - new Date(c.fecha).getTime() <= 86400_000) {
+      // Si dos diarios publican lo mismo el mismo día, el aviso sale una sola vez por localidad
+      const [primero] = await redis([["SET", `agua:dia:${ahora.slice(0, 10)}:${hash(c.localidad)}`, "1", "NX", "EX", 86400]]);
+      if (primero !== "OK") continue;
       await notificarSeguro({
         tipo: "agua", clave: `agua:${c.id}`, ttl: 4 * 86400,
         titulo: `${c.localidad}: corte de agua`, cuerpo: `${c.zona} (${c.fuente})`, url: "/?v=agua",

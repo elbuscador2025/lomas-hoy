@@ -26,6 +26,16 @@ export async function correrTareas({ guardar, env = process.env, log = console }
     return { notas: lecturas.flatMap((l) => (l.status === "fulfilled" ? l.value : [])), diariosLeidos: ok, diariosSinLeer: lista.map((d) => d.medio).filter((m) => !ok.includes(m)) };
   })());
 
+  // Diarios locales (Lomas Conectado, Diario Lomas): se leen una sola vez por corrida; de ahí salen las Noticias de Lomas y también avisos de cortes de agua.
+  let locales;
+  const leerLocales = () => (locales ??= (async () => {
+    const lista = cfg.noticias.diarios;
+    const lecturas = await Promise.allSettled(lista.map(async (d) => leerRss(await traer(d.url, "text"), d.medio)));
+    const ok = lista.filter((_, i) => lecturas[i].status === "fulfilled" && lecturas[i].value.length).map((d) => d.medio);
+    if (!ok.length) throw new Error("No se pudo leer ningún diario local");
+    return { notas: lecturas.flatMap((l) => (l.status === "fulfilled" ? l.value : [])), diariosLeidos: ok, diariosSinLeer: lista.map((d) => d.medio).filter((m) => !ok.includes(m)) };
+  })());
+
   const tareas = {
     // Mascotas y Trueque: no traen datos; avisan al sitio para que baje lo vencido y mande los avisos de las 19 hs
     mascotas: async () => ({ ok: true }),
@@ -58,19 +68,20 @@ export async function correrTareas({ guardar, env = process.env, log = console }
     },
     // Noticias de los diarios locales (solo título y enlace). Si un diario no responde, se muestran los otros.
     noticias: async () => {
-      const lista = cfg.noticias.diarios;
-      const lecturas = await Promise.allSettled(lista.map(async (d) => leerRss(await traer(d.url, "text"), d.medio)));
-      const ok = lista.filter((_, i) => lecturas[i].status === "fulfilled" && lecturas[i].value.length).map((d) => d.medio);
-      if (!ok.length) throw new Error("No se pudo leer ningún diario local");
-      return { notas: armarNoticias(lecturas.map((l) => (l.status === "fulfilled" ? l.value : [])), cfg.noticias.maximo), diariosLeidos: ok, diariosSinLeer: lista.map((d) => d.medio).filter((m) => !ok.includes(m)) };
+      const d = await leerLocales();
+      return { notas: armarNoticias([d.notas], cfg.noticias.maximo), diariosLeidos: d.diariosLeidos, diariosSinLeer: d.diariosSinLeer };
     },
     colectivos: async () => {
       const d = await leerDiarios();
       return { paros: buscarParos(d.notas, cfg), diariosLeidos: d.diariosLeidos, diariosSinLeer: d.diariosSinLeer };
     },
+    // Cortes de agua: notas de los diarios nacionales y de los locales que anuncian un corte o falta de agua en Lomas o sus localidades
     agua: async () => {
-      const d = await leerDiarios();
-      return { noticias: buscarAgua(d.notas, cfg), diariosSinLeer: d.diariosSinLeer };
+      const [nac, loc] = await Promise.allSettled([leerDiarios(), leerLocales()]);
+      if (nac.status === "rejected" && loc.status === "rejected") throw nac.reason;
+      const notas = [...(nac.status === "fulfilled" ? nac.value.notas : []), ...(loc.status === "fulfilled" ? loc.value.notas : [])];
+      const sinLeer = [...(nac.status === "fulfilled" ? nac.value.diariosSinLeer : cfg.colectivos.diarios.map((x) => x.medio)), ...(loc.status === "fulfilled" ? loc.value.diariosSinLeer : cfg.noticias.diarios.map((x) => x.medio))];
+      return { noticias: buscarAgua(notas, cfg), diariosSinLeer: sinLeer };
     },
   };
 
