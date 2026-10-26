@@ -445,3 +445,18 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .sos-fila { display:flex; flex-direction:column; gap:6px; background:#fff; border:1px solid var(--linea); border-radius:16px; padding:12px; }
 .sos-num { font-size:26px; line-height:1.2; }
 .sos-num.sos-local { font-size:19px; }
+
+.c-pasa { --c-bg:#FFE3D1; --c-fuerte:#C2410C; }
+.c-noticias { --c-bg:#DDE3F0; --c-fuerte:#1D2D50; }
+.boton-pasa { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; margin:10px 0 4px; padding:10px 14px; min-height:52px; border-radius:14px; border:2px solid #C2410C; background:#FFF4EC; color:#7A2A05; font:inherit; font-size:15px; line-height:1.25; text-align:left; cursor:pointer; box-shadow:0 2px 6px rgba(16,33,63,.14); transition:transform .09s ease, filter .09s ease; }
+.boton-pasa:active { transform:scale(.97); filter:brightness(.92); }
+.pasa-texto { display:block; }
+.pasa-texto span { font-weight:600; }
+.pasa-flecha { font-size:24px; font-weight:800; }
+.pasa-aviso-texto { font-size:18px; line-height:1.3; }
+.pasa-vistos { font-weight:700; }
+.noticia a { display:flex; flex-direction:column; gap:4px; text-decoration:none; color:inherit; }
+.noticia a b { font-size:17px; line-height:1.3; }
+.noticia a small { color:var(--suave); }
+.boton-sugerir { display:block; width:100%; margin:14px 0 4px; padding:12px; border-radius:14px; border:1px dashed var(--suave); background:none; color:inherit; font:inherit; font-size:15px; font-weight:700; cursor:pointer; }
+.vista-previa { display:block; max-width:100%; max-height:220px; border-radius:12px; margin:8px 0; }

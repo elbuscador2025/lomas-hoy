@@ -3,10 +3,11 @@ import { createHash } from "node:crypto";
 import { redis } from "@/lib/servidor";
 import { notificarAdmin } from "@/lib/push";
 
-import { MOTIVOS, MOTIVOS_ESTAFA } from "@/lib/moderacion-comun";
+import { MOTIVOS, MOTIVOS_ESTAFA, MOTIVOS_PASA } from "@/lib/moderacion-comun";
 export { MOTIVOS, MOTIVOS_ESTAFA };
 export const DENUNCIAS_PARA_OCULTAR = 3;
 export type Seccion = "trueque" | "trabajo";
+type SeccionDenunciable = Seccion | "pasa";
 export type Denuncia = { motivo: string; disp: string; t: string };
 export const huella = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 16);
 
@@ -33,8 +34,8 @@ export async function desbloquear(id: string) {
 // ---- Denuncias: cada celular cuenta una sola vez por publicación; con 3 se oculta hasta que yo la revise ----
 type Registro = { situacion: string; denuncias?: Denuncia[]; oculta?: boolean } & Record<string, unknown>;
 
-export async function denunciar(seccion: Seccion, id: string, motivo: string, dispositivo: string, resumen: string) {
-  if (!MOTIVOS.includes(motivo)) return false;
+export async function denunciar(seccion: SeccionDenunciable, id: string, motivo: string, dispositivo: string, resumen: string) {
+  if (!(seccion === "pasa" ? MOTIVOS_PASA : MOTIVOS).includes(motivo)) return false;
   const [j] = await redis([["HGET", seccion, id]]);
   if (!j) return false;
   const r = JSON.parse(j as string) as Registro;
@@ -48,7 +49,7 @@ export async function denunciar(seccion: Seccion, id: string, motivo: string, di
   return true;
 }
 // Mi revisión: la publicación vuelve a verse y se borran las denuncias
-export async function dejarPublicada(seccion: Seccion, id: string) {
+export async function dejarPublicada(seccion: SeccionDenunciable, id: string) {
   const [j] = await redis([["HGET", seccion, id]]);
   if (!j) return false;
   const { denuncias: _d, oculta: _o, ...r } = JSON.parse(j as string) as Registro;

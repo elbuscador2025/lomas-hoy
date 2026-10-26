@@ -211,3 +211,15 @@ export function leerSubte(json, cfg, ahora = new Date()) {
   }
   return { lineas };
 }
+
+// ---- Noticias de Lomas: título, diario y enlace de cada nota (sin copiar la nota) ----
+const sentencia = (t) => (t === t.toUpperCase() && /[A-ZÁÉÍÓÚÑ]{3}/.test(t) ? t.charAt(0) + t.slice(1).toLowerCase() : t); // "AYSA QUIERE SUBIR..." → "Aysa quiere subir..."
+export function armarNoticias(porDiario, maximo = 30) {
+  const vistos = new Set();
+  const notas = porDiario.flatMap((x) => x)
+    .filter((n) => n.titular && /^https?:\/\//.test(n.link) && !Number.isNaN(n.fecha.getTime()))
+    .map((n) => ({ titulo: sentencia(n.titular.replace(/\s+/g, " ").trim()).slice(0, 220), link: n.link, medio: n.medio, fecha: n.fecha.toISOString() }))
+    .filter((n) => { if (vistos.has(n.link)) return false; vistos.add(n.link); return true; })
+    .sort((a, b) => b.fecha.localeCompare(a.fecha));
+  return notas.slice(0, maximo);
+}

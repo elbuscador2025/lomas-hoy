@@ -23,6 +23,7 @@ export const config = {
     discapacidad: { activa: true, titulo: "Discapacidad" },
     coop: { activa: true, titulo: "COOP" },
     ansesof: { activa: true, titulo: "ANSES" },
+    noticias: { activa: true, titulo: "Noticias de Lomas" },
   },
 
   tren: {
@@ -69,6 +70,15 @@ export const config = {
     url: "https://apitransporte.buenosaires.gob.ar/subtes/serviceAlerts",
     paginaPublica: "https://api-transporte.buenosaires.gob.ar/",
     lineas: ["A", "B", "C", "D", "E", "H", "Premetro"],
+  },
+
+  // Noticias de Lomas: solo título, diario y enlace (nunca la nota). Diarios locales con RSS público.
+  noticias: {
+    diarios: [
+      { medio: "Lomas Conectado", url: "https://www.lomasconectado.com/feed" },
+      { medio: "Diario Lomas", url: "https://www.diariolomas.com.ar/feed" },
+    ],
+    maximo: 30,
   },
 
   colectivos: {

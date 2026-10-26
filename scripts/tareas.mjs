@@ -2,7 +2,7 @@
 // Las usan dos "cadetes": el despertador externo (el sitio, en /api/actualizar) y GitHub Actions (scripts/actualizar.mjs, de respaldo).
 // Si una fuente falla, no se pisa el último dato bueno: solo se anota el error.
 import { config as cfg } from "../lomas.config.mjs";
-import { leerTren, leerLuz, leerRss, buscarParos, buscarAgua, leerProgramados, leerSubte } from "./fuentes.mjs";
+import { leerTren, leerLuz, leerRss, buscarParos, buscarAgua, leerProgramados, leerSubte, armarNoticias } from "./fuentes.mjs";
 import { leerAlertas } from "./alertas.mjs";
 import { leerPronostico, urlOpenMeteo, leerPron5d, leerZipSmn, URL_SMN_5DIAS } from "./clima.mjs";
 
@@ -55,6 +55,14 @@ export async function correrTareas({ guardar, env = process.env, log = console }
       const { SUBTE_CLIENT_ID: id, SUBTE_CLIENT_SECRET: secreto } = env;
       if (!id || !secreto) return null;
       return leerSubte(await traer(`${cfg.subte.url}?json=1&client_id=${encodeURIComponent(id)}&client_secret=${encodeURIComponent(secreto)}`, "json"), cfg);
+    },
+    // Noticias de los diarios locales (solo título y enlace). Si un diario no responde, se muestran los otros.
+    noticias: async () => {
+      const lista = cfg.noticias.diarios;
+      const lecturas = await Promise.allSettled(lista.map(async (d) => leerRss(await traer(d.url, "text"), d.medio)));
+      const ok = lista.filter((_, i) => lecturas[i].status === "fulfilled" && lecturas[i].value.length).map((d) => d.medio);
+      if (!ok.length) throw new Error("No se pudo leer ningún diario local");
+      return { notas: armarNoticias(lecturas.map((l) => (l.status === "fulfilled" ? l.value : [])), cfg.noticias.maximo), diariosLeidos: ok, diariosSinLeer: lista.map((d) => d.medio).filter((m) => !ok.includes(m)) };
     },
     colectivos: async () => {
       const d = await leerDiarios();

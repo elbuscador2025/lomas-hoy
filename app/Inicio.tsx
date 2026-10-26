@@ -20,6 +20,10 @@ import Discapacidad from "./Discapacidad";
 import CoopPantalla from "./Coop";
 import HoyCobran from "./HoyCobran";
 import Sos from "./Sos";
+import { BotonPasa, PantallaPasa, FormularioPasa } from "./Pasa";
+import Sugerir from "./Sugerir";
+import NoticiasLomas from "./Noticias";
+import type { AvisoPasa } from "@/lib/pasa-comun";
 import { GuardiasPantalla, SalitasPantalla, tieneGuardia24, esSalita } from "./Salud";
 import OficinasAnses from "./OficinasAnses";
 import { OFICINAS_ANSES, PALABRAS_ANSES_OF, ordenarOficinas, type OficinaAnses } from "@/lib/ansesof";
@@ -99,6 +103,10 @@ export default function Inicio() {
   const [oficinasAnses, setOficinasAnses] = useState<OficinaAnses[]>(ordenarOficinas(OFICINAS_ANSES));
   useEffect(() => { fetch("/api/ansesof").then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.oficinas?.length) setOficinasAnses(j.oficinas); }).catch(() => {}); }, []);
   const [verTodas, setVerTodas] = useState(false);
+  const [avisosPasa, setAvisosPasa] = useState<AvisoPasa[]>([]);
+  const cargarPasa = useCallback(() => { fetch("/api/pasa").then((r) => (r.ok ? r.json() : null)).then((j) => { if (Array.isArray(j)) setAvisosPasa(j); }).catch(() => {}); }, []);
+  useEffect(() => { cargarPasa(); }, [cargarPasa]);
+  useEffect(() => { if (vista === "pasa") cargarPasa(); }, [vista, cargarPasa]);
   const [coop, setCoop] = useState<Coop[]>(COOP_OFICIALES);
   const [coopElegida, setCoopElegida] = useState("");
   useEffect(() => { fetch("/api/coop").then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.coop?.length) setCoop(j.coop); }).catch(() => {}); }, []);
@@ -235,6 +243,8 @@ export default function Inicio() {
   const rAnses = resumenAnses(anses.entradas, hoyStr);
   const nuevasTrabajo = trabajo.filter((p) => esNuevaTrabajo(p, config.trabajo.diasNuevas)).length;
   const nuevasTrueque = trueque.publicaciones.filter((p) => esNuevaTrueque(p, config.trueque.diasNuevas)).length;
+  const notasLomas = d.noticias?.contenido?.notas ?? [];
+  const notasHoy = notasLomas.filter((n) => ahoraAR(new Date(n.fecha)).slice(0, 10) === hoyStr).length;
   const lugaresDe = (vistaId: string) => lugares.filter((l) => CATEGORIAS_DE[vistaId].includes(l.categoria));
 
   function pedirUbicacion() {
@@ -699,6 +709,34 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "pasa")
+    return (
+      <Detalle color="pasa" titulo="Pasa en Lomas" onVolver={volver}>
+        <PantallaPasa avisos={avisosPasa} onAvisar={() => abrir("pasa-avisar")} onVisto={(id, n) => setAvisosPasa((l) => l.map((a) => (a.id === id ? { ...a, vistos: n } : a)))} />
+      </Detalle>
+    );
+
+  if (vista === "pasa-avisar")
+    return (
+      <Detalle color="pasa" titulo="Avisar algo" onVolver={volver}>
+        <FormularioPasa onListo={(publicado) => { if (publicado) cargarPasa(); volver(); }} />
+      </Detalle>
+    );
+
+  if (vista === "sugerir")
+    return (
+      <Detalle titulo="Tu idea" onVolver={volver}>
+        <Sugerir />
+      </Detalle>
+    );
+
+  if (vista === "noticias")
+    return (
+      <Detalle color="noticias" titulo={s.noticias.titulo} onVolver={volver}>
+        <NoticiasLomas notas={notasLomas} sinDatos={!d.noticias?.contenido} />
+      </Detalle>
+    );
+
   if (vista === "sos")
     return (
       <Detalle color="guardias" titulo="Emergencias" onVolver={volver}>
@@ -900,6 +938,7 @@ export default function Inicio() {
           </section>
         ) : (
           <>
+            <BotonPasa ultimo={avisosPasa[0]} onClick={() => abrir("pasa")} />
             {(s.tren.activa || s.colectivos.activa) && (
               <section className="transporte coloreado c-tren" aria-label="Transporte">
                 <h2><Icono nombre="tren" tam={24} /> Transporte</h2>
@@ -954,6 +993,11 @@ export default function Inicio() {
                 <Tile color="ansesof" icono="ansesof" titulo={s.ansesof.titulo} estado="Ver" tono="neutro" onClick={() => abrir("ansesof")}
                   resumen="Oficinas y turnos" />
               )}
+              {s.noticias.activa && (
+                <Tile color="noticias" icono="noticias" titulo={s.noticias.titulo} onClick={() => abrir("noticias")}
+                  estado={notasHoy ? plural(notasHoy, "nueva", "nuevas") : "Ver"} tono={notasHoy ? "aviso" : "neutro"}
+                  resumen="Lo último de los diarios del barrio" />
+              )}
               {s.coop.activa && (
                 <Tile color="coop" icono="coop" titulo={s.coop.titulo} estado="Ver" tono="neutro" onClick={() => { setCoopElegida(""); abrir("coop"); }}
                   resumen="Luminarias, poda, árboles y arreglos del barrio" />
@@ -976,6 +1020,7 @@ export default function Inicio() {
             <button className="btn whatsapp" onClick={compartirDia}>Compartir por WhatsApp</button>
           </>
         )}
+        <button className="boton-sugerir" onClick={() => abrir("sugerir")}>💡 ¿Qué le agregarías a Lomas Hoy?</button>
         <p className="pie-ingresar"><a href={panel ?? "/entrar"}>{panel ? "Mi panel" : "Ingresar"}</a></p>
       </section>
     </main>

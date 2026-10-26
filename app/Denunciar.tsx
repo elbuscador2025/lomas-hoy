@@ -1,9 +1,9 @@
 "use client";
 import { useState } from "react";
-import { MOTIVOS } from "@/lib/moderacion-comun";
+import { MOTIVOS, MOTIVOS_PASA } from "@/lib/moderacion-comun";
 
 // Botón "Denunciar" de cada publicación de Trueque y Trabajo para mayores de 50 años.
-export default function Denunciar({ seccion, id }: { seccion: "trueque" | "trabajo"; id: string }) {
+export default function Denunciar({ seccion, id }: { seccion: "trueque" | "trabajo" | "pasa"; id: string }) {
   const [abierto, setAbierto] = useState(false);
   const [estado, setEstado] = useState<"" | "enviando" | "listo" | "error">("");
 
@@ -23,7 +23,7 @@ export default function Denunciar({ seccion, id }: { seccion: "trueque" | "traba
         <div className="modal-fondo" role="dialog" aria-modal="true" aria-label="Denunciar">
           <div className="modal">
             <b>¿Por qué la denunciás?</b>
-            {MOTIVOS.map((m) => <button key={m} className="btn claro ancho" disabled={estado === "enviando"} onClick={() => enviar(m)}>{m}</button>)}
+            {(seccion === "pasa" ? MOTIVOS_PASA : MOTIVOS).map((m) => <button key={m} className="btn claro ancho" disabled={estado === "enviando"} onClick={() => enviar(m)}>{m}</button>)}
             {estado === "error" && <p className="error">No se pudo enviar. Probá de nuevo.</p>}
             <button className="btn cancelar-rojo" onClick={() => setAbierto(false)}>Cancelar</button>
           </div>

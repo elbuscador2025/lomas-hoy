@@ -111,3 +111,13 @@ test("clima: la temperatura de ahora es el promedio de las estaciones con datos 
   assert.deepEqual([o.temp, o.estaciones, o.etiqueta], [23.3, ["Ezeiza", "Morón", "Buenos Aires"], "Parcialmente nublado"]);
   assert.equal(leerEstacionesSmn(txt, ["Ezeiza", "El Palomar"], new Date("2026-10-23T21:10:00Z")), null); // con una sola estación vigente no alcanza
 });
+
+import { armarNoticias } from "./fuentes.mjs";
+test("noticias: mezcla los diarios, la más nueva arriba, sin repetidos ni enlaces raros, y baja los títulos en mayúsculas", () => {
+  const n = (titular, link, fecha, medio) => ({ titular, link, fecha: new Date(fecha), medio });
+  const r = armarNoticias([
+    [n("AYSA QUIERE SUBIR LA TARIFA", "https://a.com/1", "2026-10-26T13:00:00Z", "A"), n("Nota vieja", "https://a.com/2", "2026-10-25T10:00:00Z", "A"), n("Repetida", "javascript:alert(1)", "2026-10-26T12:00:00Z", "A")],
+    [n("Nota de B", "https://b.com/1", "2026-10-26T14:00:00Z", "B"), n("Nota vieja", "https://a.com/2", "2026-10-25T10:00:00Z", "B"), n("", "https://b.com/2", "2026-10-26T14:00:00Z", "B")],
+  ]);
+  assert.deepEqual(r.map((x) => [x.titulo, x.medio]), [["Nota de B", "B"], ["Aysa quiere subir la tarifa", "A"], ["Nota vieja", "A"]]);
+});

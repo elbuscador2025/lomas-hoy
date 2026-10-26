@@ -3,11 +3,12 @@ import { after } from "next/server";
 import { mantener } from "@/lib/mascotas";
 import { mantener as mantenerTrueque } from "@/lib/trueque";
 import { mantener as mantenerTrabajo } from "@/lib/trabajo";
+import { mantener as mantenerPasa } from "@/lib/pasa";
 import { evaluarResumen } from "@/lib/resumen";
 import { evaluarTren, evaluarProgramados, evaluarColectivos, evaluarAgua, evaluarSubte, evaluarTormenta, evaluarAlertasSmn } from "@/lib/eventos";
 import { redis } from "@/lib/servidor";
 
-export const CLAVES_VALIDAS = ["tren", "luz", "colectivos", "programados", "agua", "pronostico", "mascotas", "subte", "alertas"];
+export const CLAVES_VALIDAS = ["tren", "luz", "colectivos", "programados", "agua", "pronostico", "mascotas", "subte", "alertas", "noticias"];
 
 // Si falló la lectura (contenido vacío), se conserva el último dato bueno y solo se anota el error.
 export async function guardarDato(clave: string, contenido: any, error?: unknown) { // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -18,7 +19,7 @@ export async function guardarDato(clave: string, contenido: any, error?: unknown
     // Los avisos salen después de responder: si fallan, el dato ya quedó guardado.
     if (clave === "tren") after(() => evaluarTren(contenido).catch((e) => console.error("push tren", e)));
     if (clave === "programados") after(() => evaluarProgramados(contenido).catch((e) => console.error("push programados", e)));
-    if (clave === "mascotas") after(() => Promise.all([mantener(), mantenerTrueque(), mantenerTrabajo(), evaluarResumen()]).catch((e) => console.error("mascotas", e)));
+    if (clave === "mascotas") after(() => Promise.all([mantener(), mantenerTrueque(), mantenerTrabajo(), mantenerPasa(), evaluarResumen()]).catch((e) => console.error("mascotas", e)));
     if (clave === "colectivos") after(() => evaluarColectivos(contenido).catch((e) => console.error("push colectivos", e)));
     if (clave === "subte") after(() => evaluarSubte(contenido).catch((e) => console.error("push subte", e)));
     if (clave === "alertas") after(() => evaluarAlertasSmn(contenido).catch((e) => console.error("push alertas", e)));
