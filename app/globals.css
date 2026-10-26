@@ -381,11 +381,11 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 
 /* Botones que se sienten: sombra en reposo, se hunden al apretar */
 button, a, .tile { -webkit-tap-highlight-color: transparent; }
-.tile, .transporte, .btn.llamar, .btn.grande-btn, .btn.whatsapp, .btn.whatsapp-chico, .btn.llamar-si, .tarjeta-publicar {
+.tile, .transporte, .noche-btn, .btn.llamar, .btn.grande-btn, .btn.whatsapp, .btn.whatsapp-chico, .btn.llamar-si, .tarjeta-publicar {
   box-shadow: 0 2px 6px rgba(16, 33, 63, .16), 0 1px 2px rgba(16, 33, 63, .10);
   transition: transform .09s ease, filter .09s ease, box-shadow .09s ease;
 }
-.tile:active, .btn.llamar:active, .btn.grande-btn:active, .btn.whatsapp:active, .btn.whatsapp-chico:active, .btn.llamar-si:active, .tarjeta-publicar:active {
+.tile:active, .noche-btn:active, .btn.llamar:active, .btn.grande-btn:active, .btn.whatsapp:active, .btn.whatsapp-chico:active, .btn.llamar-si:active, .tarjeta-publicar:active {
   transform: scale(.96); filter: brightness(.9); box-shadow: 0 1px 2px rgba(16, 33, 63, .18);
 }
 .transporte .renglon { transition: transform .09s ease, background-color .09s ease; border-radius:10px; }
@@ -426,3 +426,9 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .salud-card .salud-km { font-weight:700; color:var(--c-fuerte); }
 .salud-card .salud-llegar { min-height:52px; font-weight:800; }
 .salud-aviso { background:var(--c-bg); border-radius:14px; padding:12px; margin:4px 0 10px; line-height:1.4; font-weight:600; }
+
+.bloque-noche { background:#0B1730; border-radius:16px; padding:10px; margin-top:8px; display:flex; flex-direction:column; gap:8px; color:#fff; }
+.bloque-noche > b { font-size:15px; }
+.noche-botones { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.noche-btn { min-height:60px; padding:6px 4px; border:0; border-radius:12px; background:#2A4A8C; color:#fff; font:inherit; font-size:14px; font-weight:800; line-height:1.15; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; cursor:pointer; }
+.noche-btn small { font-size:11px; font-weight:600; opacity:.9; }

@@ -783,6 +783,16 @@ export default function Inicio() {
             {(clima?.frase ?? (clima ? clima.ahora.etiqueta : datos ? "Sin datos del clima" : "Cargando…")).split("\n").map((l) => <span key={l} className={l.length > 46 ? "chica" : ""}>{l}</span>)}
           </span>
         </button>
+        {(hAR >= 20 || hAR < 8) && (
+          <section className="bloque-noche" aria-label="Necesitás algo esta noche">
+            <b>¿Necesitás algo esta noche?</b>
+            <div className="noche-botones">
+              <button className="noche-btn" onClick={() => abrir("guardias")}>Guardias 24 hs</button>
+              <button className="noche-btn" onClick={() => abrir("vets")}>Veterinarias de guardia</button>
+              <button className="noche-btn" onClick={() => abrir("farmacias")}>Farmacias abiertas<small>Llamá antes de ir</small></button>
+            </div>
+          </section>
+        )}
       </header>
 
       <section className="hoja">

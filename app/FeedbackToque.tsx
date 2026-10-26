@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 
 // Los botones que "se sienten": al apretarlos, una vibración cortita y un "clic" suave (el sonido se apaga en Configurar avisos).
-const BOTONES = ".tile, .transporte .renglon, .btn.llamar, .btn.llamar-si, .btn.grande-btn, .btn.whatsapp, .btn.whatsapp-chico, .tarjeta-publicar";
+const BOTONES = ".tile, .transporte .renglon, .btn.llamar, .btn.llamar-si, .btn.grande-btn, .btn.whatsapp, .btn.whatsapp-chico, .tarjeta-publicar, .noche-btn";
 const CLAVE_SONIDO = "lomas-hoy:sonido";
 export const sonidoActivo = () => { try { return localStorage.getItem(CLAVE_SONIDO) !== "no"; } catch { return true; } };
 export const guardarSonido = (v: boolean) => { try { localStorage.setItem(CLAVE_SONIDO, v ? "si" : "no"); } catch {} };
