@@ -478,24 +478,36 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .aviso-vecinos-nota { color:var(--suave); font-size:13px; margin:10px 0 6px; }
 .boton-pasa { justify-content:center; text-align:center; }
 
-.c-quiniela { --c-bg:#FFE680; --c-fuerte:#D9480F; }
+.tile-emoji { font-size:28px; line-height:1; }
+
+/* Quiniela en verde lotería, Quini 6 en rojo. Colores fijos y con buen contraste (letra blanca sobre fondo intenso). */
+.c-quiniela { --c-bg:#0B7A3E; --c-fuerte:#0B7A3E; --q-claro:#E4F4EB; --q-oscuro:#064D27; }
+.c-quini6 { --c-bg:#D62828; --c-fuerte:#D62828; --q-claro:#FDE9E9; --q-oscuro:#8F1414; }
+.tile.c-quiniela { background:#0B7A3E; }
+.tile.c-quiniela .tile-icono, .tile.c-quiniela b, .tile.c-quiniela .tile-resumen { color:#fff; }
+.tile.c-quiniela .pildora { background:#E4F4EB; color:#064D27; }
+.detalle.c-quiniela .barra, .detalle.c-quini6 .barra { background:var(--c-bg); border-bottom:3px solid var(--q-oscuro); }
+.detalle.c-quiniela .titulo-detalle, .detalle.c-quini6 .titulo-detalle { background:var(--c-bg); border-left:6px solid var(--q-oscuro); color:#fff; }
+.detalle.c-quiniela .volver, .detalle.c-quini6 .volver { background:#fff; color:var(--q-oscuro); }
 .tile-emoji { font-size:28px; line-height:1; }
 .quin-fila { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:8px 0; }
 .quin-sorteos { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin:8px 0 12px; }
-.btn.quin-boton { min-height:52px; padding:0 4px; font-size:16px; background:#fff; color:var(--c-fuerte); border:2px solid var(--c-fuerte); box-shadow:none; }
-.btn.quin-boton.activo { background:var(--c-fuerte); color:#fff; }
+.btn.quin-boton { min-height:52px; padding:0 4px; font-size:17px; background:#E4F4EB; color:#064D27; border:2px solid #B9DCC8; box-shadow:none; font-weight:700; }
+.btn.quin-boton.activo { background:#0B7A3E; color:#fff; border-color:#064D27; font-weight:900; outline:3px solid #0B7A3E; outline-offset:2px; }
+.btn.quin-boton.rojo { background:#FDE9E9; color:#8F1414; border-color:#F1B8B8; }
+.btn.quin-boton.rojo.activo { background:#D62828; color:#fff; border-color:#8F1414; outline-color:#D62828; }
 .quin-fecha { margin:0 0 6px; font-weight:700; }
 .quin-titulo { font-size:18px; font-weight:800; margin:10px 0 6px; line-height:1.3; }
-.quin-resultado { background:#FFF7D6; border:2px solid var(--c-fuerte); border-radius:18px; padding:12px; }
+.quin-resultado { background:#EEF8F2; border:2px solid #0B7A3E; border-radius:18px; padding:12px; }
 .quin-aun { background:#F1F3F6; border-color:#C7CCD6; }
-.quin-cabeza { display:flex; flex-direction:column; align-items:center; margin:6px 0 12px; }
-.quin-cabeza small { font-size:15px; font-weight:700; color:var(--suave); }
-.quin-cabeza b { font-size:64px; line-height:1; letter-spacing:2px; color:var(--c-fuerte); }
-.quin-grilla { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-.quin-grilla li { display:flex; align-items:center; gap:10px; background:#fff; border-radius:10px; padding:6px 10px; }
-.quin-grilla li span { min-width:24px; font-size:14px; color:var(--suave); font-weight:700; }
-.quin-grilla li b { font-size:26px; letter-spacing:1px; }
-.quin-modalidad { background:#FFF7D6; border:2px solid var(--c-fuerte); border-radius:18px; padding:10px 12px; margin:10px 0; }
-.quin-modalidad h2 { margin:0 0 8px; font-size:20px; }
+.quin-cabeza { display:flex; flex-direction:column; align-items:center; gap:6px; margin:6px 0 14px; }
+.quin-cabeza small { font-size:15px; font-weight:800; color:#064D27; }
+.bola-oro { width:168px; height:168px; border-radius:50%; display:grid; place-items:center; font-size:50px; font-weight:900; letter-spacing:1px; color:#3B2A00; background:radial-gradient(circle at 32% 28%, #FFF3B0 0%, #F7D154 38%, #D9A400 100%); border:4px solid #B8860B; box-shadow:0 4px 10px rgba(0,0,0,.25), inset 0 -6px 10px rgba(120,80,0,.25); }
+.quin-grilla { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:10px 8px; }
+.quin-grilla li { display:flex; align-items:center; gap:8px; }
+.quin-grilla li span { min-width:20px; text-align:right; font-size:13px; color:#064D27; font-weight:800; }
+.bola { width:78px; height:78px; border-radius:50%; display:grid; place-items:center; background:#fff; border:3px solid #0B7A3E; color:#10213F; font-size:24px; font-weight:900; letter-spacing:.5px; }
+.quin-modalidad { background:#FDF1F1; border:2px solid #D62828; border-radius:18px; padding:10px 12px; margin:10px 0; }
+.quin-modalidad h2 { margin:0 0 8px; font-size:20px; color:#8F1414; }
 .quin-bolitas { list-style:none; margin:0; padding:0; display:flex; gap:6px; flex-wrap:nowrap; justify-content:space-between; }
-.quin-bolitas li { flex:1; max-width:48px; aspect-ratio:1; border-radius:50%; background:#fff; border:3px solid var(--c-fuerte); display:grid; place-items:center; font-weight:900; font-size:19px; }
+.quin-bolitas li { flex:1; max-width:50px; aspect-ratio:1; border-radius:50%; background:#D62828; border:3px solid #8F1414; color:#fff; display:grid; place-items:center; font-weight:900; font-size:19px; }

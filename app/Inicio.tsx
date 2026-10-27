@@ -22,7 +22,7 @@ import Discapacidad from "./Discapacidad";
 import CoopPantalla from "./Coop";
 import HoyCobran from "./HoyCobran";
 import Sos from "./Sos";
-import QuinielaPantalla from "./Quiniela";
+import QuinielaPantalla, { type ModoQuiniela } from "./Quiniela";
 import { ultimoResultado } from "@/lib/quiniela-comun";
 import { BotonPasa, FormularioPasa, useVecinos } from "./Pasa";
 import Sugerir from "./Sugerir";
@@ -106,6 +106,7 @@ export default function Inicio() {
   const [oficinasAnses, setOficinasAnses] = useState<OficinaAnses[]>(ordenarOficinas(OFICINAS_ANSES));
   useEffect(() => { fetch("/api/ansesof").then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.oficinas?.length) setOficinasAnses(j.oficinas); }).catch(() => {}); }, []);
   const [verTodas, setVerTodas] = useState(false);
+  const [modoQuiniela, setModoQuiniela] = useState<ModoQuiniela>("quiniela");
   const vecinos = useVecinos(config.secciones.pasa.activa);
   const [coop, setCoop] = useState<Coop[]>(COOP_OFICIALES);
   const [coopElegida, setCoopElegida] = useState("");
@@ -727,8 +728,8 @@ export default function Inicio() {
 
   if (vista === "quiniela" && s.quiniela.activa)
     return (
-      <Detalle color="quiniela" titulo={s.quiniela.titulo} onVolver={volver}>
-        <QuinielaPantalla quiniela={d.quiniela?.contenido} quini={d.quini6?.contenido} hoy={hoyStr} />
+      <Detalle color={modoQuiniela === "quini" ? "quini6" : "quiniela"} titulo={s.quiniela.titulo} onVolver={volver}>
+        <QuinielaPantalla quiniela={d.quiniela?.contenido} quini={d.quini6?.contenido} hoy={hoyStr} modo={modoQuiniela} onModo={setModoQuiniela} />
       </Detalle>
     );
 

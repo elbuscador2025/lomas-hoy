@@ -4,8 +4,8 @@ import { SORTEOS, QUINIELAS } from "@/scripts/quiniela.mjs";
 import { diasDe, ultimoDe, fechaLinda, sorteosDelDia, type Quiniela, type Quini6, type Jurisdiccion } from "@/lib/quiniela-comun";
 
 // Quiniela y Quini 6: solo resultados. Nada de dónde jugar, agencias ni enlaces para apostar.
-const Boton = ({ activo, onClick, children }: { activo: boolean; onClick: () => void; children: React.ReactNode }) => (
-  <button role="tab" aria-selected={activo} className={`btn quin-boton ${activo ? "activo" : ""}`} onClick={onClick}>{children}</button>
+const Boton = ({ activo, onClick, children, rojo }: { activo: boolean; onClick: () => void; children: React.ReactNode; rojo?: boolean }) => (
+  <button role="tab" aria-selected={activo} className={`btn quin-boton ${activo ? "activo" : ""}${rojo ? " rojo" : ""}`} onClick={onClick}>{children}</button>
 );
 
 function Resultado({ quiniela, hoy }: { quiniela: Quiniela | null | undefined; hoy: string }) {
@@ -40,9 +40,9 @@ function Resultado({ quiniela, hoy }: { quiniela: Quiniela | null | undefined; h
         : r && fechaMostrada ? (
           <section className="quin-resultado" aria-label={`${s.nombre} ${jur}`}>
             <p className="quin-titulo">{s.nombre} · {fechaLinda(fechaMostrada)} · {actual?.sorteos[id]?.hora ?? s.hora} hs</p>
-            <div className="quin-cabeza"><small>Cabeza</small><b>{r[0]}</b></div>
+            <div className="quin-cabeza"><small>Cabeza · 1°</small><b className="bola-oro">{r[0]}</b></div>
             <ol className="quin-grilla">
-              {r.map((n, i) => <li key={i}><span>{i + 1}</span><b>{n}</b></li>)}
+              {r.slice(1).map((n, i) => <li key={i}><span>{i + 2}</span><b className="bola">{n}</b></li>)}
             </ol>
           </section>
         ) : (
@@ -71,13 +71,14 @@ function Quini({ quini }: { quini: Quini6 | null | undefined }) {
   );
 }
 
-export default function QuinielaPantalla({ quiniela, quini, hoy }: { quiniela: Quiniela | null | undefined; quini: Quini6 | null | undefined; hoy: string }) {
-  const [modo, setModo] = useState<"quiniela" | "quini">("quiniela");
+export type ModoQuiniela = "quiniela" | "quini";
+export default function QuinielaPantalla({ quiniela, quini, hoy, modo, onModo }: { quiniela: Quiniela | null | undefined; quini: Quini6 | null | undefined; hoy: string; modo: ModoQuiniela; onModo: (m: ModoQuiniela) => void }) {
+  const setModo = onModo;
   return (
     <>
       <div className="quin-fila" role="tablist" aria-label="Juego">
         <Boton activo={modo === "quiniela"} onClick={() => setModo("quiniela")}>Quiniela</Boton>
-        <Boton activo={modo === "quini"} onClick={() => setModo("quini")}>Quini 6</Boton>
+        <Boton activo={modo === "quini"} onClick={() => setModo("quini")} rojo>Quini 6</Boton>
       </div>
       {modo === "quiniela" ? <Resultado quiniela={quiniela} hoy={hoy} /> : <Quini quini={quini} />}
       <p className="vacio">Controlá siempre tu boleta en la agencia.</p>
