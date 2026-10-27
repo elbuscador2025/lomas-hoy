@@ -24,6 +24,7 @@ import HoyCobran from "./HoyCobran";
 import Sos from "./Sos";
 import QuinielaPantalla, { type ModoQuiniela } from "./Quiniela";
 import { ultimoResultado } from "@/lib/quiniela-comun";
+import { cobranHoyTile } from "@/lib/cobran-comun";
 import { BotonPasa, FormularioPasa, useVecinos } from "./Pasa";
 import Sugerir from "./Sugerir";
 import NoticiasLomas from "./Noticias";
@@ -66,7 +67,7 @@ function Tile({ icono, titulo, resumen, estado, tono, onClick, color }: {
         <span className={`pildora ${tono}`}>{estado}</span>
       </span>
       <b>{titulo}</b>
-      <span className="tile-resumen">{resumen}</span>
+      {resumen ? <span className="tile-resumen">{resumen}</span> : null}
     </button>
   );
 }
@@ -989,7 +990,7 @@ export default function Inicio() {
               {s.anses.activa && (
                 <Tile color="anses" icono="dinero" titulo={s.anses.titulo} onClick={() => abrir("anses")}
                   estado={rAnses.hayHoy ? "Hoy" : rAnses.sinDatos ? "Sin datos" : "Mes"} tono={rAnses.hayHoy ? "ok" : "neutro"}
-                  resumen={rAnses.hayHoy ? rAnses.lineasHoy.map((l) => <span key={l} className="linea-tile">{l}</span>) : rAnses.texto} />
+                  resumen={rAnses.sinDatos ? rAnses.texto : (cobranHoyTile(anses.entradas, hoyStr) ?? "Hoy no hay pagos")} />
               )}
               {s.trueque.activa && (
                 <Tile color="trueque" icono="trueque" titulo={s.trueque.titulo} onClick={() => abrir("trueque")}
@@ -1001,8 +1002,8 @@ export default function Inicio() {
                   resumen="Oficinas y turnos" />
               )}
               {s.quiniela.activa && (
-                <Tile color="quiniela" icono="bola" titulo={s.quiniela.titulo} estado="Ver" tono="neutro" onClick={() => abrir("quiniela")}
-                  resumen={ultimaQuiniela ?? "Resultados de hoy"} />
+                <Tile color="quiniela" icono="bola" titulo={"Quiniela\ny Quini 6"} estado="Ver" tono="neutro" onClick={() => abrir("quiniela")}
+                  resumen="" />
               )}
               {s.noticias.activa && (
                 <Tile color="noticias" icono="noticias" titulo={s.noticias.titulo} onClick={() => abrir("noticias")}

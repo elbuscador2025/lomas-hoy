@@ -511,3 +511,6 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .quin-modalidad h2 { margin:0 0 8px; font-size:20px; color:#8F1414; }
 .quin-bolitas { list-style:none; margin:0; padding:0; display:flex; gap:6px; flex-wrap:nowrap; justify-content:space-between; }
 .quin-bolitas li { flex:1; max-width:50px; aspect-ratio:1; border-radius:50%; background:#D62828; border:3px solid #8F1414; color:#fff; display:grid; place-items:center; font-weight:900; font-size:19px; }
+
+.tile.c-quiniela b { font-size:27px; line-height:1.1; white-space:pre-line; }
+.tile.c-quiniela .tile-emoji { font-size:68px; line-height:1; }
