@@ -381,11 +381,11 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 
 /* Botones que se sienten: sombra en reposo, se hunden al apretar */
 button, a, .tile { -webkit-tap-highlight-color: transparent; }
-.tile, .transporte, .noche-btn, .sos, .btn.llamar, .btn.grande-btn, .btn.whatsapp, .btn.whatsapp-chico, .btn.llamar-si, .tarjeta-publicar {
+.tile, .transporte, .noche-btn, .sos, .bn-circulo, .btn.llamar, .btn.grande-btn, .btn.whatsapp, .btn.whatsapp-chico, .btn.llamar-si, .tarjeta-publicar {
   box-shadow: 0 2px 6px rgba(16, 33, 63, .16), 0 1px 2px rgba(16, 33, 63, .10);
   transition: transform .09s ease, filter .09s ease, box-shadow .09s ease;
 }
-.tile:active, .noche-btn:active, .sos:active, .btn.llamar:active, .btn.grande-btn:active, .btn.whatsapp:active, .btn.whatsapp-chico:active, .btn.llamar-si:active, .tarjeta-publicar:active {
+.tile:active, .noche-btn:active, .sos:active, .boton-noticias:active .bn-circulo, .btn.llamar:active, .btn.grande-btn:active, .btn.whatsapp:active, .btn.whatsapp-chico:active, .btn.llamar-si:active, .tarjeta-publicar:active {
   transform: scale(.96); filter: brightness(.9); box-shadow: 0 1px 2px rgba(16, 33, 63, .18);
 }
 .transporte .renglon { transition: transform .09s ease, background-color .09s ease; border-radius:10px; }
@@ -514,3 +514,10 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 
 .tile.c-quiniela b { font-size:27px; line-height:1.1; white-space:pre-line; }
 .tile.c-quiniela .tile-emoji { font-size:68px; line-height:1; }
+
+/* "Noticias de Lomas": el botón principal, redondo y centrado, con un color que no usa ningún otro botón */
+.boton-noticias { display:flex; flex-direction:column; align-items:center; gap:10px; width:100%; margin:16px 0 14px; background:none; border:0; padding:6px 0; font:inherit; color:inherit; cursor:pointer; text-align:center; }
+.bn-circulo { width:min(164px, 46vw); aspect-ratio:1; border-radius:50%; display:grid; place-items:center; background:radial-gradient(circle at 35% 28%, #7E3FE0 0%, #4A1D96 62%, #35106F 100%); color:#fff; border:4px solid #2A0C5C; box-shadow:0 6px 14px rgba(42,12,92,.45), 0 2px 4px rgba(42,12,92,.35); transition:transform .09s ease, filter .09s ease, box-shadow .09s ease; }
+.boton-noticias:active .bn-circulo { transform:scale(.94); filter:brightness(.88); }
+.boton-noticias b { font-size:25px; line-height:1.15; font-weight:900; color:#2A0C5C; max-width:92%; }
+.bn-etiqueta { background:#4A1D96; color:#fff; border-radius:999px; padding:5px 16px; font-size:17px; font-weight:800; }

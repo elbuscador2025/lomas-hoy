@@ -959,6 +959,13 @@ export default function Inicio() {
                 ))}
               </section>
             )}
+            {s.noticias.activa && (
+              <button className="boton-noticias" onClick={() => abrir("noticias")}>
+                <span className="bn-circulo"><Icono nombre="noticias" tam={76} ancho={1.8} /></span>
+                <b>{s.noticias.titulo}</b>
+                {notasHoy > 0 && <span className="bn-etiqueta">{plural(notasHoy, "nueva", "nuevas")}</span>}
+              </button>
+            )}
             <div className="grilla">
               {s.luz.activa && (
                 <Tile color="luz" icono="luz" titulo="Luz" estado={luzEstado} tono={luzTono} onClick={() => abrir("luz")}
@@ -1003,11 +1010,6 @@ export default function Inicio() {
               {s.quiniela.activa && (
                 <Tile color="quiniela" icono="bola" titulo={"Quiniela\ny Quini 6"} estado="Ver" tono="neutro" onClick={() => abrir("quiniela")}
                   resumen="" />
-              )}
-              {s.noticias.activa && (
-                <Tile color="noticias" icono="noticias" titulo={s.noticias.titulo} onClick={() => abrir("noticias")}
-                  estado={notasHoy ? plural(notasHoy, "nueva", "nuevas") : "Ver"} tono={notasHoy ? "aviso" : "neutro"}
-                  resumen="Lo último de los diarios del barrio" />
               )}
               {s.coop.activa && (
                 <Tile color="coop" icono="coop" titulo={s.coop.titulo} estado="Ver" tono="neutro" onClick={() => { setCoopElegida(""); abrir("coop"); }}
