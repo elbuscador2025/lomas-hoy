@@ -49,8 +49,25 @@ export function leerProvincia(html) {
   return { fecha: fecha ? `${fecha[3]}-${fecha[2]}-${fecha[1]}` : null, sorteos };
 }
 
-// Arma los días: hoy y el último día anterior con sorteos (los domingos no hay). Provincia de hoy solo si las dos fuentes coinciden.
-export function componerDias({ lista, resultados, provinciaHoy, hoy }) {
+// Segunda fuente (un diario): La Nación publica los resultados con los datos de Data Factory. Una página por quiniela; trae los sorteos del último día.
+export const URL_NACION = { provincia: "https://www.lanacion.com.ar/loterias/quiniela-provincia/", nacional: "https://www.lanacion.com.ar/loterias/quiniela-nacional/" };
+export function leerQuinielaNacion(html) {
+  const t = textoPlano(html);
+  const sorteos = {};
+  let fecha = null;
+  for (const m of t.matchAll(/(Previa|Primera|Matutina|Vespertina|Nocturna) - \S+ (\d{2})\/(\d{2})\/(\d{4}) A la Cabeza: \d+ [^\d]*?((?:\d{2} \d{4} ){19}\d{2} \d{4})/g)) {
+    const id = idDe(m[1]);
+    const pares = m[5].trim().split(" ");
+    const nums = pares.filter((_, k) => k % 2 === 1); // 01 1688 02 0968 ... → los 20 números
+    if (id && nums.length === 20 && nums.every((v) => /^\d{4}$/.test(v))) { sorteos[id] = nums; fecha = `${m[4]}-${m[3]}-${m[2]}`; }
+  }
+  return { fecha, sorteos };
+}
+
+// Arma los días: hoy y el último día anterior con sorteos (los domingos no hay).
+// Un resultado de HOY solo se muestra si coincide con la segunda fuente (La Nación) y la Lotería de la Provincia no lo contradice; si no coincide o no se puede comprobar, queda como "todavía no salió".
+// El día anterior se muestra con la Lotería de la Ciudad, salvo que La Nación (si ese día está en su página) diga otra cosa.
+export function componerDias({ lista, resultados, externas = {}, provinciaOficial = null, hoy }) {
   const dias = [];
   const fechas = [...new Set(lista.map((x) => x.fecha))].sort();
   const ayer = fechas.filter((f) => f < hoy).pop();
@@ -60,12 +77,16 @@ export function componerDias({ lista, resultados, provinciaHoy, hoy }) {
       const l = lista.find((x) => x.fecha === fecha && x.id === s.id);
       const r = l && resultados[l.sorteo];
       if (!r) continue;
-      let provincia = r.provincia;
-      if (fecha === hoy) { // la segunda fuente: la propia Lotería de la Provincia
-        const p = provinciaHoy?.fecha === hoy ? provinciaHoy.sorteos[s.id] : null;
-        if (!p || !provincia || p.join() !== provincia.join()) provincia = null;
-      }
-      sorteos[s.id] = { hora: l.hora, nacional: r.nacional, provincia };
+      const validar = (jur) => {
+        const propio = r[jur];
+        if (!propio) return null;
+        const ext = externas[jur]?.fecha === fecha ? externas[jur].sorteos[s.id] : undefined; // undefined = esa fuente todavía no lo tiene
+        if (fecha === hoy && !ext) return null;
+        if (ext && ext.join() !== propio.join()) return null;
+        if (jur === "provincia" && fecha === hoy) { const p = provinciaOficial?.fecha === hoy ? provinciaOficial.sorteos[s.id] : null; if (p && p.join() !== propio.join()) return null; }
+        return propio;
+      };
+      sorteos[s.id] = { hora: l.hora, nacional: validar("nacional"), provincia: validar("provincia") };
     }
     dias.push({ fecha, sorteos });
   }

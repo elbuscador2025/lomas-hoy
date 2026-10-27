@@ -4,7 +4,7 @@
 import { config as cfg } from "../lomas.config.mjs";
 import { leerTren, leerLuz, leerRss, buscarParos, buscarAgua, leerProgramados, leerSubte, armarNoticias } from "./fuentes.mjs";
 import { leerAlertas } from "./alertas.mjs";
-import { leerListaCiudad, leerResultadoCiudad, leerProvincia, componerDias, leerQuiniCompleto, URL_CIUDAD, URL_CIUDAD_DATOS, URL_PROVINCIA, leerQuiniNacion, URL_QUINI_NACION } from "./quiniela.mjs";
+import { leerListaCiudad, leerResultadoCiudad, leerProvincia, componerDias, leerQuiniCompleto, URL_CIUDAD, URL_CIUDAD_DATOS, URL_PROVINCIA, leerQuiniNacion, URL_QUINI_NACION, leerQuinielaNacion, URL_NACION } from "./quiniela.mjs";
 import { leerPronostico, urlOpenMeteo, leerPron5d, leerZipSmn, URL_SMN_5DIAS } from "./clima.mjs";
 
 const TIEMPO = 20000; // ninguna fuente puede demorar más que esto
@@ -72,18 +72,20 @@ export async function correrTareas({ guardar, env = process.env, log = console }
       const d = await leerLocales();
       return { notas: armarNoticias([d.notas], cfg.noticias.maximo), diariosLeidos: d.diariosLeidos, diariosSinLeer: d.diariosSinLeer };
     },
-    // Quiniela (Provincia y Nacional): hoy y el último día con sorteos. Provincia de hoy solo si coinciden la Lotería de la Ciudad y la de la Provincia.
+    // Quiniela (Provincia y Nacional): hoy y el último día con sorteos. Los de hoy solo si coinciden la Lotería de la Ciudad y un diario (La Nación); si no, "todavía no salió".
     quiniela: async () => {
       const lista = leerListaCiudad(await traer(URL_CIUDAD, "text"));
       if (!lista.length) throw new Error("No se pudo leer la lista de sorteos de la Lotería de la Ciudad");
       const hoy = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10); // fecha de hoy en Argentina
       const ayer = [...new Set(lista.map((x) => x.fecha))].sort().filter((f) => f < hoy).pop();
-      const [leidos, prov] = await Promise.all([
+      const [leidos, prov, nacP, nacN] = await Promise.all([
         Promise.allSettled(lista.filter((x) => x.fecha === hoy || x.fecha === ayer).map(async (x) => [x.sorteo, leerResultadoCiudad(await traer(URL_CIUDAD_DATOS(x.sorteo), "text"))])),
-        traer(URL_PROVINCIA, "text").then(leerProvincia).catch(() => null), // si no responde, Provincia de hoy queda en "todavía no salió"
+        traer(URL_PROVINCIA, "text").then(leerProvincia).catch(() => null), // la Lotería de la Provincia: si publicó el resultado, no puede contradecir a la Ciudad
+        traer(URL_NACION.provincia, "text").then(leerQuinielaNacion).catch(() => null), // segunda fuente (diario)
+        traer(URL_NACION.nacional, "text").then(leerQuinielaNacion).catch(() => null),
       ]);
       const resultados = Object.fromEntries(leidos.flatMap((l) => (l.status === "fulfilled" ? [l.value] : [])));
-      return { dias: componerDias({ lista, resultados, provinciaHoy: prov, hoy }) };
+      return { dias: componerDias({ lista, resultados, provinciaOficial: prov, externas: { provincia: nacP, nacional: nacN }, hoy }) };
     },
     // Quini 6: el sitio oficial de Santa Fe (último sorteo y anterior); si no responde desde el servidor, La Nación (solo el último: el anterior lo guarda el sitio al cambiar el sorteo)
     quini6: async () => {

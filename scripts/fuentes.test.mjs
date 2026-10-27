@@ -148,7 +148,7 @@ test("agua: barrios de Lomas y horario que nombra la nota completa", () => {
   assert.deepEqual(barriosEnTexto("Corte en Lanús y Esteban Echeverría", cfgAgua), []);
 });
 
-import { leerListaCiudad, leerResultadoCiudad, leerProvincia, componerDias, leerQuini } from "./quiniela.mjs";
+import { leerListaCiudad, leerResultadoCiudad, leerProvincia, leerQuinielaNacion, componerDias, leerQuini } from "./quiniela.mjs";
 test("quiniela: lee la Ciudad y la Provincia y muestra Provincia de hoy solo si coinciden; los días sin sorteo no cuentan", () => {
   const lista = leerListaCiudad(`<li class='custom-option' data-value='5'>27/10/2026 - 10:15 - Sorteo Nº 5 - PREVIA</li><li class='custom-option' data-value='4'>26/10/2026 - 21:00 - Sorteo Nº 4 - NOCTURNA</li><li class='custom-option' data-value='3'>24/10/2026 - 21:00 - Sorteo Nº 3 - NOCTURNA</li>`);
   assert.deepEqual(lista.map((x) => [x.sorteo, x.fecha, x.hora, x.id]), [[5, "2026-10-27", "10:15", "PREV"], [4, "2026-10-26", "21:00", "NOCT"], [3, "2026-10-24", "21:00", "NOCT"]]);
@@ -158,17 +158,24 @@ test("quiniela: lee la Ciudad y la Provincia y muestra Provincia de hoy solo si 
   assert.equal(resultados[5].provincia[0], "1100");
   const spans = (base) => nums(base).map((n) => `<div><span>${n.pos}</span><span>${n.val}</span></div>`).join("");
   const html = (base) => `<div class="sorteo"><h3>Quiniela La Previa<i class="x"></i></h3><div class="datosSorteo"><p class="fechaSorteo">27/10/2026</p><div class="bolillas">${spans(base)}</div></div></div><div class="contenedorExtractos"></div>`;
-  const prov = leerProvincia(html(1100));
-  assert.equal(prov.fecha, "2026-10-27");
+  const nacion = (base, fecha = "27/10/2026") => `<div>Previa - Martes ${fecha} A la Cabeza: 99 Hermanos ${nums(base).map((n) => n.pos + " " + n.val).join(" ")} Información provista por Data Factory</div>`;
   const hoy = "2026-10-27";
-  let dias = componerDias({ lista, resultados, provinciaHoy: prov, hoy });
+  const ext = (b1, b2) => ({ provincia: leerQuinielaNacion(nacion(b1)), nacional: leerQuinielaNacion(nacion(b2)) });
+  assert.equal(ext(1100, 1000).provincia.fecha, "2026-10-27");
+  let dias = componerDias({ lista, resultados, externas: ext(1100, 1000), hoy });
   assert.deepEqual(dias.map((d) => d.fecha), ["2026-10-26", "2026-10-27"]); // ayer = el último día con sorteos antes de hoy
   assert.equal(dias[1].sorteos.PREV.provincia[0], "1100");
   assert.equal(dias[1].sorteos.PREV.nacional[0], "1000");
-  dias = componerDias({ lista, resultados, provinciaHoy: leerProvincia(html(5555)), hoy }); // no coinciden: no se muestra
+  assert.equal(dias[0].sorteos.NOCT.provincia[0], "2100"); // ayer: con la Ciudad, sin que la segunda fuente lo tenga
+  dias = componerDias({ lista, resultados, externas: ext(5555, 1000), hoy }); // Provincia no coincide: no se muestra; Nacional sí
   assert.equal(dias[1].sorteos.PREV.provincia, null);
-  dias = componerDias({ lista, resultados, provinciaHoy: leerProvincia(html(1100).replace(/<span>11\d\d<\/span>/g, "<span>----</span>")), hoy }); // la Provincia todavía no publicó
+  assert.equal(dias[1].sorteos.PREV.nacional[0], "1000");
+  dias = componerDias({ lista, resultados, externas: {}, hoy }); // sin segunda fuente: lo de hoy no se muestra
+  assert.deepEqual([dias[1].sorteos.PREV.provincia, dias[1].sorteos.PREV.nacional], [null, null]);
+  dias = componerDias({ lista, resultados, externas: ext(1100, 1000), provinciaOficial: leerProvincia(html(5555)), hoy }); // la Lotería de la Provincia contradice
   assert.equal(dias[1].sorteos.PREV.provincia, null);
+  dias = componerDias({ lista, resultados, externas: ext(1100, 1000), provinciaOficial: leerProvincia(html(1100).replace(/<span>11\d\d<\/span>/g, "<span>----</span>")), hoy }); // la Provincia todavía no publicó: no contradice
+  assert.equal(dias[1].sorteos.PREV.provincia[0], "1100");
 });
 test("quini 6: lee las 4 modalidades con sus 6 números y la fecha del sorteo", () => {
   const html = "<div>Tradicional Primer Sorteo 00 02 03 08 19 39 Premio</div><div>Tradicional La Segunda del Quini 08 25 30 36 43 45 Premio</div><div>Revancha 05 22 23 29 41 43 Premio</div><div>Siempre Sale 00 13 22 24 40 43 Premio</div>";
