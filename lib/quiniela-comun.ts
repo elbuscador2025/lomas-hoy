@@ -4,7 +4,7 @@ import { SORTEOS } from "@/scripts/quiniela.mjs";
 export type SorteoQ = { hora: string; nacional: string[] | null; provincia: string[] | null };
 export type DiaQ = { fecha: string; sorteos: Record<string, SorteoQ> };
 export type Quiniela = { dias: DiaQ[] };
-export type QuiniSorteo = { sorteo: number; fecha: string; modalidades: { nombre: string; numeros: string[] }[] };
+export type QuiniSorteo = { sorteo: number | null; fecha: string; modalidades: { nombre: string; numeros: string[] }[] };
 export type Quini6 = { sorteos: QuiniSorteo[] };
 export type Jurisdiccion = "provincia" | "nacional";
 

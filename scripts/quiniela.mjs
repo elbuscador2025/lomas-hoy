@@ -120,3 +120,18 @@ export async function leerQuiniCompleto(traerPagina = fetch) {
   } catch {}
   return [ultimo, anterior].filter(Boolean);
 }
+
+// ---- Quini 6 desde La Nación (Loterías, datos de Data Factory): se usa cuando el sitio de Santa Fe no responde desde el servidor ----
+export const URL_QUINI_NACION = "https://www.lanacion.com.ar/loterias/quini-6/";
+const NOMBRES_NACION = [["Tradicional", "Tradicional"], ["La Segunda", "Segunda vuelta"], ["Revancha", "Revancha"], ["Siempre Sale", "Siempre sale"]];
+export function leerQuiniNacion(html) {
+  const t = textoPlano(html);
+  const sec = t.slice(t.indexOf("Últimos resultados en Quini 6"));
+  const modalidades = [], fechas = [];
+  for (const [nombre, etiqueta] of NOMBRES_NACION) {
+    const m = sec.match(new RegExp(String.raw`${etiqueta} \S+ (\d{2})/(\d{2})/(\d{4})((?: \d{2}){6})(?! \d)`));
+    if (m) { modalidades.push({ nombre, numeros: m[4].trim().split(" ") }); fechas.push(`${m[3]}-${m[2]}-${m[1]}`); }
+  }
+  if (modalidades.length < 4 || new Set(fechas).size !== 1) return null; // si falta una modalidad o no son del mismo día, no se muestra
+  return { sorteo: null, fecha: fechas[0], modalidades };
+}

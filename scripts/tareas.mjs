@@ -4,7 +4,7 @@
 import { config as cfg } from "../lomas.config.mjs";
 import { leerTren, leerLuz, leerRss, buscarParos, buscarAgua, leerProgramados, leerSubte, armarNoticias } from "./fuentes.mjs";
 import { leerAlertas } from "./alertas.mjs";
-import { leerListaCiudad, leerResultadoCiudad, leerProvincia, componerDias, leerQuiniCompleto, URL_CIUDAD, URL_CIUDAD_DATOS, URL_PROVINCIA } from "./quiniela.mjs";
+import { leerListaCiudad, leerResultadoCiudad, leerProvincia, componerDias, leerQuiniCompleto, URL_CIUDAD, URL_CIUDAD_DATOS, URL_PROVINCIA, leerQuiniNacion, URL_QUINI_NACION } from "./quiniela.mjs";
 import { leerPronostico, urlOpenMeteo, leerPron5d, leerZipSmn, URL_SMN_5DIAS } from "./clima.mjs";
 
 const TIEMPO = 20000; // ninguna fuente puede demorar más que esto
@@ -85,8 +85,14 @@ export async function correrTareas({ guardar, env = process.env, log = console }
       const resultados = Object.fromEntries(leidos.flatMap((l) => (l.status === "fulfilled" ? [l.value] : [])));
       return { dias: componerDias({ lista, resultados, provinciaHoy: prov, hoy }) };
     },
-    // Quini 6 (Lotería de Santa Fe): el último sorteo y el anterior, nada más viejo
-    quini6: async () => ({ sorteos: await leerQuiniCompleto() }),
+    // Quini 6: el sitio oficial de Santa Fe (último sorteo y anterior); si no responde desde el servidor, La Nación (solo el último: el anterior lo guarda el sitio al cambiar el sorteo)
+    quini6: async () => {
+      const oficial = await Promise.race([leerQuiniCompleto(), new Promise((_, no) => setTimeout(() => no(new Error("tiempo")), 5000))]).catch(() => null);
+      if (oficial?.length) return { sorteos: oficial, fuente: "Lotería de Santa Fe" };
+      const q = leerQuiniNacion(await traer(URL_QUINI_NACION, "text"));
+      if (!q) throw new Error("No se pudo leer el Quini 6");
+      return { sorteos: [q], fuente: "La Nación (datos de Data Factory)" };
+    },
     colectivos: async () => {
       const d = await leerDiarios();
       return { paros: buscarParos(d.notas, cfg), diariosLeidos: d.diariosLeidos, diariosSinLeer: d.diariosSinLeer };

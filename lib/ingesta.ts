@@ -8,6 +8,7 @@ import { evaluarResumen } from "@/lib/resumen";
 import { evaluarTren, evaluarProgramados, evaluarColectivos, evaluarAgua, evaluarSubte, evaluarTormenta, evaluarAlertasSmn } from "@/lib/eventos";
 import { redis } from "@/lib/servidor";
 import { enriquecerAgua } from "@/lib/agua";
+import { rotarQuini } from "@/lib/quini";
 
 export const CLAVES_VALIDAS = ["tren", "luz", "colectivos", "programados", "agua", "pronostico", "mascotas", "subte", "alertas", "noticias", "quiniela", "quini6"];
 
@@ -16,6 +17,7 @@ export async function guardarDato(clave: string, contenido: any, error?: unknown
   const ahora = new Date().toISOString();
   const llave = `datos:${clave}`;
   if (contenido) {
+    if (clave === "quini6") contenido = await rotarQuini(contenido).catch(() => contenido); // último sorteo y el anterior
     if (clave === "agua") contenido = await enriquecerAgua(contenido).catch(() => contenido); // lee el texto completo de las notas nuevas (barrios y horario)
     await redis([["SET", llave, JSON.stringify({ clave, contenido, ok_en: ahora, intento_en: ahora, error: null })]]);
     // Los avisos salen después de responder: si fallan, el dato ya quedó guardado.

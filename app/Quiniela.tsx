@@ -59,7 +59,7 @@ function Quini({ quini }: { quini: Quini6 | null | undefined }) {
   if (!s) return <p className="vacio">Sin datos por ahora.</p>;
   return (
     <>
-      <p className="quin-titulo">Quini 6 · {fechaLinda(s.fecha)} · Sorteo {s.sorteo}</p>
+      <p className="quin-titulo">Quini 6 · {fechaLinda(s.fecha)}{s.sorteo ? ` · Sorteo ${s.sorteo}` : ""}</p>
       {s.modalidades.map((m) => (
         <section key={m.nombre} className="quin-modalidad" aria-label={m.nombre}>
           <h2>{m.nombre}</h2>
