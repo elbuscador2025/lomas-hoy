@@ -4,7 +4,7 @@
 import { config as cfg } from "../lomas.config.mjs";
 import { leerTren, leerLuz, leerRss, buscarParos, buscarAgua, leerProgramados, leerSubte, armarNoticias } from "./fuentes.mjs";
 import { leerAlertas } from "./alertas.mjs";
-import { leerListaCiudad, leerResultadoCiudad, leerProvincia, componerDias, leerQuiniCompleto, URL_CIUDAD, URL_CIUDAD_DATOS, URL_PROVINCIA, leerQuiniNacion, URL_QUINI_NACION, leerQuinielaNacion, URL_NACION, QUINIELAS } from "./quiniela.mjs";
+import { leerListaCiudad, leerResultadoCiudad, leerProvincia, componerDias, leerQuiniCompleto, URL_CIUDAD, URL_CIUDAD_DATOS, URL_PROVINCIA, leerQuiniNacion, URL_QUINI_NACION, leerQuinielaNacion, URL_NACION, QUINIELAS, controlarYComponer, controlarQuini } from "./quiniela.mjs";
 import { leerPronostico, urlOpenMeteo, leerPron5d, leerZipSmn, URL_SMN_5DIAS } from "./clima.mjs";
 
 const TIEMPO = 20000; // ninguna fuente puede demorar más que esto
@@ -85,17 +85,25 @@ export async function correrTareas({ guardar, env = process.env, log = console }
       const ayer = [...new Set(lista.map((x) => x.fecha))].sort().filter((f) => f < hoy).pop();
       const leidos = await Promise.allSettled(lista.filter((x) => x.fecha === hoy || x.fecha === ayer).map(async (x) => [x.sorteo, leerResultadoCiudad(await traer(URL_CIUDAD_DATOS(x.sorteo), "text"))]));
       const resultados = Object.fromEntries(leidos.flatMap((l) => (l.status === "fulfilled" ? [l.value] : [])));
-      const dias = componerDias({ lista, resultados, provinciaOficial: prov, externas: Object.fromEntries(respaldo), hoy });
-      if (!dias.some((d) => Object.keys(d.sorteos).length)) throw new Error("No se pudo leer ninguna fuente de la quiniela");
-      return { dias };
+      const { dias, controles, diferencias } = controlarYComponer({ lista, resultados, provinciaOficial: prov, externas: Object.fromEntries(respaldo), hoy });
+      if (!dias.some((d) => Object.keys(d.sorteos).length) && !controles.length) throw new Error("No se pudo leer ninguna fuente de la quiniela");
+      return { dias, controles, diferencias }; // controles: lo que no pasó los controles (no se muestra); diferencias: lo oficial que no coincide con La Nación
     },
     // Quini 6: el sitio oficial de Santa Fe (último sorteo y anterior); si no responde desde el servidor, La Nación (solo el último: el anterior lo guarda el sitio al cambiar el sorteo)
     quini6: async () => {
+      const hoy = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
       const oficial = await Promise.race([leerQuiniCompleto(), new Promise((_, no) => setTimeout(() => no(new Error("tiempo")), 5000))]).catch(() => null);
-      if (oficial?.length) return { sorteos: oficial, fuente: "Lotería de Santa Fe" };
-      const q = leerQuiniNacion(await traer(URL_QUINI_NACION, "text"));
-      if (!q) throw new Error("No se pudo leer el Quini 6");
-      return { sorteos: [q], fuente: "La Nación (datos de Data Factory)" };
+      let leidos, fuente;
+      if (oficial?.length) { leidos = oficial; fuente = "Lotería de Santa Fe"; }
+      else {
+        const q = leerQuiniNacion(await traer(URL_QUINI_NACION, "text"));
+        if (!q) throw new Error("No se pudo leer el Quini 6");
+        leidos = [q]; fuente = "La Nación (datos de Data Factory)";
+      }
+      // Controles: lo que no cierra no se muestra
+      const controles = [], sorteos = [];
+      leidos.forEach((q, k) => { const r = controlarQuini(q, hoy, leidos[k + 1] ?? null); if (r.ok) sorteos.push(q); else controles.push({ quiniela: "Quini 6", sorteo: q.fecha, fecha: q.fecha, motivo: r.motivo }); });
+      return { sorteos, fuente, controles };
     },
     colectivos: async () => {
       const d = await leerDiarios();

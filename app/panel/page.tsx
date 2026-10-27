@@ -24,6 +24,7 @@ type Datos = {
   resumen: { visitantes_totales: number; volvieron_otro_dia: number } | null;
   reportes: { creado_en: string; seccion: string; mensaje: string }[];
   corridas?: { t: string; o: string }[];
+  quiniela?: { ultimo: string | null; problemas: string[] } | null;
 };
 
 const vacio: Lugar = { id: "", categoria: "guardias", nombre: "", direccion: "", localidad: "", telefonos: [], horario: "", fuente: "", fuenteUrl: "" };
@@ -127,6 +128,13 @@ export default function Panel() {
               <><br /><small>Últimas corridas: {datos.corridas.map((x) => `${new Date(x.t).toLocaleTimeString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", hour: "2-digit", minute: "2-digit", hour12: false })} (${x.o === "despertador" ? "despertador" : "GitHub"})`).join(" · ")}</small></>
             )}
           </p>
+          {datos.quiniela && (
+            <p className={`normal ${datos.quiniela.problemas.length ? "error" : ""}`}>
+              {datos.quiniela.problemas.length
+                ? <><b>Quiniela:</b> no coincidieron o no pasaron el control hoy:<br /><small>{datos.quiniela.problemas.join(" · ")}</small></>
+                : <><b>Quiniela:</b> {datos.quiniela.ultimo ? `último control OK a las ${new Date(datos.quiniela.ultimo).toLocaleTimeString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", hour: "2-digit", minute: "2-digit", hour12: false })}` : "todavía sin controles"}</>}
+            </p>
+          )}
           <p>
             Visitantes distintos: <b>{datos.resumen?.visitantes_totales ?? 0}</b> · Volvieron otro día:{" "}
             <b>{datos.resumen?.volvieron_otro_dia ?? 0}</b>

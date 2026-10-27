@@ -1,5 +1,6 @@
 import { redis, hoyArgentina } from "@/lib/servidor";
 import { esAdmin } from "@/lib/cuentas";
+import { estadoControles } from "@/lib/controles";
 
 export async function POST(req: Request) {
   if (!(await esAdmin(req))) return Response.json({ ok: false }, { status: 401 });
@@ -18,5 +19,6 @@ export async function POST(req: Request) {
     resumen: { visitantes_totales: r[n], volvieron_otro_dia: r[n + 1] },
     reportes: (r[n + 2] as string[]).map((x) => JSON.parse(x)),
     corridas: (r[n + 3] as string[]).map((x) => JSON.parse(x)), // las últimas actualizaciones de datos: { t, o }
+    quiniela: await estadoControles().catch(() => null), // último control de la Quiniela y lo que no coincidió hoy
   });
 }

@@ -9,6 +9,7 @@ import { evaluarTren, evaluarProgramados, evaluarColectivos, evaluarAgua, evalua
 import { redis } from "@/lib/servidor";
 import { enriquecerAgua } from "@/lib/agua";
 import { rotarQuini } from "@/lib/quini";
+import { registrarControles } from "@/lib/controles";
 
 export const CLAVES_VALIDAS = ["tren", "luz", "colectivos", "programados", "agua", "pronostico", "mascotas", "subte", "alertas", "noticias", "quiniela", "quini6"];
 
@@ -21,6 +22,7 @@ export async function guardarDato(clave: string, contenido: any, error?: unknown
     if (clave === "agua") contenido = await enriquecerAgua(contenido).catch(() => contenido); // lee el texto completo de las notas nuevas (barrios y horario)
     await redis([["SET", llave, JSON.stringify({ clave, contenido, ok_en: ahora, intento_en: ahora, error: null })]]);
     // Los avisos salen después de responder: si fallan, el dato ya quedó guardado.
+    if (clave === "quiniela" || clave === "quini6") after(() => registrarControles(contenido.controles ?? [], contenido.diferencias ?? []).catch((e) => console.error("controles", e))); // avisos de administrador y estado del panel
     if (clave === "tren") after(() => evaluarTren(contenido).catch((e) => console.error("push tren", e)));
     if (clave === "programados") after(() => evaluarProgramados(contenido).catch((e) => console.error("push programados", e)));
     if (clave === "mascotas") after(() => Promise.all([mantener(), mantenerTrueque(), mantenerTrabajo(), mantenerPasa(), evaluarResumen()]).catch((e) => console.error("mascotas", e)));

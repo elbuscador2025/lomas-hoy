@@ -50,7 +50,9 @@ export function leerResultadoCiudad(js) {
   const j = JSON.parse(js.match(/=\s*(\[[\s\S]*\])\s*;/)[1]); // el archivo trae después otra línea (el pozo): se toma solo la lista de resultados
   const x = j[0];
   const jur = x?.jurisdicciones ?? {};
-  return { sorteo: x?.sorteo, ...Object.fromEntries(QUINIELAS.map((q) => [q.id, veinte(jur[q.cod]?.numeros, q.cifras)])) };
+  const f = String(x?.fecha ?? "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  const invalidas = QUINIELAS.filter((q) => jur[q.cod]?.numeros?.length && !veinte(jur[q.cod].numeros, q.cifras)).map((q) => q.id); // vinieron, pero sin 20 números de 4 cifras (Montevideo, 3)
+  return { sorteo: x?.sorteo, fecha: f ? `${f[3]}-${f[2]}-${f[1]}` : null, invalidas, ...Object.fromEntries(QUINIELAS.map((q) => [q.id, veinte(jur[q.cod]?.numeros, q.cifras)])) };
 }
 
 // Los resultados del día que publica la Lotería de la Provincia ("----" = todavía no salió)
@@ -88,10 +90,11 @@ export function leerQuinielaNacion(html, cifras = 4) {
 //  · Provincia: la Lotería de la Provincia; si todavía no lo cargó, la Lotería de la Ciudad (que publica el extracto de todas).
 //  · Las demás quinielas: el extracto de la Lotería de la Ciudad.
 //  · Solo si el sitio oficial no responde o no tiene ese sorteo, se usa el diario (La Nación) como respaldo.
-export function componerDias({ lista, resultados, externas = {}, provinciaOficial = null, hoy }) {
-  const dias = [];
+export function controlarYComponer({ lista, resultados, externas = {}, provinciaOficial = null, hoy }) {
+  const dias = [], controles = [], diferencias = [];
   const fechas = [...new Set([...lista.map((x) => x.fecha), ...Object.values(externas).map((e) => e?.fecha).filter(Boolean)])].sort();
   const ayer = fechas.filter((f) => f < hoy).pop();
+  const anterior = {}; // el último sorteo mostrado de cada quiniela (un sorteo no puede ser igual al anterior)
   for (const fecha of [ayer, hoy].filter(Boolean)) {
     const sorteos = {};
     for (const s of SORTEOS) {
@@ -99,13 +102,25 @@ export function componerDias({ lista, resultados, externas = {}, provinciaOficia
       const r = l && resultados[l.sorteo];
       const diario = (q) => (externas[q]?.fecha === fecha ? externas[q].sorteos[s.id] ?? null : null);
       const oficialProvincia = fecha === hoy && provinciaOficial?.fecha === hoy ? provinciaOficial.sorteos[s.id] ?? null : null;
-      const valores = Object.fromEntries(QUINIELAS.map((q) => [q.id, (q.id === "provincia" ? oficialProvincia : null) ?? r?.[q.id] ?? diario(q.id) ?? null]));
+      const valores = {};
+      for (const q of QUINIELAS) {
+        const falla = (motivo) => { controles.push({ quiniela: q.nombre, sorteo: s.nombre, fecha, motivo }); valores[q.id] = null; };
+        if (r?.invalidas?.includes(q.id)) { falla("no tiene 20 números de " + q.cifras + " cifras"); continue; }
+        const oficial = (q.id === "provincia" ? oficialProvincia : null) ?? r?.[q.id] ?? null;
+        if (oficial && r && r.fecha !== fecha) { falla("la fecha del sorteo no es la del día"); continue; }
+        const valor = oficial ?? diario(q.id);
+        if (valor && anterior[q.id] && anterior[q.id].join() === valor.join()) { falla("es igual al sorteo anterior"); continue; }
+        if (oficial && diario(q.id) && diario(q.id).join() !== oficial.join()) diferencias.push({ quiniela: q.nombre, sorteo: s.nombre, fecha }); // La Nación no coincide: se muestra el oficial
+        valores[q.id] = valor ?? null;
+        if (valor) anterior[q.id] = valor;
+      }
       if (Object.values(valores).some(Boolean)) sorteos[s.id] = { hora: l?.hora ?? s.hora, ...valores };
     }
     dias.push({ fecha, sorteos });
   }
-  return dias;
+  return { dias, controles, diferencias };
 }
+export const componerDias = (args) => controlarYComponer(args).dias;
 
 // ---- Quini 6 (Lotería de Santa Fe) ----
 const MESES = { enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6, julio: 7, agosto: 8, septiembre: 9, setiembre: 9, octubre: 10, noviembre: 11, diciembre: 12 };
@@ -169,4 +184,19 @@ export function leerQuiniNacion(html) {
   }
   if (modalidades.length < 4 || new Set(fechas).size !== 1) return null; // si falta una modalidad o no son del mismo día, no se muestra
   return { sorteo: null, fecha: fechas[0], modalidades };
+}
+
+// Controles del Quini 6: cada modalidad con 6 números distintos entre 00 y 45; la fecha no puede ser futura ni repetir la del sorteo anterior.
+/** @param {any} q @param {string} hoy @param {any} [anterior] @returns {{ ok: boolean, motivo: string }} */
+export function controlarQuini(q, hoy, anterior = null) {
+  const mal = (/** @type {string} */ motivo) => ({ ok: false, motivo });
+  for (const m of q.modalidades) {
+    if (m.numeros.length !== 6) return mal(m.nombre + ": no tiene 6 números");
+    if (!m.numeros.every((n) => /^\d{2}$/.test(n) && Number(n) <= 45)) return mal(m.nombre + ": hay números fuera de 00 a 45");
+    if (new Set(m.numeros).size !== 6) return mal(m.nombre + ": hay números repetidos");
+  }
+  if (q.fecha > hoy) return mal("la fecha del sorteo es futura");
+  if (anterior && anterior.fecha !== q.fecha && JSON.stringify(anterior.modalidades) === JSON.stringify(q.modalidades)) return mal("es igual al sorteo anterior");
+  if (anterior && anterior.fecha === q.fecha && anterior.sorteo && q.sorteo && anterior.sorteo !== q.sorteo) return mal("dos sorteos con la misma fecha");
+  return { ok: true, motivo: "" };
 }
