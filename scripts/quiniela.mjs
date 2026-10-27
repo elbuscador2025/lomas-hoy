@@ -65,28 +65,24 @@ export function leerQuinielaNacion(html) {
 }
 
 // Arma los días: hoy y el último día anterior con sorteos (los domingos no hay).
-// Un resultado de HOY solo se muestra si coincide con la segunda fuente (La Nación) y la Lotería de la Provincia no lo contradice; si no coincide o no se puede comprobar, queda como "todavía no salió".
-// El día anterior se muestra con la Lotería de la Ciudad, salvo que La Nación (si ese día está en su página) diga otra cosa.
+// El resultado sale apenas lo publica la fuente oficial, sin esperar a ninguna otra:
+//  · Provincia: la Lotería de la Provincia; si todavía no lo cargó, la Lotería de la Ciudad (que publica también el extracto de la Provincia).
+//  · Nacional: la Lotería de la Ciudad.
+//  · Solo si el sitio oficial no responde o no tiene ese sorteo, se usa el diario (La Nación) como respaldo.
 export function componerDias({ lista, resultados, externas = {}, provinciaOficial = null, hoy }) {
   const dias = [];
-  const fechas = [...new Set(lista.map((x) => x.fecha))].sort();
+  const fechas = [...new Set([...lista.map((x) => x.fecha), ...Object.values(externas).map((e) => e?.fecha).filter(Boolean)])].sort();
   const ayer = fechas.filter((f) => f < hoy).pop();
   for (const fecha of [ayer, hoy].filter(Boolean)) {
     const sorteos = {};
     for (const s of SORTEOS) {
       const l = lista.find((x) => x.fecha === fecha && x.id === s.id);
       const r = l && resultados[l.sorteo];
-      if (!r) continue;
-      const validar = (jur) => {
-        const propio = r[jur];
-        if (!propio) return null;
-        const ext = externas[jur]?.fecha === fecha ? externas[jur].sorteos[s.id] : undefined; // undefined = esa fuente todavía no lo tiene
-        if (fecha === hoy && !ext) return null;
-        if (ext && ext.join() !== propio.join()) return null;
-        if (jur === "provincia" && fecha === hoy) { const p = provinciaOficial?.fecha === hoy ? provinciaOficial.sorteos[s.id] : null; if (p && p.join() !== propio.join()) return null; }
-        return propio;
-      };
-      sorteos[s.id] = { hora: l.hora, nacional: validar("nacional"), provincia: validar("provincia") };
+      const diario = (jur) => (externas[jur]?.fecha === fecha ? externas[jur].sorteos[s.id] ?? null : null);
+      const oficialProvincia = fecha === hoy && provinciaOficial?.fecha === hoy ? provinciaOficial.sorteos[s.id] ?? null : null;
+      const nacional = r?.nacional ?? diario("nacional");
+      const provincia = oficialProvincia ?? r?.provincia ?? diario("provincia");
+      if (nacional || provincia) sorteos[s.id] = { hora: l?.hora ?? s.hora, nacional: nacional ?? null, provincia: provincia ?? null };
     }
     dias.push({ fecha, sorteos });
   }

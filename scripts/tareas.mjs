@@ -72,20 +72,23 @@ export async function correrTareas({ guardar, env = process.env, log = console }
       const d = await leerLocales();
       return { notas: armarNoticias([d.notas], cfg.noticias.maximo), diariosLeidos: d.diariosLeidos, diariosSinLeer: d.diariosSinLeer };
     },
-    // Quiniela (Provincia y Nacional): hoy y el último día con sorteos. Los de hoy solo si coinciden la Lotería de la Ciudad y un diario (La Nación); si no, "todavía no salió".
+    // Quiniela (Provincia y Nacional): hoy y el último día con sorteos, de la fuente oficial apenas lo publica; el diario (La Nación) solo respalda.
     quiniela: async () => {
-      const lista = leerListaCiudad(await traer(URL_CIUDAD, "text"));
-      if (!lista.length) throw new Error("No se pudo leer la lista de sorteos de la Lotería de la Ciudad");
       const hoy = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10); // fecha de hoy en Argentina
-      const ayer = [...new Set(lista.map((x) => x.fecha))].sort().filter((f) => f < hoy).pop();
-      const [leidos, prov, nacP, nacN] = await Promise.all([
-        Promise.allSettled(lista.filter((x) => x.fecha === hoy || x.fecha === ayer).map(async (x) => [x.sorteo, leerResultadoCiudad(await traer(URL_CIUDAD_DATOS(x.sorteo), "text"))])),
-        traer(URL_PROVINCIA, "text").then(leerProvincia).catch(() => null), // la Lotería de la Provincia: si publicó el resultado, no puede contradecir a la Ciudad
-        traer(URL_NACION.provincia, "text").then(leerQuinielaNacion).catch(() => null), // segunda fuente (diario)
+      // Lo oficial se lee primero y manda; el diario (La Nación) solo respalda lo que el sitio oficial no tiene o si no responde
+      const [listaLeida, prov, nacP, nacN] = await Promise.all([
+        traer(URL_CIUDAD, "text").then(leerListaCiudad).catch(() => []),
+        traer(URL_PROVINCIA, "text").then(leerProvincia).catch(() => null),
+        traer(URL_NACION.provincia, "text").then(leerQuinielaNacion).catch(() => null),
         traer(URL_NACION.nacional, "text").then(leerQuinielaNacion).catch(() => null),
       ]);
+      const lista = listaLeida;
+      const ayer = [...new Set(lista.map((x) => x.fecha))].sort().filter((f) => f < hoy).pop();
+      const leidos = await Promise.allSettled(lista.filter((x) => x.fecha === hoy || x.fecha === ayer).map(async (x) => [x.sorteo, leerResultadoCiudad(await traer(URL_CIUDAD_DATOS(x.sorteo), "text"))]));
       const resultados = Object.fromEntries(leidos.flatMap((l) => (l.status === "fulfilled" ? [l.value] : [])));
-      return { dias: componerDias({ lista, resultados, provinciaOficial: prov, externas: { provincia: nacP, nacional: nacN }, hoy }) };
+      const dias = componerDias({ lista, resultados, provinciaOficial: prov, externas: { provincia: nacP, nacional: nacN }, hoy });
+      if (!dias.some((d) => Object.keys(d.sorteos).length)) throw new Error("No se pudo leer ninguna fuente de la quiniela");
+      return { dias };
     },
     // Quini 6: el sitio oficial de Santa Fe (último sorteo y anterior); si no responde desde el servidor, La Nación (solo el último: el anterior lo guarda el sitio al cambiar el sorteo)
     quini6: async () => {
