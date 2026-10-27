@@ -186,3 +186,15 @@ test("quini 6: lee las 4 modalidades con sus 6 números y la fecha del sorteo", 
   assert.deepEqual([q.sorteo, q.fecha, q.modalidades.map((m) => m.nombre), q.modalidades[0].numeros], [3420, "2026-10-25", ["Tradicional", "La Segunda", "Revancha", "Siempre Sale"], ["00", "02", "03", "08", "19", "39"]]);
   assert.equal(leerQuini(html.replace("Revancha 05 22 23 29 41 43", ""), "Domingo 25 - 3420", "Octubre 2026"), null);
 });
+
+import { sorteosDe, QUINIELAS } from "./quiniela.mjs";
+test("quinielas: las 6 en orden, Montevideo con menos sorteos y 3 cifras", () => {
+  assert.deepEqual(QUINIELAS.map((q) => q.nombre), ["Nacional", "Provincia", "Santa Fe", "Córdoba", "Entre Ríos", "Montevideo"]);
+  assert.equal(sorteosDe("provincia", "2026-10-27").length, 5);
+  assert.deepEqual(sorteosDe("montevideo", "2026-10-26").map((s) => s.id), ["MATU", "NOCT"]); // lunes
+  assert.deepEqual(sorteosDe("montevideo", "2026-10-24").map((s) => s.id), ["NOCT"]); // sábado: solo a las 21
+  const js = "window.RESULTADOS_DATA = " + JSON.stringify([{ sorteo: 1, jurisdicciones: { 0: { numeros: Array.from({ length: 20 }, (_, i) => ({ pos: String(i + 1).padStart(2, "0"), val: String(1876 + i) })) }, 55: { numeros: Array.from({ length: 20 }, (_, i) => ({ pos: String(i + 1).padStart(2, "0"), val: String(3342 + i) })) } } }]) + ";";
+  const r = leerResultadoCiudad(js);
+  assert.deepEqual([r.montevideo[0], r.cordoba[0], r.entrerios], ["876", "3342", null]);
+  assert.deepEqual(leerQuinielaNacion("Nocturna - Lunes 26/10/2026 A la Cabeza: 76 Llamas " + Array.from({ length: 20 }, (_, i) => String(i + 1).padStart(2, "0") + " " + (876 + i)).join(" ") + " Información", 3).sorteos.NOCT.slice(0, 2), ["876", "877"]);
+});

@@ -4,7 +4,7 @@
 import { config as cfg } from "../lomas.config.mjs";
 import { leerTren, leerLuz, leerRss, buscarParos, buscarAgua, leerProgramados, leerSubte, armarNoticias } from "./fuentes.mjs";
 import { leerAlertas } from "./alertas.mjs";
-import { leerListaCiudad, leerResultadoCiudad, leerProvincia, componerDias, leerQuiniCompleto, URL_CIUDAD, URL_CIUDAD_DATOS, URL_PROVINCIA, leerQuiniNacion, URL_QUINI_NACION, leerQuinielaNacion, URL_NACION } from "./quiniela.mjs";
+import { leerListaCiudad, leerResultadoCiudad, leerProvincia, componerDias, leerQuiniCompleto, URL_CIUDAD, URL_CIUDAD_DATOS, URL_PROVINCIA, leerQuiniNacion, URL_QUINI_NACION, leerQuinielaNacion, URL_NACION, QUINIELAS } from "./quiniela.mjs";
 import { leerPronostico, urlOpenMeteo, leerPron5d, leerZipSmn, URL_SMN_5DIAS } from "./clima.mjs";
 
 const TIEMPO = 20000; // ninguna fuente puede demorar más que esto
@@ -76,18 +76,16 @@ export async function correrTareas({ guardar, env = process.env, log = console }
     quiniela: async () => {
       const hoy = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10); // fecha de hoy en Argentina
       // Lo oficial se lee primero y manda; el diario (La Nación) solo respalda lo que el sitio oficial no tiene o si no responde
-      const [listaLeida, prov, nacP, nacN, nacS] = await Promise.all([
+      const [listaLeida, prov, respaldo] = await Promise.all([
         traer(URL_CIUDAD, "text").then(leerListaCiudad).catch(() => []),
-        traer(URL_PROVINCIA, "text").then(leerProvincia).catch(() => null),
-        traer(URL_NACION.provincia, "text").then(leerQuinielaNacion).catch(() => null),
-        traer(URL_NACION.nacional, "text").then(leerQuinielaNacion).catch(() => null),
-        traer(URL_NACION.santafe, "text").then(leerQuinielaNacion).catch(() => null),
+        traer(URL_PROVINCIA, "text").then(leerProvincia).catch(() => null), // la Lotería de la Provincia: si ya publicó, su resultado manda
+        Promise.all(Object.entries(URL_NACION).map(async ([q, url]) => [q, await traer(url, "text").then((h) => leerQuinielaNacion(h, QUINIELAS.find((x) => x.id === q).cifras)).catch(() => null)])), // respaldo (diario)
       ]);
       const lista = listaLeida;
       const ayer = [...new Set(lista.map((x) => x.fecha))].sort().filter((f) => f < hoy).pop();
       const leidos = await Promise.allSettled(lista.filter((x) => x.fecha === hoy || x.fecha === ayer).map(async (x) => [x.sorteo, leerResultadoCiudad(await traer(URL_CIUDAD_DATOS(x.sorteo), "text"))]));
       const resultados = Object.fromEntries(leidos.flatMap((l) => (l.status === "fulfilled" ? [l.value] : [])));
-      const dias = componerDias({ lista, resultados, provinciaOficial: prov, externas: { provincia: nacP, nacional: nacN, santafe: nacS }, hoy });
+      const dias = componerDias({ lista, resultados, provinciaOficial: prov, externas: Object.fromEntries(respaldo), hoy });
       if (!dias.some((d) => Object.keys(d.sorteos).length)) throw new Error("No se pudo leer ninguna fuente de la quiniela");
       return { dias };
     },

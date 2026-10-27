@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { SORTEOS } from "@/scripts/quiniela.mjs";
-import { diasDe, ultimoDe, fechaLinda, type Quiniela, type Quini6, type Jurisdiccion } from "@/lib/quiniela-comun";
+import { SORTEOS, QUINIELAS } from "@/scripts/quiniela.mjs";
+import { diasDe, ultimoDe, fechaLinda, sorteosDelDia, type Quiniela, type Quini6, type Jurisdiccion } from "@/lib/quiniela-comun";
 
 // Quiniela y Quini 6: solo resultados. Nada de dónde jugar, agencias ni enlaces para apostar.
 const Boton = ({ activo, onClick, children }: { activo: boolean; onClick: () => void; children: React.ReactNode }) => (
@@ -16,11 +16,12 @@ function Resultado({ quiniela, hoy }: { quiniela: Quiniela | null | undefined; h
   const actual = dia === "hoy" ? dHoy : dAyer;
   useEffect(() => setElegido(null), [dia, jur]);
   const ultimo = ultimoDe(actual, jur);
-  const id = elegido ?? ultimo?.id ?? SORTEOS[0].id; // se abre solo en el último que salió
+  const fechaMostrada = dia === "hoy" ? hoy : dAyer?.fecha;
+  const disponibles = sorteosDelDia(jur, fechaMostrada); // Montevideo tiene menos sorteos
+  const id = disponibles.find((x) => x.id === elegido)?.id ?? ultimo?.id ?? disponibles[0].id; // se abre solo en el último que salió
   const s = SORTEOS.find((x) => x.id === id)!;
   const r = actual?.sorteos[id]?.[jur] ?? null;
   const ayerSinSerAyer = dia === "ayer" && dAyer && new Date(`${hoy}T12:00:00-03:00`).getTime() - new Date(`${dAyer.fecha}T12:00:00-03:00`).getTime() > 86400_000 * 1.5;
-  const fechaMostrada = dia === "hoy" ? hoy : dAyer?.fecha;
 
   return (
     <>
@@ -30,12 +31,10 @@ function Resultado({ quiniela, hoy }: { quiniela: Quiniela | null | undefined; h
       </div>
       {dia === "ayer" && dAyer && <p className="quin-fecha">{ayerSinSerAyer ? `El último día con sorteos fue el ${fechaLinda(dAyer.fecha)}` : fechaLinda(dAyer.fecha)}</p>}
       <div className="quin-sorteos" role="tablist" aria-label="Quiniela">
-        <Boton activo={jur === "provincia"} onClick={() => setJur("provincia")}>Provincia</Boton>
-        <Boton activo={jur === "nacional"} onClick={() => setJur("nacional")}>Nacional</Boton>
-        <Boton activo={jur === "santafe"} onClick={() => setJur("santafe")}>Santa Fe</Boton>
+        {QUINIELAS.map((q) => <Boton key={q.id} activo={jur === q.id} onClick={() => setJur(q.id as Jurisdiccion)}>{q.nombre}</Boton>)}
       </div>
       <div className="quin-sorteos" role="tablist" aria-label="Sorteo">
-        {SORTEOS.map((x) => <Boton key={x.id} activo={id === x.id} onClick={() => setElegido(x.id)}>{x.nombre}</Boton>)}
+        {disponibles.map((x) => <Boton key={x.id} activo={id === x.id} onClick={() => setElegido(x.id)}>{x.nombre}</Boton>)}
       </div>
       {dia === "ayer" && !dAyer ? <p className="vacio">Sin datos por ahora.</p>
         : r && fechaMostrada ? (

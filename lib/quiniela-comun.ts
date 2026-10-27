@@ -1,12 +1,12 @@
 // Quiniela y Quini 6: tipos y cuentas chicas que usan la pantalla y el cuadradito. Solo resultados.
-import { SORTEOS } from "@/scripts/quiniela.mjs";
+import { SORTEOS, sorteosDe } from "@/scripts/quiniela.mjs";
 
-export type SorteoQ = { hora: string; nacional: string[] | null; provincia: string[] | null; santafe?: string[] | null };
+export type Jurisdiccion = "nacional" | "provincia" | "santafe" | "cordoba" | "entrerios" | "montevideo";
+export type SorteoQ = { hora: string } & { [J in Jurisdiccion]?: string[] | null };
 export type DiaQ = { fecha: string; sorteos: Record<string, SorteoQ> };
 export type Quiniela = { dias: DiaQ[] };
 export type QuiniSorteo = { sorteo: number | null; fecha: string; modalidades: { nombre: string; numeros: string[] }[] };
 export type Quini6 = { sorteos: QuiniSorteo[] };
-export type Jurisdiccion = "provincia" | "nacional" | "santafe";
 
 // Hoy y el último día anterior con sorteos (los domingos no hay): siempre según la fecha de hoy, nunca un número viejo como si fuera de hoy
 export function diasDe(q: Quiniela | undefined | null, hoy: string) {
@@ -18,6 +18,8 @@ export function ultimoDe(dia: DiaQ | null | undefined, j: Jurisdiccion) {
   for (const s of [...SORTEOS].reverse()) { const r = dia?.sorteos[s.id]?.[j]; if (r) return { ...s, fecha: dia!.fecha, numeros: r }; }
   return null;
 }
+// Los sorteos que existen ese día para esa quiniela (Montevideo tiene menos: sin botones vacíos)
+export const sorteosDelDia = (j: Jurisdiccion, fecha: string | undefined | null) => sorteosDe(j, fecha ?? undefined) as { id: string; nombre: string; hora: string }[];
 // Para el cuadradito: "Nocturna Provincia: 1234" (el último de hoy; si hoy no salió ninguno, el último de ayer)
 export function ultimoResultado(q: Quiniela | undefined | null, hoy: string) {
   const { hoy: h, ayer } = diasDe(q, hoy);

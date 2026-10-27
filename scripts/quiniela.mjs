@@ -24,16 +24,33 @@ export function leerListaCiudad(html) {
     .filter((x) => x.id);
 }
 
-const veinte = (numeros) => {
-  const l = (numeros ?? []).sort((a, b) => Number(a.pos) - Number(b.pos)).map((n) => String(n.val).padStart(4, "0"));
-  return l.length === 20 && l.every((v) => /^\d{4}$/.test(v)) ? l : null;
+// Las 6 quinielas que se juegan en las agencias de Buenos Aires, en el orden de los botones.
+// "cod" = jurisdicción en el extracto de la Lotería de la Ciudad (que publica todas en el mismo sorteo); "cifras" = dígitos de cada número.
+export const QUINIELAS = [
+  { id: "nacional", nombre: "Nacional", cod: "51", cifras: 4 },
+  { id: "provincia", nombre: "Provincia", cod: "53", cifras: 4 },
+  { id: "santafe", nombre: "Santa Fe", cod: "72", cifras: 4 },
+  { id: "cordoba", nombre: "Córdoba", cod: "55", cifras: 4 },
+  { id: "entrerios", nombre: "Entre Ríos", cod: "59", cifras: 4 },
+  { id: "montevideo", nombre: "Montevideo", cod: "0", cifras: 3 },
+];
+// Qué sorteos existen cada día. Montevideo solo sortea a las 15 y a las 21 (los sábados, solo a las 21); las demás, los 5 de lunes a sábado.
+export function sorteosDe(jur, fecha) {
+  if (jur !== "montevideo") return SORTEOS;
+  const dia = fecha ? new Date(fecha + "T12:00:00Z").getUTCDay() : 1;
+  return SORTEOS.filter((s) => s.id === "NOCT" || (s.id === "MATU" && dia !== 6));
+}
+
+const veinte = (numeros, cifras = 4) => {
+  const l = (numeros ?? []).slice().sort((a, b) => Number(a.pos) - Number(b.pos)).map((n) => String(n.val).trim());
+  return l.length === 20 && l.every((v) => /^\d{3,4}$/.test(v)) ? l.map((v) => v.padStart(4, "0").slice(-cifras)) : null; // Montevideo usa 3 cifras
 };
-// Un sorteo según la Ciudad: Nacional = jurisdicción 51 (Ciudad de Buenos Aires), Provincia = 53, Santa Fe = 72 (salen en el mismo sorteo, a la misma hora)
+// Un sorteo según la Ciudad: todas las quinielas salen en el mismo sorteo, a la misma hora
 export function leerResultadoCiudad(js) {
   const j = JSON.parse(js.match(/=\s*(\[[\s\S]*\])\s*;/)[1]); // el archivo trae después otra línea (el pozo): se toma solo la lista de resultados
   const x = j[0];
   const jur = x?.jurisdicciones ?? {};
-  return { sorteo: x?.sorteo, nacional: veinte(jur["51"]?.numeros), provincia: veinte(jur["53"]?.numeros), santafe: veinte(jur["72"]?.numeros) };
+  return { sorteo: x?.sorteo, ...Object.fromEntries(QUINIELAS.map((q) => [q.id, veinte(jur[q.cod]?.numeros, q.cifras)])) };
 }
 
 // Los resultados del día que publica la Lotería de la Provincia ("----" = todavía no salió)
@@ -46,28 +63,30 @@ export function leerProvincia(html) {
     const pares = [...m[2].matchAll(/<span>(\d{2})<\/span>\s*<span>([^<]*)<\/span>/g)].map((p) => ({ pos: p[1], val: p[2].trim() }));
     sorteos[id] = pares.length === 20 && pares.every((p) => /^\d{1,4}$/.test(p.val)) ? veinte(pares) : null;
   }
-  return { fecha: fecha ? `${fecha[3]}-${fecha[2]}-${fecha[1]}` : null, sorteos };
+  return { fecha: fecha ? `${fecha[3]}-${fecha[2]}-${fecha[1]}`: null, sorteos };
 }
 
-// Segunda fuente (un diario): La Nación publica los resultados con los datos de Data Factory. Una página por quiniela; trae los sorteos del último día.
-export const URL_NACION = { provincia: "https://www.lanacion.com.ar/loterias/quiniela-provincia/", nacional: "https://www.lanacion.com.ar/loterias/quiniela-nacional/", santafe: "https://www.lanacion.com.ar/loterias/quiniela-santa-fe/" };
-export function leerQuinielaNacion(html) {
+// Respaldo (un diario): La Nación publica los resultados con los datos de Data Factory. Una página por quiniela; trae los sorteos del último día. De Entre Ríos no hay página.
+export const URL_NACION = {
+  provincia: "https://www.lanacion.com.ar/loterias/quiniela-provincia/", nacional: "https://www.lanacion.com.ar/loterias/quiniela-nacional/", santafe: "https://www.lanacion.com.ar/loterias/quiniela-santa-fe/",
+  cordoba: "https://www.lanacion.com.ar/loterias/quiniela-cordoba/", montevideo: "https://www.lanacion.com.ar/loterias/quiniela-montevideo/",
+};
+export function leerQuinielaNacion(html, cifras = 4) {
   const t = textoPlano(html);
   const sorteos = {};
   let fecha = null;
-  for (const m of t.matchAll(/(Previa|Primera|Matutina|Vespertina|Nocturna) - \S+ (\d{2})\/(\d{2})\/(\d{4}) A la Cabeza: \d+ [^\d]*?((?:\d{2} \d{4} ){19}\d{2} \d{4})/g)) {
+  for (const m of t.matchAll(/(Previa|Primera|Matutina|Vespertina|Nocturna) - \S+ (\d{2})\/(\d{2})\/(\d{4}) A la Cabeza: \d+ [^\d]*?((?:\d{2} \d{3,4} ){19}\d{2} \d{3,4})/g)) {
     const id = idDe(m[1]);
-    const pares = m[5].trim().split(" ");
-    const nums = pares.filter((_, k) => k % 2 === 1); // 01 1688 02 0968 ... → los 20 números
-    if (id && nums.length === 20 && nums.every((v) => /^\d{4}$/.test(v))) { sorteos[id] = nums; fecha = `${m[4]}-${m[3]}-${m[2]}`; }
+    const nums = m[5].trim().split(" ").filter((_, k) => k % 2 === 1); // 01 1688 02 0968 ... → los 20 números
+    if (id && nums.length === 20) { sorteos[id] = nums.map((v) => v.padStart(4, "0").slice(-cifras)); fecha = `${m[4]}-${m[3]}-${m[2]}`; }
   }
   return { fecha, sorteos };
 }
 
 // Arma los días: hoy y el último día anterior con sorteos (los domingos no hay).
 // El resultado sale apenas lo publica la fuente oficial, sin esperar a ninguna otra:
-//  · Provincia: la Lotería de la Provincia; si todavía no lo cargó, la Lotería de la Ciudad (que publica también el extracto de la Provincia).
-//  · Nacional: la Lotería de la Ciudad.
+//  · Provincia: la Lotería de la Provincia; si todavía no lo cargó, la Lotería de la Ciudad (que publica el extracto de todas).
+//  · Las demás quinielas: el extracto de la Lotería de la Ciudad.
 //  · Solo si el sitio oficial no responde o no tiene ese sorteo, se usa el diario (La Nación) como respaldo.
 export function componerDias({ lista, resultados, externas = {}, provinciaOficial = null, hoy }) {
   const dias = [];
@@ -78,12 +97,10 @@ export function componerDias({ lista, resultados, externas = {}, provinciaOficia
     for (const s of SORTEOS) {
       const l = lista.find((x) => x.fecha === fecha && x.id === s.id);
       const r = l && resultados[l.sorteo];
-      const diario = (jur) => (externas[jur]?.fecha === fecha ? externas[jur].sorteos[s.id] ?? null : null);
+      const diario = (q) => (externas[q]?.fecha === fecha ? externas[q].sorteos[s.id] ?? null : null);
       const oficialProvincia = fecha === hoy && provinciaOficial?.fecha === hoy ? provinciaOficial.sorteos[s.id] ?? null : null;
-      const nacional = r?.nacional ?? diario("nacional");
-      const provincia = oficialProvincia ?? r?.provincia ?? diario("provincia");
-      const santafe = r?.santafe ?? diario("santafe"); // Santa Fe: el extracto que publica la Lotería de la Ciudad; si no, el diario
-      if (nacional || provincia || santafe) sorteos[s.id] = { hora: l?.hora ?? s.hora, nacional: nacional ?? null, provincia: provincia ?? null, santafe: santafe ?? null };
+      const valores = Object.fromEntries(QUINIELAS.map((q) => [q.id, (q.id === "provincia" ? oficialProvincia : null) ?? r?.[q.id] ?? diario(q.id) ?? null]));
+      if (Object.values(valores).some(Boolean)) sorteos[s.id] = { hora: l?.hora ?? s.hora, ...valores };
     }
     dias.push({ fecha, sorteos });
   }
