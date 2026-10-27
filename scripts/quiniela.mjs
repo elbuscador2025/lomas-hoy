@@ -90,7 +90,7 @@ export function leerQuini(html, etiqueta, mes) {
 // Pide el último sorteo del Quini 6 y el anterior (la página de Santa Fe es JSF: hay que mandar el formulario para cambiar de sorteo).
 export async function leerQuiniCompleto(traerPagina = fetch) {
   const ua = { "User-Agent": "Mozilla/5.0 (LomasHoy)" };
-  const r = await traerPagina(URL_QUINI, { headers: ua, signal: AbortSignal.timeout(20000) });
+  const r = await traerPagina(URL_QUINI, { headers: ua, signal: AbortSignal.timeout(20000) }).catch((e) => { throw new Error(`Santa Fe no responde (${e.cause?.code ?? e.cause?.message ?? e.message})`); });
   if (!r.ok) throw new Error(`Santa Fe ${r.status}`);
   const cookie = (r.headers.getSetCookie?.() ?? []).map((c) => c.split(";")[0]).join("; ");
   const html = await r.text();
