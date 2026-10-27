@@ -24,8 +24,10 @@ export const config = {
     coop: { activa: true, titulo: "COOP" },
     ansesof: { activa: true, titulo: "ANSES" },
     noticias: { activa: true, titulo: "Noticias de Lomas" },
-    // Apagada por ahora (el código y los datos siguen): para volver a mostrarla, poner activa: true.
-    pasa: { activa: false, titulo: "Enterate lo que pasa en Lomas" },
+    // Avisos de vecinos (se ven en la campanita). Para apagarlos: activa: false.
+    pasa: { activa: true, titulo: "Avisos de vecinos" },
+    quiniela: { activa: true, titulo: "Quiniela y Quini 6" },
+    quini6: { activa: true, titulo: "Quini 6" },
   },
 
   tren: {

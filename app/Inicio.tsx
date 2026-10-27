@@ -22,6 +22,8 @@ import Discapacidad from "./Discapacidad";
 import CoopPantalla from "./Coop";
 import HoyCobran from "./HoyCobran";
 import Sos from "./Sos";
+import QuinielaPantalla from "./Quiniela";
+import { ultimoResultado } from "@/lib/quiniela-comun";
 import { BotonPasa, FormularioPasa, useVecinos } from "./Pasa";
 import Sugerir from "./Sugerir";
 import NoticiasLomas from "./Noticias";
@@ -60,7 +62,7 @@ function Tile({ icono, titulo, resumen, estado, tono, onClick, color }: {
   return (
     <button className={`tile coloreado c-${color}`} onClick={onClick}>
       <span className="tile-arriba">
-        <span className="tile-icono"><Icono nombre={icono} tam={28} /></span>
+        <span className="tile-icono">{icono === "bola" ? <span className="tile-emoji" aria-hidden>🎱</span> : <Icono nombre={icono} tam={28} />}</span>
         <span className={`pildora ${tono}`}>{estado}</span>
       </span>
       <b>{titulo}</b>
@@ -241,6 +243,7 @@ export default function Inicio() {
   const rAnses = resumenAnses(anses.entradas, hoyStr);
   const nuevasTrabajo = trabajo.filter((p) => esNuevaTrabajo(p, config.trabajo.diasNuevas)).length;
   const nuevasTrueque = trueque.publicaciones.filter((p) => esNuevaTrueque(p, config.trueque.diasNuevas)).length;
+  const ultimaQuiniela = ultimoResultado(d.quiniela?.contenido, hoyStr);
   const notasLomas = d.noticias?.contenido?.notas ?? [];
   const notasHoy = notasLomas.filter((n) => ahoraAR(new Date(n.fecha)).slice(0, 10) === hoyStr).length;
   const lugaresDe = (vistaId: string) => lugares.filter((l) => CATEGORIAS_DE[vistaId].includes(l.categoria));
@@ -290,6 +293,7 @@ export default function Inicio() {
       discapacidad: s.discapacidad.activa && coincide(`discapacidad cud certificado pase de colectivo gratis autismo tea imdipam taller protegido pension simbolo estacionamiento ${TRAMITES.map((t) => `${t.titulo} ${t.palabras}`).join(" ")}`),
       coop: s.coop.activa ? coop.filter((x) => coincide(`${PALABRAS_COOP} ${x.barrio} ${x.direccion}`)) : [],
       ansesof: s.ansesof.activa && (coincide(PALABRAS_ANSES_OF) || oficinasAnses.some((o) => coincide(`${o.nombre} ${o.direccion} ${o.localidad}`))),
+      quiniela: s.quiniela.activa && coincide("quiniela quini quini6 quini 6 loteria resultados sorteo sorteos provincia nacional previa primera matutina vespertina nocturna"),
       ferias: s.trueque.activa ? trueque.ferias.filter((f) => coincide(`trueque feria ferias de trueque ${f.lugar} ${f.direccion} ${f.barrio} ${f.dias}`)) : [],
       tren: s.tren.activa ? (d.tren?.contenido?.novedades ?? []).filter((n) => coincide(`${s.tren.titulo} tren roca ${n.ramal} ${n.motivo}`)) : [],
       paros: s.colectivos.activa ? paros.filter((p) => coincide(`colectivo colectivos paro uta ${p.titular}`)) : [],
@@ -302,7 +306,7 @@ export default function Inicio() {
       clima: s.clima.activa && clima && coincide(`clima tiempo temperatura lluvia ${clima.ahora.etiqueta} ${clima.dias.map((d) => d.etiqueta).join(" ")}`) ? clima : null,
     };
   }, [busqueda, coop, oficinasAnses, lugares, mascotas, trueque, trabajo, rAnses.texto, d.tren, paros, cortes, programados, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
-  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.discapacidad || resultados.coop.length || resultados.ansesof || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
+  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.discapacidad || resultados.quiniela || resultados.coop.length || resultados.ansesof || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
 
   // ---- Estado de cada cuadradito ----
   const hayGrave = (v: Novedad["vista"]) => novedades.some((n) => n.vista === v && n.gravedad === "grave");
@@ -721,6 +725,13 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "quiniela" && s.quiniela.activa)
+    return (
+      <Detalle color="quiniela" titulo={s.quiniela.titulo} onVolver={volver}>
+        <QuinielaPantalla quiniela={d.quiniela?.contenido} quini={d.quini6?.contenido} hoy={hoyStr} />
+      </Detalle>
+    );
+
   if (vista === "noticias")
     return (
       <Detalle color="noticias" titulo={s.noticias.titulo} onVolver={volver}>
@@ -862,6 +873,10 @@ export default function Inicio() {
               <div className="grupo"><h2>{s.ansesof.titulo}</h2>
                 <button className="tarjeta muni" onClick={() => abrir("ansesof")}><b>Oficinas y turnos de ANSES</b><small>Se atiende solo con turno · Teléfono 130</small></button>
               </div>)}
+            {resultados.quiniela && (
+              <div className="grupo"><h2>{s.quiniela.titulo}</h2>
+                <button className="tarjeta muni" onClick={() => abrir("quiniela")}><b>{ultimaQuiniela ?? "Resultados de hoy"}</b><small>Ver los resultados de la Quiniela y del Quini 6</small></button>
+              </div>)}
             {resultados.coop.length > 0 && (
               <div className="grupo"><h2>{s.coop.titulo}</h2>
                 {resultados.coop.length > 6 ? <button className="tarjeta muni" onClick={() => { setCoopElegida(""); abrir("coop"); }}><b>Elegí tu barrio</b><small>Luminarias, poda, árboles y arreglos del barrio</small></button>
@@ -983,6 +998,10 @@ export default function Inicio() {
               {s.ansesof.activa && (
                 <Tile color="ansesof" icono="ansesof" titulo={s.ansesof.titulo} estado="Ver" tono="neutro" onClick={() => abrir("ansesof")}
                   resumen="Oficinas y turnos" />
+              )}
+              {s.quiniela.activa && (
+                <Tile color="quiniela" icono="bola" titulo={s.quiniela.titulo} estado="Ver" tono="neutro" onClick={() => abrir("quiniela")}
+                  resumen={ultimaQuiniela ?? "Resultados de hoy"} />
               )}
               {s.noticias.activa && (
                 <Tile color="noticias" icono="noticias" titulo={s.noticias.titulo} onClick={() => abrir("noticias")}

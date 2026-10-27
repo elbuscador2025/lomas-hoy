@@ -147,3 +147,32 @@ test("agua: barrios de Lomas y horario que nombra la nota completa", () => {
   assert.equal(cuandoEnTexto("Habrá corte en Lanús"), null);
   assert.deepEqual(barriosEnTexto("Corte en Lanús y Esteban Echeverría", cfgAgua), []);
 });
+
+import { leerListaCiudad, leerResultadoCiudad, leerProvincia, componerDias, leerQuini } from "./quiniela.mjs";
+test("quiniela: lee la Ciudad y la Provincia y muestra Provincia de hoy solo si coinciden; los días sin sorteo no cuentan", () => {
+  const lista = leerListaCiudad(`<li class='custom-option' data-value='5'>27/10/2026 - 10:15 - Sorteo Nº 5 - PREVIA</li><li class='custom-option' data-value='4'>26/10/2026 - 21:00 - Sorteo Nº 4 - NOCTURNA</li><li class='custom-option' data-value='3'>24/10/2026 - 21:00 - Sorteo Nº 3 - NOCTURNA</li>`);
+  assert.deepEqual(lista.map((x) => [x.sorteo, x.fecha, x.hora, x.id]), [[5, "2026-10-27", "10:15", "PREV"], [4, "2026-10-26", "21:00", "NOCT"], [3, "2026-10-24", "21:00", "NOCT"]]);
+  const nums = (base) => Array.from({ length: 20 }, (_, i) => ({ pos: String(i + 1).padStart(2, "0"), val: String(base + i).padStart(4, "0") }));
+  const js = (n, base) => `window.RESULTADOS_DATA = ${JSON.stringify([{ sorteo: n, jurisdicciones: { 51: { numeros: nums(base) }, 53: { numeros: nums(base + 100) } } }])};window.POZO_ULTIMO_SORTEO = 0`;
+  const resultados = { 5: leerResultadoCiudad(js(5, 1000)), 4: leerResultadoCiudad(js(4, 2000)), 3: leerResultadoCiudad(js(3, 3000)) };
+  assert.equal(resultados[5].provincia[0], "1100");
+  const spans = (base) => nums(base).map((n) => `<div><span>${n.pos}</span><span>${n.val}</span></div>`).join("");
+  const html = (base) => `<div class="sorteo"><h3>Quiniela La Previa<i class="x"></i></h3><div class="datosSorteo"><p class="fechaSorteo">27/10/2026</p><div class="bolillas">${spans(base)}</div></div></div><div class="contenedorExtractos"></div>`;
+  const prov = leerProvincia(html(1100));
+  assert.equal(prov.fecha, "2026-10-27");
+  const hoy = "2026-10-27";
+  let dias = componerDias({ lista, resultados, provinciaHoy: prov, hoy });
+  assert.deepEqual(dias.map((d) => d.fecha), ["2026-10-26", "2026-10-27"]); // ayer = el último día con sorteos antes de hoy
+  assert.equal(dias[1].sorteos.PREV.provincia[0], "1100");
+  assert.equal(dias[1].sorteos.PREV.nacional[0], "1000");
+  dias = componerDias({ lista, resultados, provinciaHoy: leerProvincia(html(5555)), hoy }); // no coinciden: no se muestra
+  assert.equal(dias[1].sorteos.PREV.provincia, null);
+  dias = componerDias({ lista, resultados, provinciaHoy: leerProvincia(html(1100).replace(/<span>11\d\d<\/span>/g, "<span>----</span>")), hoy }); // la Provincia todavía no publicó
+  assert.equal(dias[1].sorteos.PREV.provincia, null);
+});
+test("quini 6: lee las 4 modalidades con sus 6 números y la fecha del sorteo", () => {
+  const html = "<div>Tradicional Primer Sorteo 00 02 03 08 19 39 Premio</div><div>Tradicional La Segunda del Quini 08 25 30 36 43 45 Premio</div><div>Revancha 05 22 23 29 41 43 Premio</div><div>Siempre Sale 00 13 22 24 40 43 Premio</div>";
+  const q = leerQuini(html, "Domingo 25 - 3420", "Octubre 2026");
+  assert.deepEqual([q.sorteo, q.fecha, q.modalidades.map((m) => m.nombre), q.modalidades[0].numeros], [3420, "2026-10-25", ["Tradicional", "La Segunda", "Revancha", "Siempre Sale"], ["00", "02", "03", "08", "19", "39"]]);
+  assert.equal(leerQuini(html.replace("Revancha 05 22 23 29 41 43", ""), "Domingo 25 - 3420", "Octubre 2026"), null);
+});

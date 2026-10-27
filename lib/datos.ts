@@ -54,7 +54,7 @@ export type Subte = { lineas: { id: string; estado: "normal" | "demora" | "inter
 export type AlertaSmn = { id: string; evento: string; nivel: "amarilla" | "naranja" | "roja"; desde: string | null; hasta: string; descripcion: string; instruccion: string; zonas: string[] };
 export type Alertas = { alertas: AlertaSmn[]; leidas: number; fallidas: number };
 export type Noticias = { notas: { titulo: string; link: string; medio: string; fecha: string }[]; diariosLeidos: string[]; diariosSinLeer: string[] };
-export type Todo = { noticias?: Fila<Noticias>; alertas?: Fila<Alertas>; subte?: Fila<Subte>; tren?: Fila<Tren>; luz?: Fila<Luz>; clima?: Fila<Clima>; colectivos?: Fila<Colectivos>; programados?: Fila<Programados>; agua?: Fila<Agua> };
+export type Todo = { quiniela?: Fila<import("@/lib/quiniela-comun").Quiniela>; quini6?: Fila<import("@/lib/quiniela-comun").Quini6>; noticias?: Fila<Noticias>; alertas?: Fila<Alertas>; subte?: Fila<Subte>; tren?: Fila<Tren>; luz?: Fila<Luz>; clima?: Fila<Clima>; colectivos?: Fila<Colectivos>; programados?: Fila<Programados>; agua?: Fila<Agua> };
 
 const CLAVE_CACHE = "lomas-hoy:datos";
 const CLAVE_LUGARES = "lomas-hoy:lugares";

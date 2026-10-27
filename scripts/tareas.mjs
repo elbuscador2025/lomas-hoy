@@ -4,6 +4,7 @@
 import { config as cfg } from "../lomas.config.mjs";
 import { leerTren, leerLuz, leerRss, buscarParos, buscarAgua, leerProgramados, leerSubte, armarNoticias } from "./fuentes.mjs";
 import { leerAlertas } from "./alertas.mjs";
+import { leerListaCiudad, leerResultadoCiudad, leerProvincia, componerDias, leerQuiniCompleto, URL_CIUDAD, URL_CIUDAD_DATOS, URL_PROVINCIA } from "./quiniela.mjs";
 import { leerPronostico, urlOpenMeteo, leerPron5d, leerZipSmn, URL_SMN_5DIAS } from "./clima.mjs";
 
 const TIEMPO = 20000; // ninguna fuente puede demorar más que esto
@@ -71,6 +72,21 @@ export async function correrTareas({ guardar, env = process.env, log = console }
       const d = await leerLocales();
       return { notas: armarNoticias([d.notas], cfg.noticias.maximo), diariosLeidos: d.diariosLeidos, diariosSinLeer: d.diariosSinLeer };
     },
+    // Quiniela (Provincia y Nacional): hoy y el último día con sorteos. Provincia de hoy solo si coinciden la Lotería de la Ciudad y la de la Provincia.
+    quiniela: async () => {
+      const lista = leerListaCiudad(await traer(URL_CIUDAD, "text"));
+      if (!lista.length) throw new Error("No se pudo leer la lista de sorteos de la Lotería de la Ciudad");
+      const hoy = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10); // fecha de hoy en Argentina
+      const ayer = [...new Set(lista.map((x) => x.fecha))].sort().filter((f) => f < hoy).pop();
+      const [leidos, prov] = await Promise.all([
+        Promise.allSettled(lista.filter((x) => x.fecha === hoy || x.fecha === ayer).map(async (x) => [x.sorteo, leerResultadoCiudad(await traer(URL_CIUDAD_DATOS(x.sorteo), "text"))])),
+        traer(URL_PROVINCIA, "text").then(leerProvincia).catch(() => null), // si no responde, Provincia de hoy queda en "todavía no salió"
+      ]);
+      const resultados = Object.fromEntries(leidos.flatMap((l) => (l.status === "fulfilled" ? [l.value] : [])));
+      return { dias: componerDias({ lista, resultados, provinciaHoy: prov, hoy }) };
+    },
+    // Quini 6 (Lotería de Santa Fe): el último sorteo y el anterior, nada más viejo
+    quini6: async () => ({ sorteos: await leerQuiniCompleto() }),
     colectivos: async () => {
       const d = await leerDiarios();
       return { paros: buscarParos(d.notas, cfg), diariosLeidos: d.diariosLeidos, diariosSinLeer: d.diariosSinLeer };

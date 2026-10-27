@@ -9,7 +9,7 @@ import { evaluarTren, evaluarProgramados, evaluarColectivos, evaluarAgua, evalua
 import { redis } from "@/lib/servidor";
 import { enriquecerAgua } from "@/lib/agua";
 
-export const CLAVES_VALIDAS = ["tren", "luz", "colectivos", "programados", "agua", "pronostico", "mascotas", "subte", "alertas", "noticias"];
+export const CLAVES_VALIDAS = ["tren", "luz", "colectivos", "programados", "agua", "pronostico", "mascotas", "subte", "alertas", "noticias", "quiniela", "quini6"];
 
 // Si falló la lectura (contenido vacío), se conserva el último dato bueno y solo se anota el error.
 export async function guardarDato(clave: string, contenido: any, error?: unknown) { // eslint-disable-line @typescript-eslint/no-explicit-any

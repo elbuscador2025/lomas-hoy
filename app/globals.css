@@ -477,3 +477,25 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .foto-vecino { width:72px; height:72px; object-fit:cover; border-radius:10px; flex:none; }
 .aviso-vecinos-nota { color:var(--suave); font-size:13px; margin:10px 0 6px; }
 .boton-pasa { justify-content:center; text-align:center; }
+
+.c-quiniela { --c-bg:#FFE680; --c-fuerte:#D9480F; }
+.tile-emoji { font-size:28px; line-height:1; }
+.quin-fila { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:8px 0; }
+.quin-sorteos { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin:8px 0 12px; }
+.btn.quin-boton { min-height:52px; padding:0 4px; font-size:16px; background:#fff; color:var(--c-fuerte); border:2px solid var(--c-fuerte); box-shadow:none; }
+.btn.quin-boton.activo { background:var(--c-fuerte); color:#fff; }
+.quin-fecha { margin:0 0 6px; font-weight:700; }
+.quin-titulo { font-size:18px; font-weight:800; margin:10px 0 6px; line-height:1.3; }
+.quin-resultado { background:#FFF7D6; border:2px solid var(--c-fuerte); border-radius:18px; padding:12px; }
+.quin-aun { background:#F1F3F6; border-color:#C7CCD6; }
+.quin-cabeza { display:flex; flex-direction:column; align-items:center; margin:6px 0 12px; }
+.quin-cabeza small { font-size:15px; font-weight:700; color:var(--suave); }
+.quin-cabeza b { font-size:64px; line-height:1; letter-spacing:2px; color:var(--c-fuerte); }
+.quin-grilla { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.quin-grilla li { display:flex; align-items:center; gap:10px; background:#fff; border-radius:10px; padding:6px 10px; }
+.quin-grilla li span { min-width:24px; font-size:14px; color:var(--suave); font-weight:700; }
+.quin-grilla li b { font-size:26px; letter-spacing:1px; }
+.quin-modalidad { background:#FFF7D6; border:2px solid var(--c-fuerte); border-radius:18px; padding:10px 12px; margin:10px 0; }
+.quin-modalidad h2 { margin:0 0 8px; font-size:20px; }
+.quin-bolitas { list-style:none; margin:0; padding:0; display:flex; gap:6px; flex-wrap:nowrap; justify-content:space-between; }
+.quin-bolitas li { flex:1; max-width:48px; aspect-ratio:1; border-radius:50%; background:#fff; border:3px solid var(--c-fuerte); display:grid; place-items:center; font-weight:900; font-size:19px; }
