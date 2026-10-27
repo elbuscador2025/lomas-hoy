@@ -1,37 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
-import { terminaciones, type PagoAnses } from "@/lib/anses";
+import type { PagoAnses } from "@/lib/anses";
+import { BLOQUES, grupoDe, dniDe, type Clave } from "@/lib/cobran-comun";
 
-type Clave = "jubilados" | "auh" | "pensiones";
 const BOTONES: { id: Clave; titulo: string }[] = [{ id: "jubilados", titulo: "Jubilados" }, { id: "auh", titulo: "AUH" }, { id: "pensiones", titulo: "Pensiones" }];
 const GUARDADO = "lomas-hoy:anses-boton";
 
-// Cada botón tiene uno o dos bloques (grupos de pago), con nombres en palabras simples.
-type Bloque = { id: string; titulo: string; quienes: string; hoy: string; ya: string };
-const BLOQUES: Record<Clave, Bloque[]> = {
-  jubilados: [
-    { id: "min", titulo: "Jubilados que cobran la mínima", quienes: "los que ganan la mínima", hoy: "Hoy cobran los que ganan la mínima", ya: "Los que cobran la mínima ya cobraron este mes" },
-    { id: "sup", titulo: "Jubilados que cobran más que la mínima", quienes: "los que ganan más que la mínima", hoy: "Hoy cobran los que ganan más que la mínima", ya: "Los que cobran más que la mínima ya cobraron este mes" },
-  ],
-  auh: [{ id: "auh", titulo: "Asignación por hijo (AUH)", quienes: "la AUH", hoy: "Hoy cobra la AUH", ya: "La AUH ya se cobró este mes" }],
-  pensiones: [{ id: "pen", titulo: "Pensiones no contributivas", quienes: "las pensiones", hoy: "Hoy cobran las pensiones", ya: "Las pensiones ya se cobraron este mes" }],
-};
-
-// Cada línea cargada en el panel pertenece a un botón y a un bloque; las de "haberes superiores al mínimo" son el segundo bloque de Jubilados.
-const grupoDe = (p: string): { clave: Clave; bloque: string } | null => {
-  const t = p.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-  if (/auh|asignacion/.test(t)) return { clave: "auh", bloque: "auh" };
-  if (/pension/.test(t)) return { clave: "pensiones", bloque: "pen" };
-  if (/jubil/.test(t)) return { clave: "jubilados", bloque: /superior/.test(t) ? "sup" : "min" };
-  return null;
-};
 const corto = (f: string) => {
   const d = new Date(`${f}T12:00:00-03:00`);
   const dia = d.toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", weekday: "short" }).replace(".", "");
   return `${dia.charAt(0).toUpperCase()}${dia.slice(1)} ${Number(f.slice(8, 10))}`;
 };
 const largo = (f: string) => new Date(`${f}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", weekday: "long", day: "numeric" }).replace(",", "");
-const dniDe = (pagos: PagoAnses[]) => terminaciones([...new Set(pagos.flatMap((p) => p.dnis))].sort((a, b) => a - b));
 
 // Grilla de dos columnas: "DNI 0 → Jue 8". Pasadas en gris, hoy resaltada, la próxima marcada.
 function Grilla({ titulo, pagos, hoy }: { titulo: string; pagos: PagoAnses[]; hoy: string }) {

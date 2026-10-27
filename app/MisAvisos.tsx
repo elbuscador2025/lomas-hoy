@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ZONA } from "@/lib/datos";
+import { AvisosVecinos, type Vecinos } from "./Pasa";
 
 // "Mis avisos": lo que llegó al celular en los últimos 7 días. Lo guarda el service worker (public/sw.js) en el propio celular.
 export type AvisoGuardado = { id: string; t: number; tipo: string; titulo: string; cuerpo: string; url: string };
@@ -45,16 +46,18 @@ const cuando = (t: number) => {
   return `${new Date(t).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "long", day: "numeric" })} ${hora} hs`;
 };
 
-export default function MisAvisos({ avisos, onConfigurar, onAbrir }: {
-  avisos: ReturnType<typeof useAvisos>; onConfigurar: () => void; onAbrir: (url: string) => void;
+export default function MisAvisos({ avisos, vecinos, onConfigurar, onAbrir }: {
+  avisos: ReturnType<typeof useAvisos>; vecinos: Vecinos; onConfigurar: () => void; onAbrir: (url: string) => void;
 }) {
   const { lista, marcarVistos } = avisos;
+  const { marcarVistos: marcarVecinos } = vecinos;
   const vistoAntes = useRef(leerVisto()); // para marcar "Nuevo" lo que llegó desde la última vez
-  useEffect(() => { marcarVistos(); }, [marcarVistos]);
+  useEffect(() => { marcarVistos(); marcarVecinos(); }, [marcarVistos, marcarVecinos]); // al abrir la campanita se apaga el puntito
   const ordenada = lista; // lo más nuevo primero, el saludo como cualquier otro aviso
   return (
     <>
       <button className="btn claro ancho" onClick={onConfigurar}>Configurar avisos</button>
+      <AvisosVecinos vecinos={vecinos} />
       {ordenada.length === 0 ? <p className="vacio">Todavía no tenés avisos. Acá se guardan los de los últimos 7 días.</p> : (
         <ul className="lista">
           {ordenada.map((a) => (

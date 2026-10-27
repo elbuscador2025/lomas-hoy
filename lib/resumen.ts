@@ -4,7 +4,8 @@ import { redis } from "@/lib/servidor";
 import { ahoraAR } from "@/lib/avisos";
 import { asegurarClima } from "@/lib/clima";
 import type { Todo } from "@/lib/datos";
-import { resumenAnses, terminaciones, type PagoAnses } from "@/lib/anses";
+import type { PagoAnses } from "@/lib/anses";
+import { cobranHoyTexto } from "@/lib/cobran-comun";
 import { cuandoAlerta } from "@/lib/alertas-texto";
 import { transporteDe, luzParaSaludo, estadoEnUnaFrase } from "@/lib/transporte";
 import { notificarSeguro } from "@/lib/push";
@@ -41,13 +42,21 @@ export function textoSaludo(d: Datos) {
   const hoy = d.ahora.slice(0, 10);
   const temp = d.max ?? d.temp;
   const partes: string[] = [];
-  if (temp != null) partes.push(`Hoy máx ${Math.round(temp)}°.${d.frase ? ` ${d.frase.split("\n").join(". ")}.` : ""}`);
+  // "Máx 17°, sin lluvias, hace fresco, salí abrigado. Mañana: chaparrones aislados." (sin el "Hoy" repetido)
+  const lineasFrase = d.frase ? d.frase.split("\n").map((l) => l.trim()).filter(Boolean) : [];
+  const primera = lineasFrase[0]?.replace(/^Hoy: /, "");
+  const dePrimera = lineasFrase[0]?.startsWith("Hoy: ");
+  if (temp != null) {
+    partes.push(dePrimera && primera ? `Máx ${Math.round(temp)}°, ${primera}.` : `Máx ${Math.round(temp)}°.`);
+    if (!dePrimera && lineasFrase.length) partes.push(`${lineasFrase.join(". ")}.`);
+    else if (lineasFrase.length > 1) partes.push(`${lineasFrase.slice(1).join(". ")}.`);
+  } else if (lineasFrase.length) partes.push(`${lineasFrase.join(". ")}.`);
   const estado = estadoEnUnaFrase(transporteDe(d.todo), luzParaSaludo(d.todo, d.ahora));
   if (estado) partes.push(estado);
   if (d.alerta) partes.push(`Ojo: ${d.alerta}.`);
   else if (d.tormenta && d.tormenta.hasta >= d.ahora) partes.push(`Ojo: ${d.tormenta.texto.charAt(0).toLowerCase()}${d.tormenta.texto.slice(1)}`);
-  const cobran = resumenAnses(d.pagos, hoy).delMes.filter((p) => p.fecha === hoy);
-  if (cobran.length) partes.push(`Cobran DNI ${terminaciones([...new Set(cobran.flatMap((p) => p.dnis))].sort((a, b) => a - b))}.`);
+  const cobran = cobranHoyTexto(d.pagos, hoy); // los mismos datos y textos que la sección "Hoy cobran"
+  if (cobran) partes.push(cobran);
   return { titulo: `Buen día · ${fechaLinda(hoy)}`, cuerpo: partes.join(" ") || "Que tengas un buen día." };
 }
 

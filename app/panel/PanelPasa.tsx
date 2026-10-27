@@ -7,7 +7,7 @@ import { Denuncias } from "./Moderar";
 type Aviso = { id: string; tipo: string; texto: string; barrio: string; donde: string; foto: { url: string } | null; creado: string; vence: string; oculta?: boolean; denuncias?: { motivo: string }[] };
 const fecha = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", dateStyle: "short", timeStyle: "short", hour12: false });
 
-// Pestaña "Enterate lo que pasa en Lomas": todos los avisos de las últimas 24 horas, con "Borrar" y "Bloquear".
+// Pestaña "Avisos de vecinos": todos los avisos de las últimas 24 horas, con "Borrar" y "Bloquear".
 export default function PanelPasa() {
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [msg, setMsg] = useState("");

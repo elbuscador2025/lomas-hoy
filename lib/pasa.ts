@@ -2,8 +2,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { put, del } from "@vercel/blob";
 import { redis, hoyArgentina } from "@/lib/servidor";
-import { geocodificar } from "@/scripts/geocodificar.mjs";
-import { distanciaKm } from "@/lib/datos";
 import { estaBloqueado, huella, agregarBloqueo } from "@/lib/moderacion";
 import { TIPOS_PASA, MAX_TEXTO_PASA, HORAS_PASA, motivoProhibidoPasa, type AvisoPasa } from "@/lib/pasa-comun";
 
@@ -14,8 +12,6 @@ type Registro = {
 };
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 const limpio = (v: unknown, max: number) => String(v ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "").trim().slice(0, max);
-const CAJA = { latMin: -35.0, latMax: -34.55, lngMin: -58.65, lngMax: -58.2 }; // alrededor del partido de Lomas de Zamora
-const dentro = (lat: number, lng: number) => lat > CAJA.latMin && lat < CAJA.latMax && lng > CAJA.lngMin && lng < CAJA.lngMax;
 
 async function todos(): Promise<Registro[]> {
   const [x] = await redis([["HVALS", "pasa"]]);
@@ -32,20 +28,7 @@ export async function limitePorDia(dispositivo: string, ip: string) {
   return Number(d) <= MAX_POR_DIA_PASA && Number(i) <= MAX_POR_DIA_PASA * 3;
 }
 
-// El barrio: el de la salita o guardia más cercana al punto (sirve para decir "en Santa Catalina")
-export async function barrioCercano(lat: number, lng: number) {
-  const [x] = await redis([["HVALS", "lugares"]]);
-  let mejor = "", d = Infinity;
-  for (const j of x as string[]) {
-    const l = JSON.parse(j) as { localidad?: string; lat?: number; lng?: number };
-    if (l.lat == null || l.lng == null || !l.localidad) continue;
-    const k = distanciaKm({ lat, lng }, { lat: l.lat, lng: l.lng });
-    if (k < d) { d = k; mejor = l.localidad; }
-  }
-  return d < 3 ? (mejor === "General Lamadrid" ? "Villa Lamadrid" : mejor) : ""; // así lo conocen los vecinos
-}
-
-export async function publicar(form: FormData, dispositivo: string): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function publicar(form: FormData, dispositivo: string): Promise<{ ok: true; id: string; texto: string } | { ok: false; error: string }> {
   const tipo = limpio(form.get("tipo"), 20);
   if (!TIPOS_PASA.some((t) => t.id === tipo)) return { ok: false, error: "Elegí qué pasa." };
   const texto = limpio(form.get("texto"), MAX_TEXTO_PASA + 1);
@@ -56,17 +39,9 @@ export async function publicar(form: FormData, dispositivo: string): Promise<{ o
   const disp = huella(dispositivo);
   if (await estaBloqueado(null, disp)) return { ok: false, error: "No podés publicar desde este celular." };
 
-  let lat = Number(form.get("lat")), lng = Number(form.get("lng"));
-  const calle = limpio(form.get("calle"), 80);
-  if (calle.length < 3) return { ok: false, error: "Contanos dónde: la calle y la altura, o la esquina." };
-  const donde = calle;
-  // El barrio sale de la ubicación del celular (si la dio) o, si no, de buscar la calle en el mapa; si no se encuentra, el aviso se publica igual sin barrio
-  let tieneGPS = Number.isFinite(lat) && Number.isFinite(lng) && form.get("lat") !== null && form.get("lat") !== "" && dentro(lat, lng);
-  if (!tieneGPS) {
-    const g = await geocodificar(calle, "Lomas de Zamora").catch(() => null);
-    if (g && dentro(g.lat, g.lng)) { lat = g.lat; lng = g.lng; tieneGPS = true; }
-  }
-  const barrio = tieneGPS ? await barrioCercano(lat, lng).catch(() => "") : "";
+  // Dónde pasó lo escribe el vecino (calle y barrio): no se usa la ubicación del celular
+  const donde = limpio(form.get("calle"), 80);
+  if (donde.length < 3) return { ok: false, error: "Contanos dónde pasó: la calle y el barrio." };
 
   const id = randomUUID().slice(0, 10);
   let foto: Registro["foto"] = null;
@@ -84,11 +59,11 @@ export async function publicar(form: FormData, dispositivo: string): Promise<{ o
   }
   const ahora = new Date();
   const r: Registro = {
-    id, tipo, texto, barrio, donde, ...(tieneGPS ? { lat, lng } : {}), foto, creado: ahora.toISOString(),
+    id, tipo, texto, barrio: "", donde, foto, creado: ahora.toISOString(),
     vence: new Date(ahora.getTime() + HORAS_PASA * 3600_000).toISOString(), disp, situacion: "aprobada",
   };
   await redis([["HSET", "pasa", id, JSON.stringify(r)]]);
-  return { ok: true };
+  return { ok: true, id, texto };
 }
 
 // Lo que se ve en la app: lo que no venció ni fue ocultado por denuncias; los vigentes arriba (el más nuevo primero) y los ya solucionados abajo

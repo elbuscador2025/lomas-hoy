@@ -473,3 +473,7 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .aviso-pasa.resuelto { opacity:.6; filter:grayscale(1); }
 .pasa-texto { flex:1; }
 .cobro-ya { color:#8A93A0; font-size:14px; margin:6px 2px; line-height:1.35; }
+
+.foto-vecino { width:72px; height:72px; object-fit:cover; border-radius:10px; flex:none; }
+.aviso-vecinos-nota { color:var(--suave); font-size:13px; margin:10px 0 6px; }
+.boton-pasa { justify-content:center; text-align:center; }

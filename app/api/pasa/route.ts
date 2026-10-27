@@ -1,6 +1,8 @@
 import { config } from "@/lomas.config.mjs";
 import { publicos, publicar, limitePorDia, MAX_POR_DIA_PASA } from "@/lib/pasa";
 import { ipDe } from "@/lib/cuentas";
+import { notificarAdmin } from "@/lib/push";
+import { after } from "next/server";
 
 // Público: los avisos de las últimas 24 horas (sin los ocultos por denuncias).
 export async function GET() {
@@ -21,5 +23,6 @@ export async function POST(req: Request) {
   // Cada intento cuenta para el máximo de 3 por día
   if (!(await limitePorDia(dispositivo, ipDe(req)))) return Response.json({ ok: false, error: `Ya publicaste ${MAX_POR_DIA_PASA} avisos hoy. Probá mañana.` }, { status: 429 });
   const r = await publicar(form, dispositivo);
-  return Response.json(r, { status: r.ok ? 200 : 400 });
+  if (r.ok) after(() => notificarAdmin("Nuevo aviso de vecino", r.texto.slice(0, 100), "/panel#pasa")); // solo me avisa a mí (el dueño); a los vecinos nunca les llega una notificación
+  return Response.json(r.ok ? { ok: true, id: r.id } : r, { status: r.ok ? 200 : 400 });
 }

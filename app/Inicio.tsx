@@ -22,10 +22,9 @@ import Discapacidad from "./Discapacidad";
 import CoopPantalla from "./Coop";
 import HoyCobran from "./HoyCobran";
 import Sos from "./Sos";
-import { BotonPasa, PantallaPasa, FormularioPasa, NOMBRE_PASA } from "./Pasa";
+import { BotonPasa, FormularioPasa, useVecinos } from "./Pasa";
 import Sugerir from "./Sugerir";
 import NoticiasLomas from "./Noticias";
-import type { AvisoPasa } from "@/lib/pasa-comun";
 import { GuardiasPantalla, SalitasPantalla, tieneGuardia24, esSalita } from "./Salud";
 import OficinasAnses from "./OficinasAnses";
 import { OFICINAS_ANSES, PALABRAS_ANSES_OF, ordenarOficinas, type OficinaAnses } from "@/lib/ansesof";
@@ -105,10 +104,7 @@ export default function Inicio() {
   const [oficinasAnses, setOficinasAnses] = useState<OficinaAnses[]>(ordenarOficinas(OFICINAS_ANSES));
   useEffect(() => { fetch("/api/ansesof").then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.oficinas?.length) setOficinasAnses(j.oficinas); }).catch(() => {}); }, []);
   const [verTodas, setVerTodas] = useState(false);
-  const [avisosPasa, setAvisosPasa] = useState<AvisoPasa[]>([]);
-  const cargarPasa = useCallback((fresco = false) => { fetch(fresco ? `/api/pasa?t=${Date.now()}` : "/api/pasa").then((r) => (r.ok ? r.json() : null)).then((j) => { if (Array.isArray(j)) setAvisosPasa(j); }).catch(() => {}); }, []); // "fresco" salta la caché de la red: así lo que acaba de pasar se ve enseguida
-  useEffect(() => { if (config.secciones.pasa.activa) cargarPasa(); }, [cargarPasa]);
-  useEffect(() => { if (config.secciones.pasa.activa && vista === "pasa") cargarPasa(true); }, [vista, cargarPasa]);
+  const vecinos = useVecinos(config.secciones.pasa.activa);
   const [coop, setCoop] = useState<Coop[]>(COOP_OFICIALES);
   const [coopElegida, setCoopElegida] = useState("");
   useEffect(() => { fetch("/api/coop").then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.coop?.length) setCoop(j.coop); }).catch(() => {}); }, []);
@@ -707,21 +703,14 @@ export default function Inicio() {
   if (vista === "avisos")
     return (
       <Detalle titulo="Mis avisos" onVolver={volver}>
-        <MisAvisos avisos={avisosApp} onConfigurar={() => abrir("notificaciones")} onAbrir={irA} />
-      </Detalle>
-    );
-
-  if (vista === "pasa" && s.pasa.activa)
-    return (
-      <Detalle color="pasa" titulo={NOMBRE_PASA} onVolver={volver}>
-        <PantallaPasa avisos={avisosPasa} onAvisar={() => abrir("pasa-avisar")} onSolucionado={(id, listo) => { setAvisosPasa((l) => [...l.map((a) => (a.id === id && listo ? { ...a, solucionado: true } : a))].sort((a, b) => Number(a.solucionado) - Number(b.solucionado))); cargarPasa(true); }} />
+        <MisAvisos avisos={avisosApp} vecinos={vecinos} onConfigurar={() => abrir("notificaciones")} onAbrir={irA} />
       </Detalle>
     );
 
   if (vista === "pasa-avisar" && s.pasa.activa)
     return (
-      <Detalle color="pasa" titulo="Avisar algo" onVolver={volver}>
-        <FormularioPasa onListo={(publicado) => { if (publicado) cargarPasa(true); volver(); }} />
+      <Detalle color="pasa" titulo="Avisá si pasa algo" onVolver={volver}>
+        <FormularioPasa onListo={(publicado) => { if (publicado) vecinos.recargar(true); volver(); }} />
       </Detalle>
     );
 
@@ -810,9 +799,9 @@ export default function Inicio() {
           <span className="marca">Lomas Hoy</span>
           <span className="azul-botones">
           <button className="sos" aria-label="Emergencias: números para llamar" onClick={(e) => { e.stopPropagation(); abrir("sos"); }}>SOS</button>
-          <button className="campana" aria-label={avisosApp.sinVer ? `Mis avisos: ${avisosApp.sinVer} sin ver` : "Mis avisos"} onClick={(e) => { e.stopPropagation(); abrir("avisos"); }}>
+          <button className="campana" aria-label={avisosApp.sinVer + vecinos.sinVer ? `Mis avisos: ${avisosApp.sinVer + vecinos.sinVer} sin ver` : "Mis avisos"} onClick={(e) => { e.stopPropagation(); abrir("avisos"); }}>
             <Icono nombre="campana" tam={22} />
-            {avisosApp.sinVer > 0 ? <span className="num-rojo">{avisosApp.sinVer > 9 ? "9+" : avisosApp.sinVer}</span>
+            {avisosApp.sinVer + vecinos.sinVer > 0 ? <span className="num-rojo">{avisosApp.sinVer + vecinos.sinVer > 9 ? "9+" : avisosApp.sinVer + vecinos.sinVer}</span>
               : (push.estado === "inactivo" || push.estado === "iosSinInstalar") && <span className="punto" />}
           </button>
           </span>
@@ -940,7 +929,7 @@ export default function Inicio() {
           </section>
         ) : (
           <>
-            {s.pasa.activa && <BotonPasa avisos={avisosPasa} onClick={() => abrir("pasa")} />}
+            {s.pasa.activa && <BotonPasa onClick={() => abrir("pasa-avisar")} />}
             {(s.tren.activa || s.colectivos.activa) && (
               <section className="transporte coloreado c-tren" aria-label="Transporte">
                 <h2><Icono nombre="tren" tam={24} /> Transporte</h2>

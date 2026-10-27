@@ -1,5 +1,5 @@
 // Guarda la app en el celu para que abra sin internet, y muestra las notificaciones.
-const CACHE = "lomas-hoy-v5";
+const CACHE = "lomas-hoy-v6";
 const AVISOS = "lomas-hoy-avisos"; // "Mis avisos": lo que llegó en los últimos 7 días, guardado en el propio celular
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.add("/")));
@@ -50,7 +50,7 @@ self.addEventListener("push", (e) => {
     self.registration.showNotification(d.titulo || "Lomas Hoy", {
       body: d.cuerpo || "",
       icon: "/icon-192.png",
-      badge: "/icon-192.png",
+      badge: "/badge-96.png", // ícono chico de la barra de Android: la "L" en blanco sobre fondo transparente
       tag: d.tag || undefined,
       data: { url: d.url || "/" },
     }),
