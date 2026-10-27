@@ -148,8 +148,8 @@ test("agua: barrios de Lomas y horario que nombra la nota completa", () => {
   assert.deepEqual(barriosEnTexto("Corte en Lanús y Esteban Echeverría", cfgAgua), []);
 });
 
-import { leerListaCiudad, leerResultadoCiudad, leerProvincia, leerQuinielaNacion, componerDias, leerQuini } from "./quiniela.mjs";
-test("quiniela: sale apenas lo publica la fuente oficial; el diario solo respalda", () => {
+import { leerListaCiudad, leerResultadoCiudad, leerProvincia, componerDias, leerQuini } from "./quiniela.mjs";
+test("quiniela: sale apenas lo publica la fuente oficial, sin esperar a nadie", () => {
   const lista = leerListaCiudad("<li class='custom-option' data-value='5'>27/10/2026 - 10:15 - Sorteo Nº 5 - PREVIA</li><li class='custom-option' data-value='4'>26/10/2026 - 21:00 - Sorteo Nº 4 - NOCTURNA</li><li class='custom-option' data-value='3'>24/10/2026 - 21:00 - Sorteo Nº 3 - NOCTURNA</li>");
   assert.deepEqual(lista.map((x) => [x.sorteo, x.fecha, x.hora, x.id]), [[5, "2026-10-27", "10:15", "PREV"], [4, "2026-10-26", "21:00", "NOCT"], [3, "2026-10-24", "21:00", "NOCT"]]);
   const nums = (base) => Array.from({ length: 20 }, (_, i) => ({ pos: String(i + 1).padStart(2, "0"), val: String(base + i).padStart(4, "0") }));
@@ -157,26 +157,15 @@ test("quiniela: sale apenas lo publica la fuente oficial; el diario solo respald
   const resultados = { 5: leerResultadoCiudad(js(5, 1000)), 4: leerResultadoCiudad(js(4, 2000)), 3: leerResultadoCiudad(js(3, 3000)) };
   const spans = (base) => nums(base).map((n) => "<div><span>" + n.pos + "</span><span>" + n.val + "</span></div>").join("");
   const html = (base) => '<div class="sorteo"><h3>Quiniela La Previa<i class="x"></i></h3><div class="datosSorteo"><p class="fechaSorteo">27/10/2026</p><div class="bolillas">' + spans(base) + '</div></div></div><div class="contenedorExtractos"></div>';
-  const nacion = (base) => "<div>Previa - Martes 27/10/2026 A la Cabeza: 99 Hermanos " + nums(base).map((n) => n.pos + " " + n.val).join(" ") + " Información provista por Data Factory</div>";
-  const ext = (b1, b2) => ({ provincia: leerQuinielaNacion(nacion(b1)), nacional: leerQuinielaNacion(nacion(b2)) });
   const hoy = "2026-10-27";
-  assert.equal(ext(1100, 1000).provincia.fecha, "2026-10-27");
-  assert.equal(componerDias({ lista, resultados, hoy })[1].sorteos.PREV.santafe[0], "1200"); // Santa Fe: el extracto de la Ciudad (jurisdicción 72)
-  // Sale apenas lo publica la Lotería de la Ciudad, sin esperar al diario
   let dias = componerDias({ lista, resultados, hoy });
   assert.deepEqual(dias.map((d) => d.fecha), ["2026-10-26", "2026-10-27"]); // ayer = el último día con sorteos antes de hoy
-  assert.deepEqual([dias[1].sorteos.PREV.provincia[0], dias[1].sorteos.PREV.nacional[0], dias[0].sorteos.NOCT.provincia[0]], ["1100", "1000", "2100"]);
+  assert.deepEqual([dias[1].sorteos.PREV.provincia[0], dias[1].sorteos.PREV.nacional[0], dias[1].sorteos.PREV.santafe[0], dias[0].sorteos.NOCT.provincia[0]], ["1100", "1000", "1200", "2100"]);
   // Si la Lotería de la Provincia ya lo publicó, manda su resultado; mientras muestre "----", se usa la Ciudad
   dias = componerDias({ lista, resultados, provinciaOficial: leerProvincia(html(5555)), hoy });
   assert.equal(dias[1].sorteos.PREV.provincia[0], "5555");
   dias = componerDias({ lista, resultados, provinciaOficial: leerProvincia(html(1100).replace(/<span>11\d\d<\/span>/g, "<span>----</span>")), hoy });
   assert.equal(dias[1].sorteos.PREV.provincia[0], "1100");
-  // El diario solo respalda lo que el sitio oficial no tiene
-  const sinPrevia = { ...resultados }; delete sinPrevia[5];
-  dias = componerDias({ lista, resultados: sinPrevia, externas: ext(7100, 7000), hoy });
-  assert.deepEqual([dias[1].sorteos.PREV.provincia[0], dias[1].sorteos.PREV.nacional[0]], ["7100", "7000"]);
-  dias = componerDias({ lista, resultados, externas: ext(7100, 7000), hoy }); // con la Ciudad presente, el diario no pesa
-  assert.deepEqual([dias[1].sorteos.PREV.provincia[0], dias[1].sorteos.PREV.nacional[0]], ["1100", "1000"]);
   dias = componerDias({ lista: [], resultados: {}, hoy }); // sin datos: nada inventado
   assert.deepEqual(dias.map((d) => Object.keys(d.sorteos).length), [0]);
 });
@@ -196,41 +185,33 @@ test("quinielas: las 6 en orden, Montevideo con menos sorteos y 3 cifras", () =>
   const js = "window.RESULTADOS_DATA = " + JSON.stringify([{ sorteo: 1, jurisdicciones: { 0: { numeros: Array.from({ length: 20 }, (_, i) => ({ pos: String(i + 1).padStart(2, "0"), val: String(1876 + i) })) }, 55: { numeros: Array.from({ length: 20 }, (_, i) => ({ pos: String(i + 1).padStart(2, "0"), val: String(3342 + i) })) } } }]) + ";";
   const r = leerResultadoCiudad(js);
   assert.deepEqual([r.montevideo[0], r.cordoba[0], r.entrerios], ["876", "3342", null]);
-  assert.deepEqual(leerQuinielaNacion("Nocturna - Lunes 26/10/2026 A la Cabeza: 76 Llamas " + Array.from({ length: 20 }, (_, i) => String(i + 1).padStart(2, "0") + " " + (876 + i)).join(" ") + " Información", 3).sorteos.NOCT.slice(0, 2), ["876", "877"]);
 });
 
 import { controlarYComponer, controlarQuini } from "./quiniela.mjs";
-test("controles de la quiniela: lo que no cierra no se muestra y queda registrado; La Nación que no coincide se anota", () => {
+test("control básico de la quiniela: 20 números de 4 cifras y la fecha del día; si no cierra, no se muestra", () => {
   const lista = leerListaCiudad("<li data-value='5'>27/10/2026 - 10:15 - Sorteo Nº 5 - PREVIA</li><li data-value='4'>26/10/2026 - 21:00 - Sorteo Nº 4 - NOCTURNA</li>");
   const nums = (base, n = 20) => Array.from({ length: n }, (_, i) => ({ pos: String(i + 1).padStart(2, "0"), val: String(base + i).padStart(4, "0") }));
   const js = (n, fecha, jur) => "window.RESULTADOS_DATA = " + JSON.stringify([{ sorteo: n, fecha, jurisdicciones: jur }]) + ";";
   const bien = (base) => ({ 51: { numeros: nums(base) }, 53: { numeros: nums(base + 100) } });
   const hoy = "2026-10-27";
-  // todo en orden: sin controles fallidos
   let r = controlarYComponer({ lista, resultados: { 5: leerResultadoCiudad(js(5, "27/10/2026", bien(1000))), 4: leerResultadoCiudad(js(4, "26/10/2026", bien(2000))) }, hoy });
-  assert.deepEqual([r.controles.length, r.diferencias.length, r.dias[1].sorteos.PREV.nacional[0]], [0, 0, "1000"]);
-  // 19 números: no se muestra y se anota
+  assert.deepEqual([r.controles.length, r.dias[1].sorteos.PREV.nacional[0]], [0, "1000"]);
+  // 19 números: no se muestra
   r = controlarYComponer({ lista, resultados: { 5: leerResultadoCiudad(js(5, "27/10/2026", { 51: { numeros: nums(1000, 19) }, 53: { numeros: nums(1100) } })), 4: leerResultadoCiudad(js(4, "26/10/2026", bien(2000))) }, hoy });
   assert.deepEqual([r.dias[1].sorteos.PREV.nacional, r.dias[1].sorteos.PREV.provincia[0], r.controles.map((c) => c.quiniela + " " + c.sorteo)], [null, "1100", ["Nacional Previa"]]);
-  // fecha distinta a la del día
+  // números de 5 cifras: no se muestra
+  r = controlarYComponer({ lista, resultados: { 5: leerResultadoCiudad(js(5, "27/10/2026", { 51: { numeros: nums(10000) }, 53: { numeros: nums(1100) } })), 4: leerResultadoCiudad(js(4, "26/10/2026", bien(2000))) }, hoy });
+  assert.equal(r.dias[1].sorteos.PREV.nacional, null);
+  // fecha distinta a la del día: no se muestra
   r = controlarYComponer({ lista, resultados: { 5: leerResultadoCiudad(js(5, "26/10/2026", bien(1000))), 4: leerResultadoCiudad(js(4, "26/10/2026", bien(2000))) }, hoy });
-  assert.deepEqual([r.dias[1].sorteos.PREV, r.controles.map((c) => c.motivo).filter((m) => /fecha/.test(m)).length], [undefined, 2]);
-  // igual al sorteo anterior
-  r = controlarYComponer({ lista, resultados: { 5: leerResultadoCiudad(js(5, "27/10/2026", bien(2000))), 4: leerResultadoCiudad(js(4, "26/10/2026", bien(2000))) }, hoy });
-  assert.deepEqual([r.dias[1].sorteos.PREV, r.controles.map((c) => c.motivo).filter((m) => /anterior/.test(m)).length], [undefined, 2]);
-  // La Nación no coincide: se muestra el oficial y se anota; si coincide, no se anota
-  const nacion = (base) => leerQuinielaNacion("Previa - Martes 27/10/2026 A la Cabeza: 99 Hermanos " + nums(base).map((n) => n.pos + " " + n.val).join(" ") + " Información");
-  const resultados = { 5: leerResultadoCiudad(js(5, "27/10/2026", bien(1000))), 4: leerResultadoCiudad(js(4, "26/10/2026", bien(2000))) };
-  r = controlarYComponer({ lista, resultados, externas: { nacional: nacion(7000), provincia: nacion(1100) }, hoy });
-  assert.deepEqual([r.dias[1].sorteos.PREV.nacional[0], r.diferencias.map((d) => d.quiniela + " " + d.sorteo)], ["1000", ["Nacional Previa"]]);
+  assert.deepEqual([r.dias[1].sorteos.PREV, r.controles.filter((m) => /fecha/.test(m.motivo)).length], [undefined, 2]);
 });
-test("controles del Quini 6: 6 números distintos entre 00 y 45, fecha no futura y distinta de la anterior", () => {
+test("control básico del Quini 6: 6 números distintos entre 00 y 45 y fecha no futura", () => {
   const q = (fecha, nums) => ({ sorteo: null, fecha, modalidades: ["Tradicional", "La Segunda", "Revancha", "Siempre Sale"].map((nombre) => ({ nombre, numeros: nums })) });
   const ok = ["00", "02", "03", "08", "19", "39"];
-  assert.equal(controlarQuini(q("2026-10-25", ok), "2026-10-27", q("2026-10-21", ["04", "05", "32", "39", "40", "44"])).ok, true);
+  assert.equal(controlarQuini(q("2026-10-25", ok), "2026-10-27").ok, true);
   assert.match(controlarQuini(q("2026-10-25", ["00", "02", "03", "08", "19"]), "2026-10-27").motivo, /6 números/);
   assert.match(controlarQuini(q("2026-10-25", ["00", "02", "03", "08", "19", "46"]), "2026-10-27").motivo, /fuera de 00 a 45/);
   assert.match(controlarQuini(q("2026-10-25", ["00", "02", "03", "08", "19", "19"]), "2026-10-27").motivo, /repetidos/);
   assert.match(controlarQuini(q("2026-10-29", ok), "2026-10-27").motivo, /futura/);
-  assert.match(controlarQuini(q("2026-10-25", ok), "2026-10-27", q("2026-10-21", ok)).motivo, /igual al sorteo anterior/);
 });

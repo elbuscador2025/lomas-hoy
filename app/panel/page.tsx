@@ -131,7 +131,7 @@ export default function Panel() {
           {datos.quiniela && (
             <p className={`normal ${datos.quiniela.problemas.length ? "error" : ""}`}>
               {datos.quiniela.problemas.length
-                ? <><b>Quiniela:</b> no coincidieron o no pasaron el control hoy:<br /><small>{datos.quiniela.problemas.join(" · ")}</small></>
+                ? <><b>Quiniela:</b> no pasaron el control hoy:<br /><small>{datos.quiniela.problemas.join(" · ")}</small></>
                 : <><b>Quiniela:</b> {datos.quiniela.ultimo ? `último control OK a las ${new Date(datos.quiniela.ultimo).toLocaleTimeString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", hour: "2-digit", minute: "2-digit", hour12: false })}` : "todavía sin controles"}</>}
             </p>
           )}

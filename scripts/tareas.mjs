@@ -4,7 +4,7 @@
 import { config as cfg } from "../lomas.config.mjs";
 import { leerTren, leerLuz, leerRss, buscarParos, buscarAgua, leerProgramados, leerSubte, armarNoticias } from "./fuentes.mjs";
 import { leerAlertas } from "./alertas.mjs";
-import { leerListaCiudad, leerResultadoCiudad, leerProvincia, componerDias, leerQuiniCompleto, URL_CIUDAD, URL_CIUDAD_DATOS, URL_PROVINCIA, leerQuiniNacion, URL_QUINI_NACION, leerQuinielaNacion, URL_NACION, QUINIELAS, controlarYComponer, controlarQuini } from "./quiniela.mjs";
+import { leerListaCiudad, leerResultadoCiudad, leerProvincia, componerDias, leerQuiniCompleto, URL_CIUDAD, URL_CIUDAD_DATOS, URL_PROVINCIA, leerQuiniNacion, URL_QUINI_NACION, controlarYComponer, controlarQuini } from "./quiniela.mjs";
 import { leerPronostico, urlOpenMeteo, leerPron5d, leerZipSmn, URL_SMN_5DIAS } from "./clima.mjs";
 
 const TIEMPO = 20000; // ninguna fuente puede demorar más que esto
@@ -72,22 +72,21 @@ export async function correrTareas({ guardar, env = process.env, log = console }
       const d = await leerLocales();
       return { notas: armarNoticias([d.notas], cfg.noticias.maximo), diariosLeidos: d.diariosLeidos, diariosSinLeer: d.diariosSinLeer };
     },
-    // Quiniela (Provincia y Nacional): hoy y el último día con sorteos, de la fuente oficial apenas lo publica; el diario (La Nación) solo respalda.
+    // Quiniela (6 quinielas): hoy y el último día con sorteos, de la fuente oficial apenas lo publica.
     quiniela: async () => {
       const hoy = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10); // fecha de hoy en Argentina
-      // Lo oficial se lee primero y manda; el diario (La Nación) solo respalda lo que el sitio oficial no tiene o si no responde
-      const [listaLeida, prov, respaldo] = await Promise.all([
+      // Solo fuentes oficiales: la Lotería de la Ciudad (extracto de todas las quinielas) y la de la Provincia
+      const [listaLeida, prov] = await Promise.all([
         traer(URL_CIUDAD, "text").then(leerListaCiudad).catch(() => []),
-        traer(URL_PROVINCIA, "text").then(leerProvincia).catch(() => null), // la Lotería de la Provincia: si ya publicó, su resultado manda
-        Promise.all(Object.entries(URL_NACION).map(async ([q, url]) => [q, await traer(url, "text").then((h) => leerQuinielaNacion(h, QUINIELAS.find((x) => x.id === q).cifras)).catch(() => null)])), // respaldo (diario)
+        traer(URL_PROVINCIA, "text").then(leerProvincia).catch(() => null), // si ya publicó, su resultado manda para Provincia
       ]);
       const lista = listaLeida;
       const ayer = [...new Set(lista.map((x) => x.fecha))].sort().filter((f) => f < hoy).pop();
       const leidos = await Promise.allSettled(lista.filter((x) => x.fecha === hoy || x.fecha === ayer).map(async (x) => [x.sorteo, leerResultadoCiudad(await traer(URL_CIUDAD_DATOS(x.sorteo), "text"))]));
       const resultados = Object.fromEntries(leidos.flatMap((l) => (l.status === "fulfilled" ? [l.value] : [])));
-      const { dias, controles, diferencias } = controlarYComponer({ lista, resultados, provinciaOficial: prov, externas: Object.fromEntries(respaldo), hoy });
+      const { dias, controles } = controlarYComponer({ lista, resultados, provinciaOficial: prov, hoy });
       if (!dias.some((d) => Object.keys(d.sorteos).length) && !controles.length) throw new Error("No se pudo leer ninguna fuente de la quiniela");
-      return { dias, controles, diferencias }; // controles: lo que no pasó los controles (no se muestra); diferencias: lo oficial que no coincide con La Nación
+      return { dias, controles }; // controles: lo que no pasó el control básico (no se muestra)
     },
     // Quini 6: el sitio oficial de Santa Fe (último sorteo y anterior); si no responde desde el servidor, La Nación (solo el último: el anterior lo guarda el sitio al cambiar el sorteo)
     quini6: async () => {
@@ -102,7 +101,7 @@ export async function correrTareas({ guardar, env = process.env, log = console }
       }
       // Controles: lo que no cierra no se muestra
       const controles = [], sorteos = [];
-      leidos.forEach((q, k) => { const r = controlarQuini(q, hoy, leidos[k + 1] ?? null); if (r.ok) sorteos.push(q); else controles.push({ quiniela: "Quini 6", sorteo: q.fecha, fecha: q.fecha, motivo: r.motivo }); });
+      leidos.forEach((q) => { const r = controlarQuini(q, hoy); if (r.ok) sorteos.push(q); else controles.push({ quiniela: "Quini 6", sorteo: q.fecha, fecha: q.fecha, motivo: r.motivo }); });
       return { sorteos, fuente, controles };
     },
     colectivos: async () => {
