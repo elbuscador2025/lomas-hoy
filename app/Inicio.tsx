@@ -24,7 +24,6 @@ import HoyCobran from "./HoyCobran";
 import Sos from "./Sos";
 import QuinielaPantalla, { type ModoQuiniela } from "./Quiniela";
 import { ultimoResultado } from "@/lib/quiniela-comun";
-import { cobranHoyTile } from "@/lib/cobran-comun";
 import { BotonPasa, FormularioPasa, useVecinos } from "./Pasa";
 import Sugerir from "./Sugerir";
 import NoticiasLomas from "./Noticias";
@@ -990,7 +989,7 @@ export default function Inicio() {
               {s.anses.activa && (
                 <Tile color="anses" icono="dinero" titulo={s.anses.titulo} onClick={() => abrir("anses")}
                   estado={rAnses.hayHoy ? "Hoy" : rAnses.sinDatos ? "Sin datos" : "Mes"} tono={rAnses.hayHoy ? "ok" : "neutro"}
-                  resumen={rAnses.sinDatos ? rAnses.texto : (cobranHoyTile(anses.entradas, hoyStr) ?? "Hoy no hay pagos")} />
+                  resumen="Jubilados, AUH y pensiones" />
               )}
               {s.trueque.activa && (
                 <Tile color="trueque" icono="trueque" titulo={s.trueque.titulo} onClick={() => abrir("trueque")}

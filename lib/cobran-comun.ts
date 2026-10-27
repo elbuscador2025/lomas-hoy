@@ -37,12 +37,3 @@ export function cobranHoyTexto(pagos: PagoAnses[], hoy: string) {
   if (pen.length) partes.push(`Pensiones: DNI ${dniDe(pen)}.`);
   return partes.join(" ");
 }
-
-// Para el cuadradito "Hoy cobran": el primer grupo que cobra hoy con su nombre simple ("Jubilados que cobran más que la mínima: DNI 4 y 5") y "y más" si cobran varios. null si no cobra nadie.
-export function cobranHoyTile(pagos: PagoAnses[], hoy: string) {
-  const deHoy = pagos.filter((p) => p.fecha === hoy);
-  const claves = (["jubilados", "auh", "pensiones"] as Clave[]).flatMap((k) => BLOQUES[k].map((b) => ({ k, b })));
-  const con = claves.map(({ k, b }) => ({ b, pagos: deHoy.filter((p) => { const g = grupoDe(p.prestacion); return g?.clave === k && g.bloque === b.id; }) })).filter((x) => x.pagos.length);
-  if (!con.length) return null;
-  return `${con[0].b.titulo}: DNI ${dniDe(con[0].pagos)}${con.length > 1 ? " y más" : ""}`;
-}
