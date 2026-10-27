@@ -29,9 +29,10 @@ function Resultado({ quiniela, hoy }: { quiniela: Quiniela | null | undefined; h
         <Boton activo={dia === "ayer"} onClick={() => setDia("ayer")}>Ayer</Boton>
       </div>
       {dia === "ayer" && dAyer && <p className="quin-fecha">{ayerSinSerAyer ? `El último día con sorteos fue el ${fechaLinda(dAyer.fecha)}` : fechaLinda(dAyer.fecha)}</p>}
-      <div className="quin-fila" role="tablist" aria-label="Quiniela">
+      <div className="quin-sorteos" role="tablist" aria-label="Quiniela">
         <Boton activo={jur === "provincia"} onClick={() => setJur("provincia")}>Provincia</Boton>
         <Boton activo={jur === "nacional"} onClick={() => setJur("nacional")}>Nacional</Boton>
+        <Boton activo={jur === "santafe"} onClick={() => setJur("santafe")}>Santa Fe</Boton>
       </div>
       <div className="quin-sorteos" role="tablist" aria-label="Sorteo">
         {SORTEOS.map((x) => <Boton key={x.id} activo={id === x.id} onClick={() => setElegido(x.id)}>{x.nombre}</Boton>)}

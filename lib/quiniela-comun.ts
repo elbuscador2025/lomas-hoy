@@ -1,12 +1,12 @@
 // Quiniela y Quini 6: tipos y cuentas chicas que usan la pantalla y el cuadradito. Solo resultados.
 import { SORTEOS } from "@/scripts/quiniela.mjs";
 
-export type SorteoQ = { hora: string; nacional: string[] | null; provincia: string[] | null };
+export type SorteoQ = { hora: string; nacional: string[] | null; provincia: string[] | null; santafe?: string[] | null };
 export type DiaQ = { fecha: string; sorteos: Record<string, SorteoQ> };
 export type Quiniela = { dias: DiaQ[] };
 export type QuiniSorteo = { sorteo: number | null; fecha: string; modalidades: { nombre: string; numeros: string[] }[] };
 export type Quini6 = { sorteos: QuiniSorteo[] };
-export type Jurisdiccion = "provincia" | "nacional";
+export type Jurisdiccion = "provincia" | "nacional" | "santafe";
 
 // Hoy y el último día anterior con sorteos (los domingos no hay): siempre según la fecha de hoy, nunca un número viejo como si fuera de hoy
 export function diasDe(q: Quiniela | undefined | null, hoy: string) {

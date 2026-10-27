@@ -76,17 +76,18 @@ export async function correrTareas({ guardar, env = process.env, log = console }
     quiniela: async () => {
       const hoy = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10); // fecha de hoy en Argentina
       // Lo oficial se lee primero y manda; el diario (La Nación) solo respalda lo que el sitio oficial no tiene o si no responde
-      const [listaLeida, prov, nacP, nacN] = await Promise.all([
+      const [listaLeida, prov, nacP, nacN, nacS] = await Promise.all([
         traer(URL_CIUDAD, "text").then(leerListaCiudad).catch(() => []),
         traer(URL_PROVINCIA, "text").then(leerProvincia).catch(() => null),
         traer(URL_NACION.provincia, "text").then(leerQuinielaNacion).catch(() => null),
         traer(URL_NACION.nacional, "text").then(leerQuinielaNacion).catch(() => null),
+        traer(URL_NACION.santafe, "text").then(leerQuinielaNacion).catch(() => null),
       ]);
       const lista = listaLeida;
       const ayer = [...new Set(lista.map((x) => x.fecha))].sort().filter((f) => f < hoy).pop();
       const leidos = await Promise.allSettled(lista.filter((x) => x.fecha === hoy || x.fecha === ayer).map(async (x) => [x.sorteo, leerResultadoCiudad(await traer(URL_CIUDAD_DATOS(x.sorteo), "text"))]));
       const resultados = Object.fromEntries(leidos.flatMap((l) => (l.status === "fulfilled" ? [l.value] : [])));
-      const dias = componerDias({ lista, resultados, provinciaOficial: prov, externas: { provincia: nacP, nacional: nacN }, hoy });
+      const dias = componerDias({ lista, resultados, provinciaOficial: prov, externas: { provincia: nacP, nacional: nacN, santafe: nacS }, hoy });
       if (!dias.some((d) => Object.keys(d.sorteos).length)) throw new Error("No se pudo leer ninguna fuente de la quiniela");
       return { dias };
     },

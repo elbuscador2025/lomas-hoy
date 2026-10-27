@@ -153,7 +153,7 @@ test("quiniela: sale apenas lo publica la fuente oficial; el diario solo respald
   const lista = leerListaCiudad("<li class='custom-option' data-value='5'>27/10/2026 - 10:15 - Sorteo Nº 5 - PREVIA</li><li class='custom-option' data-value='4'>26/10/2026 - 21:00 - Sorteo Nº 4 - NOCTURNA</li><li class='custom-option' data-value='3'>24/10/2026 - 21:00 - Sorteo Nº 3 - NOCTURNA</li>");
   assert.deepEqual(lista.map((x) => [x.sorteo, x.fecha, x.hora, x.id]), [[5, "2026-10-27", "10:15", "PREV"], [4, "2026-10-26", "21:00", "NOCT"], [3, "2026-10-24", "21:00", "NOCT"]]);
   const nums = (base) => Array.from({ length: 20 }, (_, i) => ({ pos: String(i + 1).padStart(2, "0"), val: String(base + i).padStart(4, "0") }));
-  const js = (n, base) => "window.RESULTADOS_DATA = " + JSON.stringify([{ sorteo: n, jurisdicciones: { 51: { numeros: nums(base) }, 53: { numeros: nums(base + 100) } } }]) + ";window.POZO_ULTIMO_SORTEO = 0";
+  const js = (n, base) => "window.RESULTADOS_DATA = " + JSON.stringify([{ sorteo: n, jurisdicciones: { 51: { numeros: nums(base) }, 53: { numeros: nums(base + 100) }, 72: { numeros: nums(base + 200) } } }]) + ";window.POZO_ULTIMO_SORTEO = 0";
   const resultados = { 5: leerResultadoCiudad(js(5, 1000)), 4: leerResultadoCiudad(js(4, 2000)), 3: leerResultadoCiudad(js(3, 3000)) };
   const spans = (base) => nums(base).map((n) => "<div><span>" + n.pos + "</span><span>" + n.val + "</span></div>").join("");
   const html = (base) => '<div class="sorteo"><h3>Quiniela La Previa<i class="x"></i></h3><div class="datosSorteo"><p class="fechaSorteo">27/10/2026</p><div class="bolillas">' + spans(base) + '</div></div></div><div class="contenedorExtractos"></div>';
@@ -161,6 +161,7 @@ test("quiniela: sale apenas lo publica la fuente oficial; el diario solo respald
   const ext = (b1, b2) => ({ provincia: leerQuinielaNacion(nacion(b1)), nacional: leerQuinielaNacion(nacion(b2)) });
   const hoy = "2026-10-27";
   assert.equal(ext(1100, 1000).provincia.fecha, "2026-10-27");
+  assert.equal(componerDias({ lista, resultados, hoy })[1].sorteos.PREV.santafe[0], "1200"); // Santa Fe: el extracto de la Ciudad (jurisdicción 72)
   // Sale apenas lo publica la Lotería de la Ciudad, sin esperar al diario
   let dias = componerDias({ lista, resultados, hoy });
   assert.deepEqual(dias.map((d) => d.fecha), ["2026-10-26", "2026-10-27"]); // ayer = el último día con sorteos antes de hoy
