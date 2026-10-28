@@ -46,7 +46,7 @@ self.addEventListener("push", (e) => {
   let d = {};
   try { d = e.data.json(); } catch {}
   e.waitUntil(Promise.all([
-    guardarAviso(d),
+    guardarAviso(d).catch(() => {}), // si falla guardar en "Mis avisos", igual se muestra la notificación (Apple corta la suscripción si no se muestra)
     self.registration.showNotification(d.titulo || "Lomas Hoy", {
       body: d.cuerpo || "",
       icon: "/icon-192.png",

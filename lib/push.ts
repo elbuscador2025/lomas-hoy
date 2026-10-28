@@ -47,11 +47,27 @@ export function validarSuscripcion(d: Record<string, unknown>): Suscripcion | st
   return { endpoint, keys: { p256dh, auth }, tipos, creado: new Date().toISOString(), equipo: d.equipo === "celular" ? "celular" : d.equipo === "compu" ? "compu" : undefined };
 }
 
+// Devuelve true si es un celular que todavía no estaba guardado.
 export async function guardarSuscripcion(s: Suscripcion) {
   const id = idDe(s.endpoint);
   const [previo] = await redis([["HGET", "push:subs", id]]);
   const creado = previo ? (JSON.parse(previo as string) as Suscripcion).creado : s.creado;
   await redis([["HSET", "push:subs", id, JSON.stringify({ ...s, creado, renovado: new Date().toISOString() })]]);
+  return !previo;
+}
+
+// Confirmación al instante: solo a ese celular, sin contar para el máximo diario ni pasar por el horario de silencio.
+export async function confirmarSuscripcion(endpoint: string) {
+  try {
+    prepararVapid();
+    const [j] = await redis([["HGET", "push:subs", idDe(endpoint)]]);
+    if (!j) return;
+    const r = await enviarUna(JSON.parse(j as string), { titulo: "Lomas Hoy", cuerpo: "✅ Listo, ya vas a recibir los avisos de Lomas Hoy", url: "/", tag: "bienvenida", tipo: "" }, true);
+    if (r.borrar) await borrarSuscripcion(endpoint);
+    await registrar({ tipo: "bienvenida", evento: "bienvenida", enviadas: r.ok ? 1 : 0, fallidas: r.ok ? 0 : 1, errores: r.ok ? [] : [`${r.estado ?? "?"}: ${r.mensaje}`] }, r.ok ? 1 : 0, r.ok ? 0 : 1);
+  } catch (e) {
+    console.error("push bienvenida:", e);
+  }
 }
 export async function borrarSuscripcion(endpoint: string) {
   await redis([["HDEL", "push:subs", idDe(endpoint)]]);

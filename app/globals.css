@@ -591,3 +591,7 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .jg-pantalla .jg-ttt { justify-content:center; }
 .jg-pantalla .jg-tablero3 { width:min(86vw, 340px, calc(100dvh - 330px)); }
 .jg-pantalla .jg-mensaje { font-size:20px; margin:0; min-height:0; }
+
+/* iPhone: botón para activar los avisos */
+.aviso-iphone { margin:0 0 12px; text-align:center; }
+.aviso-iphone .btn { width:100%; min-height:60px; font-size:19px; margin:0; }

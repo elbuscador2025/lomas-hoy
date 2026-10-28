@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { config } from "@/lomas.config.mjs";
 import { Icono } from "./Iconos";
-import { useInstalar, type Push } from "./usePush";
+import { useInstalar, esIOS, estaInstalada, type Push } from "./usePush";
 import { sonidoActivo, guardarSonido } from "./FeedbackToque";
 
 function PasosIPhone() {
@@ -50,10 +50,28 @@ const AVISOS_QUE_LLEGAN: { icono: string; texto: string; activo: boolean }[] = [
   { icono: "tormenta", texto: "Se pronostica una tormenta fuerte", activo: config.push.tipos.tormenta.activa },
 ];
 
+// iPhone con la app instalada (abierta desde el ícono) y sin permiso: botón grande arriba de la pantalla principal. Al activarse desaparece.
+// En Safari sin instalar no aparece: ahí se muestra el cartel de "Compartir > Agregar a inicio".
+export function BotonAvisosIPhone({ push }: { push: Push }) {
+  const [iphoneInstalado, setIphoneInstalado] = useState(false);
+  useEffect(() => setIphoneInstalado(esIOS() && estaInstalada()), []);
+  if (!iphoneInstalado || (push.estado !== "inactivo" && push.estado !== "denegado")) return null;
+  return (
+    <div className="aviso-iphone">
+      {push.estado === "inactivo" ? (
+        <button className="btn grande-btn" disabled={push.ocupado} onClick={() => push.activar(push.prefs)}>🔔 Activar avisos (Buen día y alertas)</button>
+      ) : (
+        <small className="chico">Para activarlos: Ajustes &gt; Notificaciones &gt; Lomas Hoy</small>
+      )}
+      {push.error && <p className="error">{push.error}</p>}
+    </div>
+  );
+}
+
 // Cartel para activar los avisos. Pide el permiso del navegador solo al tocar "Activar avisos".
 export function CartelAvisos({ push, agua }: { push: Push; agua: boolean }) {
   const [cerrado, setCerrado] = useState(true);
-  useEffect(() => setCerrado(estaCerrado("lomas-hoy:bienvenida")), []);
+  useEffect(() => setCerrado(estaCerrado("lomas-hoy:bienvenida") || (esIOS() && estaInstalada())), []);
   if (cerrado || (push.estado !== "inactivo" && push.estado !== "iosSinInstalar")) return null;
   return (
     <section className="cartel" aria-label="Activar los avisos">

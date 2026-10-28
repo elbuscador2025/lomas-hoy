@@ -1,4 +1,5 @@
-import { validarSuscripcion, guardarSuscripcion, borrarSuscripcion, leerSuscripcion } from "@/lib/push";
+import { after } from "next/server";
+import { validarSuscripcion, guardarSuscripcion, borrarSuscripcion, leerSuscripcion, confirmarSuscripcion } from "@/lib/push";
 
 // Sin registro: solo se guarda la dirección que el navegador da para avisar, el barrio y qué tipos quiere.
 export async function POST(req: Request) {
@@ -21,7 +22,8 @@ export async function POST(req: Request) {
     }
     const s = validarSuscripcion(cuerpo);
     if (typeof s === "string") return Response.json({ ok: false, error: s }, { status: 400 });
-    await guardarSuscripcion(s);
+    const nueva = await guardarSuscripcion(s);
+    if (nueva) after(() => confirmarSuscripcion(s.endpoint)); // celular nuevo: confirmación solo para él
     return Response.json({ ok: true });
   } catch {
     return Response.json({ ok: false, error: "No se pudo guardar. Probá de nuevo." }, { status: 500 });

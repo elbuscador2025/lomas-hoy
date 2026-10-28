@@ -12,7 +12,7 @@ import { haceCuanto } from "@/lib/hace";
 import { Icono } from "./Iconos";
 import Pie from "./Pie";
 import LugarCard from "./LugarCard";
-import Notificaciones, { CartelInstalar, CartelAvisos, SonidoAlTocar } from "./Notificaciones";
+import Notificaciones, { CartelInstalar, CartelAvisos, BotonAvisosIPhone, SonidoAlTocar } from "./Notificaciones";
 import MisAvisos, { useAvisos } from "./MisAvisos";
 import MapaLuz from "./MapaLuz";
 import { cuandoAlerta } from "@/lib/alertas-texto";
@@ -870,6 +870,7 @@ export default function Inicio() {
       </header>
 
       <section className="hoja">
+        <BotonAvisosIPhone push={push} />
         <form className="buscador" role="search" onSubmit={(e) => { e.preventDefault(); (document.activeElement as HTMLElement | null)?.blur(); }}>
           <Icono nombre="lupa" tam={24} ancho={2.5} />
           <input type="search" placeholder="¿Qué buscás? Farmacia, veterinaria…" aria-label="Buscar" value={q} onChange={(e) => cambiarBusqueda(e.target.value)} />
