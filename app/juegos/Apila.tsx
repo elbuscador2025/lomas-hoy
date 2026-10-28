@@ -65,7 +65,7 @@ function cuadro(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, 
 }
 function preparar(c: HTMLCanvasElement, w: number, h: number) {
   const r = window.devicePixelRatio || 1;
-  c.width = Math.round(w * r); c.height = Math.round(h * r);
+  c.width = Math.round(w * r); c.height = Math.round(h * r); c.style.width = w + "px"; c.style.height = h + "px";
   const ctx = c.getContext("2d")!;
   ctx.setTransform(r, 0, 0, r, 0, 0);
   return ctx;
