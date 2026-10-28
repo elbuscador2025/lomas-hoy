@@ -76,7 +76,9 @@ export default function Apila() {
   const e = useRef<Estado>(nuevoEstado());
   const [, forzar] = useReducer((x: number) => x + 1, 0);
   const tablero = useRef<HTMLCanvasElement>(null), sig = useRef<HTMLCanvasElement>(null);
-  const celda = useCelda(COLS, FILAS, 340);
+  const zona = useRef<HTMLDivElement>(null);
+  const celda = useCelda(zona, COLS, FILAS);
+  const gesto = useRef<{ x: number; y: number; px: number; movido: boolean; hecho: boolean } | null>(null);
   const s = e.current;
 
   const actuar = useCallback((fn: (s: Estado) => void) => {
@@ -131,12 +133,24 @@ export default function Apila() {
     }
     const p = sig.current;
     if (p) {
-      const t = 14, pc = preparar(p, 5 * t + 4, 3 * t + 4);
+      const t = 9, pc = preparar(p, 5 * t + 4, 3 * t + 4);
       const cs = s.siguiente.celdas;
       const ox = Math.floor((5 - ancho(cs)) * t / 2) + 2, oy = Math.floor((3 - (Math.max(...cs.map((q) => q[0])) + 1)) * t / 2) + 2;
       cs.forEach(([a, b]) => cuadro(pc, ox + b * t, oy + a * t, t, s.siguiente.color));
     }
   });
+
+  // gestos sobre el tablero: deslizar a los costados mueve, tocar gira, deslizar hacia abajo hace caer
+  const alTocar = (ev: React.PointerEvent) => { gesto.current = { x: ev.clientX, y: ev.clientY, px: ev.clientX, movido: false, hecho: false }; };
+  const alDeslizar = (ev: React.PointerEvent) => {
+    const g = gesto.current; if (!g || g.hecho) return;
+    const paso = Math.max(18, celda * 0.9);
+    while (ev.clientX - g.px >= paso) { derecha(); g.px += paso; g.movido = true; }
+    while (g.px - ev.clientX >= paso) { izquierda(); g.px -= paso; g.movido = true; }
+    const dy = ev.clientY - g.y;
+    if (!g.movido && dy > 45 && dy > Math.abs(ev.clientX - g.x)) { caer(); g.hecho = true; }
+  };
+  const alSoltar = () => { const g = gesto.current; gesto.current = null; if (g && !g.movido && !g.hecho) rotar(); };
 
   return (
     <div className="jg">
@@ -147,18 +161,20 @@ export default function Apila() {
         <span><small>Líneas</small><b>{s.lineas}</b></span>
         <span className="jg-sig"><small>Sigue</small><canvas ref={sig} /></span>
       </div>
-      <div className="jg-cancha" style={{ width: COLS * celda, height: FILAS * celda }}>
-        <canvas ref={tablero} style={{ width: COLS * celda, height: FILAS * celda }} />
-        {s.fase !== "jugando" && (
-          <div className="jg-capa">
-            {s.fase === "pausa" ? <><b>Pausa</b><button className="jg-grande" onClick={pausar}>Seguir</button></> : <>
-              <b>Fin del juego</b>
-              <span>{s.puntos} puntos</span>
-              {s.nuevoRecord && <em>¡Nuevo récord!</em>}
-              <button className="jg-grande" onClick={reiniciar}>Jugar de nuevo</button>
-            </>}
-          </div>
-        )}
+      <div className="jg-zona" ref={zona}>
+        <div className="jg-cancha" style={{ width: COLS * celda, height: FILAS * celda }} onPointerDown={alTocar} onPointerMove={alDeslizar} onPointerUp={alSoltar} onPointerCancel={() => (gesto.current = null)}>
+          <canvas ref={tablero} style={{ width: COLS * celda, height: FILAS * celda }} />
+          {s.fase !== "jugando" && (
+            <div className="jg-capa" onPointerDown={(ev) => ev.stopPropagation()} onPointerUp={(ev) => ev.stopPropagation()}>
+              {s.fase === "pausa" ? <><b>Pausa</b><button className="jg-grande" onClick={pausar}>Seguir</button></> : <>
+                <b>Fin del juego</b>
+                <span>{s.puntos} puntos</span>
+                {s.nuevoRecord && <em>¡Nuevo récord!</em>}
+                <button className="jg-grande" onClick={reiniciar}>Jugar de nuevo</button>
+              </>}
+            </div>
+          )}
+        </div>
       </div>
       <div className="jg-controles">
         <BotonRepetir onAccion={izquierda} etiqueta="Izquierda">◀</BotonRepetir>

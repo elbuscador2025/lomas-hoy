@@ -76,7 +76,7 @@ export default function TaTeTi() {
   if (!modo)
     return (
       <div className="jg jg-ttt">
-        <p className="jg-ayuda">¿Cómo querés jugar?</p>
+        <p className="jg-mensaje">¿Cómo querés jugar?</p>
         <button className="jg-grande ancho" onClick={() => empezar("compu")}>🤖 Contra la computadora</button>
         <button className="jg-grande ancho" onClick={() => empezar("dos")}>👥 Entre dos personas</button>
         <BotonSonido activo={activo} onClick={alternar} />

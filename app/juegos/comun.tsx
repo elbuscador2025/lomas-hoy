@@ -49,7 +49,7 @@ export function useSonido() {
   return { activo, sonar, alternar };
 }
 export function BotonSonido({ activo, onClick }: { activo: boolean; onClick: () => void }) {
-  return <button className="jg-mini" onClick={onClick} aria-pressed={!activo} aria-label={activo ? "Silenciar sonidos" : "Activar sonidos"}>{activo ? "🔊 Sonido" : "🔇 Sin sonido"}</button>;
+  return <button className="jg-mini" onClick={onClick} aria-pressed={!activo} aria-label={activo ? "Silenciar sonidos" : "Activar sonidos"}>{activo ? "🔊" : "🔇"}</button>;
 }
 
 // ---- Botón que repite la acción mientras se lo mantiene apretado (izquierda, derecha, bajar) ----
@@ -66,17 +66,16 @@ export function BotonRepetir({ onAccion, repetir = true, className = "", etiquet
   );
 }
 
-// ---- Tamaño de la cancha: lo más grande que entre en la pantalla (celulares chicos incluidos) ----
-export function useCelda(columnas: number, filas: number, reservado: number, minimo = 12, maximo = 36) {
-  const [celda, setCelda] = useState(22);
+// ---- Tamaño de la cancha: lo más grande que entre en el espacio libre de la zona (se achica sola en celulares chicos) ----
+export function useCelda(zona: React.RefObject<HTMLElement | null>, columnas: number, filas: number, maximo = 40) {
+  const [celda, setCelda] = useState(12);
   useEffect(() => {
-    const medir = () => {
-      const ancho = Math.min(window.innerWidth, 560) - 32, alto = window.innerHeight - reservado;
-      setCelda(Math.max(minimo, Math.min(maximo, Math.floor(Math.min(ancho / columnas, alto / filas)))));
-    };
+    const el = zona.current; if (!el) return;
+    const medir = () => setCelda(Math.max(8, Math.min(maximo, Math.floor(Math.min((el.clientWidth - 8) / columnas, (el.clientHeight - 8) / filas)))));
     medir();
-    window.addEventListener("resize", medir);
-    return () => window.removeEventListener("resize", medir);
-  }, [columnas, filas, reservado, minimo, maximo]);
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [zona, columnas, filas, maximo]);
   return celda;
 }

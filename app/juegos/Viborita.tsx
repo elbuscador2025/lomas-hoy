@@ -48,7 +48,8 @@ export default function Viborita() {
   const [, forzar] = useReducer((x: number) => x + 1, 0);
   const lienzo = useRef<HTMLCanvasElement>(null);
   const toque = useRef<{ x: number; y: number } | null>(null);
-  const celda = useCelda(N, N, 440, 14, 30);
+  const zona = useRef<HTMLDivElement>(null);
+  const celda = useCelda(zona, N, N, 34);
   const s = e.current;
 
   const girar = useCallback((d: Dir) => {
@@ -132,6 +133,7 @@ export default function Viborita() {
         <span><small>Récord</small><b>{Math.max(s.record, s.puntos)}</b></span>
         <span><small>Largo</small><b>{s.cuerpo.length}</b></span>
       </div>
+      <div className="jg-zona" ref={zona}>
       <div className="jg-cancha" style={{ width: N * celda, height: N * celda }} onPointerDown={alTocar} onPointerMove={alDeslizar} onPointerUp={() => (toque.current = null)} onPointerCancel={() => (toque.current = null)}>
         <canvas ref={lienzo} style={{ width: N * celda, height: N * celda }} />
         {s.fase !== "jugando" && (
@@ -147,9 +149,10 @@ export default function Viborita() {
           </div>
         )}
       </div>
+      </div>
       <div className="jg-flechas">
-        {flecha("arr", "▲", "Arriba", "jg-arriba")}
         {flecha("izq", "◀", "Izquierda", "jg-izq")}
+        {flecha("arr", "▲", "Arriba", "jg-arriba")}
         {flecha("aba", "▼", "Abajo", "jg-abajo")}
         {flecha("der", "▶", "Derecha", "jg-der")}
       </div>

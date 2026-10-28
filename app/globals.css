@@ -562,3 +562,32 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .jg-casilla.X { color:#FF9F1C; } .jg-casilla.O { color:#2EC4B6; }
 .jg-casilla.gana { background:#1F8A4C; }
 .jg-casilla:disabled { cursor:default; }
+
+/* Juegos: una sola pantalla, sin scroll, con los controles siempre visibles abajo */
+.detalle.jg-pantalla { position:fixed; top:0; bottom:0; left:50%; transform:translateX(-50%); width:min(100%, 560px); min-height:0; height:100dvh; display:flex; flex-direction:column; overflow:hidden; overscroll-behavior:none; background:var(--fondo, #fff); }
+.jg-pantalla .barra { display:flex; align-items:center; gap:12px; padding:6px 12px; flex:none; }
+.jg-pantalla .volver { min-height:40px; font-size:15px; }
+.barra-titulo { font-size:20px; font-weight:900; color:#10213F; }
+.jg-pantalla .titulo-detalle { display:none; }
+.jg-pantalla .detalle-cuerpo { flex:1; min-height:0; display:flex; flex-direction:column; padding:6px 12px 8px; }
+.jg-pantalla .jg { flex:1; min-height:0; gap:6px; }
+.jg-zona { flex:1; min-height:0; width:100%; display:flex; align-items:center; justify-content:center; }
+.jg-pantalla .jg-estado { gap:14px; flex:none; flex-wrap:nowrap; align-items:center; }
+.jg-pantalla .jg-estado span { min-width:0; }
+.jg-pantalla .jg-estado small { font-size:11px; }
+.jg-pantalla .jg-estado b { font-size:16px; }
+.jg-sig { flex-direction:row !important; gap:6px; align-items:center !important; }
+.jg-sig small { display:none; }
+.jg-pantalla .jg-marcador { flex:none; }
+.jg-pantalla .jg-marcador b { font-size:18px; }
+.jg-pantalla .jg-controles, .jg-pantalla .jg-flechas { flex:none; display:grid; grid-template-columns:repeat(4,1fr); grid-template-areas:none; gap:8px; max-width:none; width:100%; }
+.jg-pantalla .jg-flechas > * { grid-area:auto !important; }
+.jg-pantalla .jg-ctrl { min-height:60px; font-size:28px; }
+.jg-pantalla .jg-acciones { flex:none; flex-wrap:nowrap; gap:6px; width:100%; }
+.jg-pantalla .jg-acciones .jg-mini { flex:1; min-height:42px; padding:0 6px; font-size:14px; white-space:nowrap; }
+.jg-pantalla .jg-ttt .jg-acciones { flex-wrap:wrap; }
+.jg-pantalla .jg-ttt .jg-acciones .jg-mini { flex:1 1 40%; }
+.jg-pantalla .jg-ayuda { display:none; }
+.jg-pantalla .jg-ttt { justify-content:center; }
+.jg-pantalla .jg-tablero3 { width:min(86vw, 340px, calc(100dvh - 330px)); }
+.jg-pantalla .jg-mensaje { font-size:20px; margin:0; min-height:0; }

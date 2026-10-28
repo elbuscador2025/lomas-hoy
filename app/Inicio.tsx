@@ -72,11 +72,12 @@ function Tile({ icono, titulo, resumen, estado, tono, onClick, color }: {
   );
 }
 
-function Detalle({ titulo, onVolver, color, children }: { titulo: string; onVolver: () => void; color?: string; children: React.ReactNode }) {
+function Detalle({ titulo, onVolver, color, pantalla, children }: { titulo: string; onVolver: () => void; color?: string; pantalla?: boolean; children: React.ReactNode }) {
   return (
-    <main className={`detalle${color ? ` coloreado c-${color}` : ""}`}>
+    <main className={`detalle${color ? ` coloreado c-${color}` : ""}${pantalla ? " jg-pantalla" : ""}`}>
       <div className="barra">
         <button className="volver" onClick={onVolver}><Icono nombre="volver" tam={22} ancho={2.5} /> Volver</button>
+        {pantalla && <span className="barra-titulo">{titulo}</span>}
       </div>
       <div className="detalle-cuerpo">
         <h1 className="titulo-detalle">{titulo}</h1>
@@ -737,7 +738,7 @@ export default function Inicio() {
   if (vista?.startsWith("juego-")) {
     const j = JUEGOS.find((x) => `juego-${x.id}` === vista);
     if (j) return (
-      <Detalle color="juegos" titulo={j.nombre} onVolver={volver}>
+      <Detalle color="juegos" titulo={j.nombre} onVolver={volver} pantalla>
         <j.Componente />
       </Detalle>
     );
