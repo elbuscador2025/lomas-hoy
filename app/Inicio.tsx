@@ -23,6 +23,7 @@ import CoopPantalla from "./Coop";
 import HoyCobran from "./HoyCobran";
 import Sos from "./Sos";
 import QuinielaPantalla, { type ModoQuiniela } from "./Quiniela";
+import ListaJuegos, { JUEGOS } from "./juegos/Juegos";
 import { ultimoResultado } from "@/lib/quiniela-comun";
 import { BotonPasa, FormularioPasa, useVecinos } from "./Pasa";
 import Sugerir from "./Sugerir";
@@ -62,7 +63,7 @@ function Tile({ icono, titulo, resumen, estado, tono, onClick, color }: {
   return (
     <button className={`tile coloreado c-${color}`} onClick={onClick}>
       <span className="tile-arriba">
-        <span className="tile-icono">{icono === "bola" ? <span className="tile-emoji" aria-hidden>🎱</span> : <Icono nombre={icono} tam={28} />}</span>
+        <span className="tile-icono">{icono === "bola" ? <span className="tile-emoji" aria-hidden>🎱</span> : icono.startsWith("emoji:") ? <span className="tile-emoji" aria-hidden>{icono.slice(6)}</span> : <Icono nombre={icono} tam={28} />}</span>
         <span className={`pildora ${tono}`}>{estado}</span>
       </span>
       <b>{titulo}</b>
@@ -726,6 +727,22 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "juegos")
+    return (
+      <Detalle color="juegos" titulo="Juegos" onVolver={volver}>
+        <ListaJuegos onAbrir={(id) => abrir(`juego-${id}`)} />
+      </Detalle>
+    );
+
+  if (vista?.startsWith("juego-")) {
+    const j = JUEGOS.find((x) => `juego-${x.id}` === vista);
+    if (j) return (
+      <Detalle color="juegos" titulo={j.nombre} onVolver={volver}>
+        <j.Componente />
+      </Detalle>
+    );
+  }
+
   if (vista === "quiniela" && s.quiniela.activa)
     return (
       <Detalle color={modoQuiniela === "quini" ? "quini6" : "quiniela"} titulo={s.quiniela.titulo} onVolver={volver}>
@@ -1011,6 +1028,8 @@ export default function Inicio() {
                 <Tile color="quiniela" icono="bola" titulo={"Quiniela\ny Quini 6"} estado="Ver" tono="neutro" onClick={() => abrir("quiniela")}
                   resumen="" />
               )}
+              <Tile color="juegos" icono="emoji:🎮" titulo="Juegos" estado="Gratis" tono="neutro" onClick={() => abrir("juegos")}
+                resumen="Apilá, La Viborita y Ta-Te-Ti" />
               {s.coop.activa && (
                 <Tile color="coop" icono="coop" titulo={s.coop.titulo} estado="Ver" tono="neutro" onClick={() => { setCoopElegida(""); abrir("coop"); }}
                   resumen="Luminarias, poda, árboles y arreglos del barrio" />

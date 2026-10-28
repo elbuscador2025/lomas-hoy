@@ -521,3 +521,44 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .boton-noticias:active .bn-circulo { transform:scale(.94); filter:brightness(.88); }
 .boton-noticias b { font-size:25px; line-height:1.15; font-weight:900; color:#2A0C5C; max-width:92%; }
 .bn-etiqueta { background:#4A1D96; color:#fff; border-radius:999px; padding:5px 16px; font-size:17px; font-weight:800; }
+
+/* Juegos */
+.c-juegos { --c-bg:#FFD3A6; --c-fuerte:#C2570C; }
+.jg-lista { list-style:none; margin:10px 0; padding:0; display:flex; flex-direction:column; gap:12px; }
+.jg-tarjeta { display:flex; align-items:center; gap:14px; width:100%; min-height:84px; padding:12px 16px; border:2px solid #C2570C; border-radius:20px; background:#FFF1E2; color:#10213F; font:inherit; text-align:left; cursor:pointer; box-shadow:0 2px 6px rgba(16,33,63,.14); transition:transform .09s ease, filter .09s ease; }
+.jg-tarjeta:active { transform:scale(.97); filter:brightness(.92); }
+.jg-emoji { font-size:46px; line-height:1; }
+.jg-texto { display:flex; flex-direction:column; flex:1; gap:2px; }
+.jg-texto b { font-size:22px; }
+.jg-texto small { font-size:15px; color:#46506A; }
+.jg-flecha { font-size:28px; font-weight:800; }
+.jg { display:flex; flex-direction:column; align-items:center; gap:10px; width:100%; user-select:none; -webkit-user-select:none; touch-action:manipulation; }
+.jg-estado, .jg-marcador { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; align-items:flex-end; width:100%; }
+.jg-estado span, .jg-marcador span { display:flex; flex-direction:column; align-items:center; min-width:54px; }
+.jg-estado small, .jg-marcador small { font-size:12px; font-weight:700; color:#46506A; }
+.jg-estado b, .jg-marcador b { font-size:22px; line-height:1.1; color:#10213F; }
+.jg-sig canvas { background:#10213F; border-radius:8px; }
+.jg-cancha { position:relative; border-radius:12px; overflow:hidden; border:3px solid #10213F; background:#10213F; box-shadow:0 4px 10px rgba(16,33,63,.3); touch-action:none; }
+.jg-cancha canvas { display:block; }
+.jg-capa { position:absolute; inset:0; background:rgba(8,16,36,.84); display:flex; flex-direction:column; gap:10px; align-items:center; justify-content:center; color:#fff; text-align:center; padding:12px; }
+.jg-capa b { font-size:28px; }
+.jg-capa span { font-size:17px; }
+.jg-capa em { font-style:normal; font-weight:800; color:#FFD54A; font-size:18px; }
+.jg-grande { min-height:58px; padding:0 22px; font:inherit; font-size:20px; font-weight:800; border-radius:16px; border:0; background:#1F5AD6; color:#fff; cursor:pointer; box-shadow:0 2px 6px rgba(16,33,63,.2); }
+.jg-grande.ancho { width:100%; }
+.jg-grande:active, .jg-ctrl:active, .jg-mini:active { transform:scale(.95); filter:brightness(.9); }
+.jg-controles { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; width:100%; max-width:440px; }
+.jg-flechas { display:grid; grid-template-columns:repeat(3,1fr); grid-template-areas:". arr ." "izq aba der"; gap:8px; width:100%; max-width:300px; }
+.jg-flechas .jg-arriba { grid-area:arr; } .jg-flechas .jg-izq { grid-area:izq; } .jg-flechas .jg-abajo { grid-area:aba; } .jg-flechas .jg-der { grid-area:der; }
+.jg-ctrl { min-height:64px; font:inherit; font-size:28px; border-radius:16px; border:0; background:#10213F; color:#fff; cursor:pointer; touch-action:manipulation; box-shadow:0 3px 0 #050B1A; }
+.jg-acciones { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+.jg-mini { min-height:46px; padding:0 14px; font:inherit; font-size:16px; font-weight:700; border-radius:12px; border:2px solid #10213F; background:#fff; color:#10213F; cursor:pointer; }
+.jg-mini.destacado { background:#1F5AD6; border-color:#1F5AD6; color:#fff; }
+.jg-ayuda { margin:0; font-size:14px; color:#46506A; text-align:center; }
+.jg-mensaje { margin:4px 0; font-size:23px; font-weight:800; color:#10213F; text-align:center; min-height:32px; }
+.jg-mensaje.fin { color:#1F8A4C; }
+.jg-tablero3 { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; width:min(88vw, 360px); }
+.jg-casilla { aspect-ratio:1; border:0; border-radius:18px; background:#10213F; font:inherit; font-size:min(20vw, 76px); font-weight:900; line-height:1; cursor:pointer; color:#fff; box-shadow:0 3px 0 #050B1A; }
+.jg-casilla.X { color:#FF9F1C; } .jg-casilla.O { color:#2EC4B6; }
+.jg-casilla.gana { background:#1F8A4C; }
+.jg-casilla:disabled { cursor:default; }
