@@ -148,7 +148,7 @@ export default function Notificaciones({ push, agua }: { push: Push; agua: boole
 }
 
 // Botón de Trueque, Trabajo y Mascotas: prende (o apaga) ese tipo de aviso. Es el mismo interruptor de "Configurar avisos".
-export function AvisarmeNuevos({ push, tipo }: { push: Push; tipo: string }) {
+export function AvisarmeNuevos({ push, tipo, textos }: { push: Push; tipo: string; textos?: { boton: string; activo: string; quitar: string } }) {
   const [msg, setMsg] = useState("");
   const activo = push.estado === "activo" && !!push.prefs.tipos[tipo];
   async function activar() {
@@ -161,10 +161,10 @@ export function AvisarmeNuevos({ push, tipo }: { push: Push; tipo: string }) {
       : push.estado === "noSoportado" ? "Este navegador no permite recibir avisos." : "Un momento…");
   }
   return activo ? (
-    <p className="avisarme-nuevos">Te avisamos cuando haya nuevos · <button className="link" onClick={() => push.guardar({ ...push.prefs, tipos: { ...push.prefs.tipos, [tipo]: false } })}>Desactivar</button></p>
+    <p className="avisarme-nuevos">{textos?.activo ?? "Te avisamos cuando haya nuevos"} · <button className="link" onClick={() => push.guardar({ ...push.prefs, tipos: { ...push.prefs.tipos, [tipo]: false } })}>{textos?.quitar ?? "Desactivar"}</button></p>
   ) : (
     <>
-      <button className="btn claro ancho" disabled={push.ocupado} onClick={activar}>Avisarme cuando haya nuevos</button>
+      <button className="btn claro ancho" disabled={push.ocupado} onClick={activar}>{textos?.boton ?? "Avisarme cuando haya nuevos"}</button>
       {msg && <p className="error">{msg}</p>}
     </>
   );

@@ -6,8 +6,8 @@ import { config } from "@/lomas.config.mjs";
 import { redis, hoyArgentina } from "@/lib/servidor";
 import { ahoraAR } from "@/lib/avisos";
 
-export type Tipo = "tren" | "luz" | "agua" | "tormenta" | "colectivos" | "mascotas" | "trueque" | "trabajo" | "resumen" | "subte";
-export const TIPOS: Tipo[] = ["tren", "luz", "agua", "tormenta", "colectivos", "mascotas", "trueque", "trabajo", "resumen", "subte"];
+export type Tipo = "tren" | "luz" | "agua" | "tormenta" | "colectivos" | "mascotas" | "trueque" | "trabajo" | "resumen" | "subte" | "castracion";
+export const TIPOS: Tipo[] = ["tren", "luz", "agua", "tormenta", "colectivos", "mascotas", "trueque", "trabajo", "resumen", "subte", "castracion"];
 export type Suscripcion = {
   endpoint: string; keys: { p256dh: string; auth: string };
   tipos: Partial<Record<Tipo, boolean>>; creado: string; equipo?: string; renovado?: string; // sin nombre, teléfono, ni nada personal
@@ -127,7 +127,7 @@ export async function notificar(ev: Evento) {
   prepararVapid();
   // 3) Quiénes la reciben: todos los que tienen ese tipo prendido (si todavía no eligieron, está prendido)
   // (mascotas, trueque y trabajo son opcionales: solo le llega a quien lo prendió)
-  const interesadas = (await todasLasSuscripciones()).filter((s) => (ev.tipo === "mascotas" || ev.tipo === "trueque" || ev.tipo === "trabajo" || ev.tipo === "subte" ? s.tipos?.[ev.tipo] === true : s.tipos?.[ev.tipo] !== false));
+  const interesadas = (await todasLasSuscripciones()).filter((s) => (ev.tipo === "mascotas" || ev.tipo === "trueque" || ev.tipo === "trabajo" || ev.tipo === "subte" || ev.tipo === "castracion" ? s.tipos?.[ev.tipo] === true : s.tipos?.[ev.tipo] !== false));
   // 4) Máximo por día y por celular
   const dia = hoyArgentina();
   const [filas] = await redis([["HGETALL", `push:cuenta:${dia}`]]);

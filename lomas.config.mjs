@@ -182,6 +182,8 @@ export const config = {
       // Todos los días a las 7: una sola notificación con lo del día. Prendido de entrada.
       resumen: { activa: true, titulo: "Resumen de la mañana" },
       mascotas: { activa: true, porDefecto: false, titulo: "Mascotas perdidas" },
+      // Apagado de entrada: solo le llega a quien toca "Avisarme cuando haya castración". Un aviso por cada jornada nueva que cargo en el panel.
+      castracion: { activa: true, porDefecto: false, titulo: "Castración gratuita" },
       // Apagado de entrada. Como mucho un aviso por día, a las 19, juntando los trueques nuevos.
       trueque: { activa: true, porDefecto: false, titulo: "Trueque" },
       // Apagado de entrada. Como mucho un aviso por día, a las 19, juntando los trabajos nuevos.

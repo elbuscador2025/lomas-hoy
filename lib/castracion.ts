@@ -1,6 +1,6 @@
 // Castración gratuita de mascotas. Todo lo "fijo" sale de la página oficial del Hospital de Animales de Lomas de Zamora
 // (https://lomasdezamora.gov.ar/hospital-animales, verificada el 28/10/2026). Las jornadas en los barrios las cargo a mano desde mi panel.
-export type Jornada = { id: string; fecha: string; horario: string; direccion: string; barrio: string; requisitos: string; modalidad: string };
+export type Jornada = { id: string; fecha: string; desde: string; hasta: string; horario: string; direccion: string; barrio: string; requisitos: string; modalidad: string };
 
 export const URL_HOSPITAL_ANIMALES = "https://lomasdezamora.gov.ar/hospital-animales";
 export const URL_TURNO_CASTRACION = "https://comunidad.lomasdezamora.gov.ar"; // botón "Solicitá un turno" de la sección Castraciones de esa página

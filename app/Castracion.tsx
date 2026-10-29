@@ -2,12 +2,14 @@
 import { Icono } from "./Iconos";
 import BotonLlamar from "./BotonLlamar";
 import Pie from "./Pie";
+import { AvisarmeNuevos } from "./Notificaciones";
+import type { Push } from "./usePush";
 import { type Jornada, URL_TURNO_CASTRACION, URL_HOSPITAL_ANIMALES, HOSPITAL_DIRECCION, HOSPITAL_HORARIO, TELEFONOS_MUNICIPIO, REDES_CRONOGRAMA } from "@/lib/castracion";
 
 const fechaLarga = (f: string) => { const t = new Date(f + "T12:00:00").toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" }); return t.charAt(0).toUpperCase() + t.slice(1); };
 
 // Pantalla "Castración gratuita": cómo sacar turno, jornadas en los barrios, requisitos oficiales y contacto. No se pide ni se guarda ningún dato.
-export default function Castracion({ jornadas }: { jornadas: Jornada[] }) {
+export default function Castracion({ jornadas, push }: { jornadas: Jornada[]; push: Push }) {
   return (
     <>
       <p className="vacio">Información para acceder al servicio municipal gratuito de castración de perros y gatos en Lomas de Zamora.</p>
@@ -42,6 +44,7 @@ export default function Castracion({ jornadas }: { jornadas: Jornada[] }) {
           ))}
         </ul>
       )}
+      <AvisarmeNuevos push={push} tipo="castracion" textos={{ boton: "🔔 Avisarme cuando haya castración", activo: "✓ Te vamos a avisar de cada jornada", quitar: "Dejar de avisarme" }} />
       <p className="vacio">El Municipio también hace operativos en los barrios. El cronograma se publica en Instagram:</p>
       <div className="acciones">
         {REDES_CRONOGRAMA.map((r) => <a key={r.url} className="btn claro" href={r.url} target="_blank" rel="noreferrer">{r.nombre} ↗</a>)}

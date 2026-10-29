@@ -773,7 +773,7 @@ export default function Inicio() {
   if (vista === "castracion" && s.castracion.activa)
     return (
       <Detalle color="castracion" titulo="Castración gratuita de mascotas" onVolver={volver}>
-        <Castracion jornadas={jornadas} />
+        <Castracion jornadas={jornadas} push={push} />
       </Detalle>
     );
 
