@@ -16,6 +16,7 @@ import PanelPasa from "./PanelPasa";
 import PanelSugerencias from "./PanelSugerencias";
 import PanelOficinasAnses from "./PanelOficinasAnses";
 import PanelCastraciones from "./PanelCastraciones";
+import PanelMerenderos from "./PanelMerenderos";
 import PanelAgua from "./PanelAgua";
 import MiCuenta from "./MiCuenta";
 import { post, salir } from "./api";
@@ -34,7 +35,7 @@ const fecha = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone:
 export default function Panel() {
   const [datos, setDatos] = useState<Datos | null>(null);
   const [lugares, setLugares] = useState<Lugar[]>([]);
-  const [pestana, setPestana] = useState<"stats" | "lugares" | "barrios" | "push" | "mascotas" | "anses" | "coop" | "ansesof" | "castracion" | "pasa" | "sugerencias" | "agua" | "trueque" | "trabajo" | "bloqueados" | "denuncias">("stats");
+  const [pestana, setPestana] = useState<"stats" | "lugares" | "barrios" | "push" | "mascotas" | "anses" | "coop" | "ansesof" | "castracion" | "merenderos" | "pasa" | "sugerencias" | "agua" | "trueque" | "trabajo" | "bloqueados" | "denuncias">("stats");
   const [editando, setEditando] = useState<(Lugar & { tels: string; direccionOriginal?: string }) | null>(null);
   const [mensaje, setMensaje] = useState("");
 
@@ -98,6 +99,7 @@ export default function Panel() {
         <button className={`btn ${pestana === "anses" ? "" : "claro"}`} onClick={() => setPestana("anses")}>ANSES</button>
         <button className={`btn ${pestana === "ansesof" ? "" : "claro"}`} onClick={() => setPestana("ansesof")}>Oficinas ANSES</button>
         <button className={`btn ${pestana === "castracion" ? "" : "claro"}`} onClick={() => setPestana("castracion")}>Castraciones</button>
+        <button className={`btn ${pestana === "merenderos" ? "" : "claro"}`} onClick={() => setPestana("merenderos")}>Merenderos</button>
         {config.secciones.pasa.activa && <button className={`btn ${pestana === "pasa" ? "" : "claro"}`} onClick={() => setPestana("pasa")}>Avisos de vecinos</button>}
         <button className={`btn ${pestana === "sugerencias" ? "" : "claro"}`} onClick={() => setPestana("sugerencias")}>Sugerencias</button>
         <button className={`btn ${pestana === "coop" ? "" : "claro"}`} onClick={() => setPestana("coop")}>COOP</button>
@@ -121,6 +123,7 @@ export default function Panel() {
       {pestana === "sugerencias" && <PanelSugerencias />}
       {pestana === "ansesof" && <PanelOficinasAnses />}
       {pestana === "castracion" && <PanelCastraciones />}
+      {pestana === "merenderos" && <PanelMerenderos />}
       {pestana === "agua" && <PanelAgua />}
 
       {pestana === "stats" && (

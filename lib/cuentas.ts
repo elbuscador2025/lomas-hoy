@@ -5,7 +5,7 @@ import { promisify } from "node:util";
 import { redis } from "@/lib/servidor";
 const scrypt = promisify(scryptCb) as (p: string, s: Buffer, n: number) => Promise<Buffer>;
 
-export type Sesion = { tipo: "admin"; id: string };
+export type Sesion = { tipo: "admin"; id: string } | { tipo: "merendero"; id: string };
 
 // Contraseñas cifradas con scrypt, nunca en texto plano
 export async function hashear(clave: string, salHex = randomBytes(16).toString("hex")) {
@@ -22,7 +22,7 @@ export const correoValido = (c: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(
 export const ipDe = (req: Request) => (req.headers.get("x-forwarded-for") ?? "desconocida").split(",")[0].trim().slice(0, 45);
 
 const iguales = (a: string, b: string) => { const x = Buffer.from(a), y = Buffer.from(b); return x.length === y.length && timingSafeEqual(x, y); };
-async function hashCoincide(clave: string, sal: string, hash: string) {
+export async function hashCoincide(clave: string, sal: string, hash: string) {
   const { hash: calculado } = await hashear(clave, sal);
   return iguales(calculado, hash);
 }
@@ -83,6 +83,12 @@ export async function entrar(entrada: unknown, clave: string, ip: string) {
 
   let sesion: Sesion | null = null;
   if (correo && correo === correoAdmin() && (await claveAdminOk(clave))) sesion = { tipo: "admin", id: "admin" };
+  // Merenderos: el mismo "Ingresar". Mi entrada (arriba) no cambia.
+  if (!sesion && correo !== correoAdmin()) {
+    const { merenderoPorCredenciales } = await import("@/lib/merenderos");
+    const id = await merenderoPorCredenciales(correo, clave);
+    if (id) sesion = { tipo: "merendero", id };
+  }
   if (!sesion) {
     await redis([
       ["INCR", llave], ["EXPIRE", llave, VENTANA],
@@ -91,6 +97,6 @@ export async function entrar(entrada: unknown, clave: string, ip: string) {
     return { error: "datos" as const };
   }
   await redis([["DEL", llave]]);
-  return { sesion, cookie: await iniciarSesion(sesion), destino: "/panel" };
+  return { sesion, cookie: await iniciarSesion(sesion), destino: sesion.tipo === "admin" ? "/panel" : "/merendero" };
 }
 

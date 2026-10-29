@@ -597,3 +597,24 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .aviso-iphone .btn { width:100%; min-height:60px; font-size:19px; margin:0; }
 
 .c-castracion { --c-bg:#E3F4D0; --c-fuerte:#3F7A12; }
+
+/* Ollas populares (merenderos) */
+.olla-enlace { background:#FFF3D6; border:3px solid #B8860B; border-radius:20px; padding:16px; margin:0 0 14px; text-align:center; display:flex; flex-direction:column; gap:8px; align-items:center; }
+.olla-enlace h2 { margin:0; font-size:26px; color:#10213F; }
+.olla-enlace p { margin:0; font-size:18px; color:#10213F; }
+.olla-emoji { font-size:48px; line-height:1; }
+.olla-boton { width:100%; min-height:64px; font-size:20px; margin:6px 0 0; }
+.olla-ok { font-weight:800; color:#1B6B3A !important; font-size:20px !important; }
+.olla-cerrada { font-weight:700; }
+.olla-cuadro { background:#FFF3D6; border-left:6px solid #B8860B; border-radius:14px; padding:10px 14px; margin:0 0 12px; display:flex; flex-direction:column; gap:2px; color:#10213F; }
+.olla-cuadro b { font-size:17px; }
+.olla-cuadro span { font-size:15px; }
+.merendero { max-width:560px; }
+.merendero h1 { font-size:28px; }
+.merendero .form label, .form-merendero label { font-size:18px; font-weight:700; }
+.merendero input, .form-merendero input { font-size:20px; min-height:52px; }
+.merendero-btn { font-size:22px; min-height:68px; width:100%; margin:8px 0; }
+.merendero-n { font-size:22px; }
+.merendero-n b { font-size:34px; }
+.merendero-msg { font-size:18px; font-weight:700; }
+.merendero-pie { display:flex; gap:10px; flex-wrap:wrap; margin-top:24px; }

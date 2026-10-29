@@ -168,6 +168,21 @@ export async function leerSuscripcion(endpoint: string): Promise<Suscripcion | n
   return j ? (JSON.parse(j as string) as Suscripcion) : null;
 }
 
+// Envía a la lista de celulares de una olla (merenderos). No pasa por el máximo diario ni toca a los demás suscriptos. Borra los celulares que ya no existen.
+export async function enviarALista(hash: string, carga: { titulo: string; cuerpo: string; url: string; tag: string; tipo?: string }, nombre: string) {
+  prepararVapid();
+  const [x] = await redis([["HGETALL", hash]]);
+  const plano = (Array.isArray(x) ? x : []) as string[];
+  const subs: { id: string; s: Suscripcion }[] = [];
+  for (let i = 0; i < plano.length; i += 2) subs.push({ id: plano[i], s: JSON.parse(plano[i + 1]) as Suscripcion });
+  const res = await enviarATodas(subs.map((x) => x.s), () => ({ ...carga, titulo: corto(carga.titulo, 90), cuerpo: corto(carga.cuerpo, 240) }), true);
+  const borrar = subs.filter((_, i) => res[i].borrar);
+  if (borrar.length) await redis(borrar.map((x) => ["HDEL", hash, x.id]));
+  const ok = res.filter((r) => r.ok).length, mal = res.filter((r) => !r.ok);
+  await registrar({ tipo: "olla", evento: nombre, titulo: carga.titulo, interesadas: subs.length, enviadas: ok, fallidas: mal.length, borradas: borrar.length, errores: [...new Set(mal.map((r) => `${r.estado ?? "?"}: ${r.mensaje}`))].slice(0, 3) }, ok, mal.length);
+  return { enviadas: ok, fallidas: mal.length };
+}
+
 // Nunca tira error: si algo falla se anota y la app sigue como si nada.
 export async function notificarSeguro(ev: Evento) {
   try {

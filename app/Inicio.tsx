@@ -25,6 +25,7 @@ import Sos from "./Sos";
 import QuinielaPantalla, { type ModoQuiniela } from "./Quiniela";
 import ListaJuegos, { JUEGOS } from "./juegos/Juegos";
 import Castracion from "./Castracion";
+import { OllaEnlace, CuadrosOlla } from "./Olla";
 import { PALABRAS_CASTRACION, type Jornada } from "@/lib/castracion";
 import { ultimoResultado } from "@/lib/quiniela-comun";
 import { BotonPasa, FormularioPasa, useVecinos } from "./Pasa";
@@ -122,6 +123,8 @@ export default function Inicio() {
   const [diaClima, setDiaClima] = useState(0); // día elegido en la pantalla del clima (0 = hoy)
   const push = usePush();
   const avisosApp = useAvisos();
+  const [ollaEnlace, setOllaEnlace] = useState<string | null>(null); // llegó por el enlace de una olla (merendero)
+  useEffect(() => { const o = new URLSearchParams(location.search).get("olla"); if (o && /^[a-f0-9]{8,32}$/.test(o)) setOllaEnlace(o); }, []);
   const [panel, setPanel] = useState<string | null>(null); // adónde lleva el enlace del pie: mi panel
   const s = config.secciones;
 
@@ -882,7 +885,9 @@ export default function Inicio() {
       </header>
 
       <section className="hoja">
+        {ollaEnlace && <OllaEnlace id={ollaEnlace} />}
         <BotonAvisosIPhone push={push} />
+        <CuadrosOlla />
         <form className="buscador" role="search" onSubmit={(e) => { e.preventDefault(); (document.activeElement as HTMLElement | null)?.blur(); }}>
           <Icono nombre="lupa" tam={24} ancho={2.5} />
           <input type="search" placeholder="¿Qué buscás? Farmacia, veterinaria…" aria-label="Buscar" value={q} onChange={(e) => cambiarBusqueda(e.target.value)} />

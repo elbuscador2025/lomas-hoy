@@ -5,6 +5,7 @@ import { mantener as mantenerTrueque } from "@/lib/trueque";
 import { mantener as mantenerTrabajo } from "@/lib/trabajo";
 import { mantener as mantenerPasa } from "@/lib/pasa";
 import { enviarPendientes as mantenerCastracion } from "@/lib/castracion-aviso";
+import { enviarPendientes as mantenerOllas } from "@/lib/merenderos";
 import { evaluarResumen } from "@/lib/resumen";
 import { evaluarTren, evaluarProgramados, evaluarColectivos, evaluarAgua, evaluarSubte, evaluarTormenta, evaluarAlertasSmn } from "@/lib/eventos";
 import { redis } from "@/lib/servidor";
@@ -26,7 +27,7 @@ export async function guardarDato(clave: string, contenido: any, error?: unknown
     if (clave === "quiniela" || clave === "quini6") after(() => registrarControles(contenido.controles ?? []).catch((e) => console.error("controles", e))); // estado para mi panel
     if (clave === "tren") after(() => evaluarTren(contenido).catch((e) => console.error("push tren", e)));
     if (clave === "programados") after(() => evaluarProgramados(contenido).catch((e) => console.error("push programados", e)));
-    if (clave === "mascotas") after(() => Promise.all([mantener(), mantenerTrueque(), mantenerTrabajo(), mantenerPasa(), mantenerCastracion(), evaluarResumen()]).catch((e) => console.error("mascotas", e)));
+    if (clave === "mascotas") after(() => Promise.all([mantener(), mantenerTrueque(), mantenerTrabajo(), mantenerPasa(), mantenerCastracion(), mantenerOllas(), evaluarResumen()]).catch((e) => console.error("mascotas", e)));
     if (clave === "colectivos") after(() => evaluarColectivos(contenido).catch((e) => console.error("push colectivos", e)));
     if (clave === "subte") after(() => evaluarSubte(contenido).catch((e) => console.error("push subte", e)));
     if (clave === "alertas") after(() => evaluarAlertasSmn(contenido).catch((e) => console.error("push alertas", e)));

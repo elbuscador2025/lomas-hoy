@@ -6,7 +6,7 @@ export type Prefs = { tipos: Record<string, boolean>; localidad?: string; v?: nu
 export type EstadoPush = "cargando" | "noSoportado" | "iosSinInstalar" | "inactivo" | "denegado" | "activo";
 
 const CLAVE = "lomas-hoy:push";
-const PUBLICA = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "").trim();
+export const PUBLICA = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "").trim();
 const json = { "Content-Type": "application/json" };
 
 export const prefsIniciales = (): Prefs => ({
@@ -14,7 +14,7 @@ export const prefsIniciales = (): Prefs => ({
   tipos: Object.fromEntries(Object.entries(config.push.tipos).map(([k, v]) => [k, (v as { porDefecto?: boolean }).porDefecto ?? v.activa])),
 });
 
-const aBytes = (base64: string) => {
+export const aBytes = (base64: string) => {
   const b = atob((base64 + "=".repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, "+").replace(/_/g, "/"));
   return Uint8Array.from(b, (c) => c.charCodeAt(0));
 };
@@ -52,7 +52,8 @@ export function usePush() {
         // Cada vez que se abre la app, la suscripción se renueva sola (y si el navegador la perdió, se vuelve a crear)
         if (!sub && eligio && Notification.permission === "granted") sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: aBytes(PUBLICA) }).catch(() => null);
         if (sub && eligio) await enviar(sub, leerPrefs()).catch(() => {});
-        setEstado(sub ? "activo" : "inactivo");
+        // Si el celular solo se anotó en una olla (merendero), los avisos generales siguen sin activar
+        setEstado(sub && (eligio || !localStorage.getItem("lomas-hoy:solo-olla")) ? "activo" : "inactivo");
       } catch {
         setEstado("noSoportado");
       }
