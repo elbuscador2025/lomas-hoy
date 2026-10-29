@@ -9,7 +9,7 @@ import type { Jornada } from "@/lib/castracion";
 const enSilencio = () => { const h = Number(ahoraAR().slice(11, 13)); return h >= config.push.silencioDesde || h < config.push.silencioHasta; };
 const hh = (t: string) => t.replace(/^0/, "");
 export function diaYFecha(fecha: string) {
-  const t = new Date(fecha + "T12:00:00").toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
+  const t = new Date(fecha + "T12:00:00").toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" }).replace(",", "");
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 // "Sábado 31 de octubre, de 9:00 a 13:00, en Temperley (Calle 123)"
