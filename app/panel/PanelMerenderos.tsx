@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { post } from "./api";
+import PanelMerendero, { MUESTRA, type Mer } from "../merendero/Vista";
 
 type Fila = { id: string; nombre: string; responsable: string; correo: string; activo: boolean; abierta: boolean; personas: number };
 
@@ -10,6 +11,7 @@ export default function PanelMerenderos() {
   const [enlace, setEnlace] = useState("");
   const [msg, setMsg] = useState("");
   const [temporal, setTemporal] = useState<{ id: string; clave: string } | null>(null);
+  const [mirando, setMirando] = useState<{ datos: Mer; ejemplo: boolean } | null>(null); // panel de merendero abierto solo para mirar
   const cargar = useCallback(async () => { const r = await post("/api/panel/merenderos", { accion: "listar" }); if (r.ok) setLista((await r.json()).merenderos); }, []);
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -33,9 +35,22 @@ export default function PanelMerenderos() {
     const d = await r.json().catch(() => ({}));
     if (r.ok) setTemporal({ id: m.id, clave: d.temporal });
   }
+  async function verPanel(m: Fila) {
+    const r = await post("/api/panel/merenderos", { accion: "ver", id: m.id });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok) { setMirando({ datos: d.merendero, ejemplo: false }); window.scrollTo({ top: 0 }); } else setMsg("No se pudo abrir su panel.");
+  }
+  if (mirando) {
+    return (
+      <PanelMerendero modo="ver" datos={mirando.datos} franja={
+        <div className="franja-ver" role="status">{mirando.ejemplo ? "Estás viendo un panel de ejemplo" : `Estás viendo el panel de ${mirando.datos.nombre}`} · <button className="link" onClick={() => setMirando(null)}>Salir</button></div>
+      } />
+    );
+  }
   return (
     <div>
-      <button className="btn" onClick={invitar}>Invitar merendero</button>
+      <button className="btn" onClick={invitar}>Invitar merendero</button>{" "}
+      <button className="btn claro" onClick={() => { setMirando({ datos: MUESTRA, ejemplo: true }); window.scrollTo({ top: 0 }); }}>Ver panel de ejemplo</button>
       {enlace && (
         <div className="lugar-principal">
           <b>Enlace de invitación (sirve una sola vez, vence en 7 días)</b>
@@ -54,6 +69,7 @@ export default function PanelMerenderos() {
             {temporal?.id === m.id && <><br /><b>Contraseña temporal: {temporal.clave}</b><br /><small>Dictásela por teléfono. Se muestra solo ahora.</small></>}
           </span>
           <span>
+            <button className="btn claro chico" onClick={() => verPanel(m)}>👁 Ver su panel</button>{" "}
             <button className="btn claro chico" onClick={() => activo(m)}>{m.activo ? "Desactivar" : "Activar"}</button>{" "}
             <button className="btn claro chico" onClick={() => nuevaClave(m)}>Nueva contraseña</button>
           </span>
