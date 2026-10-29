@@ -24,6 +24,8 @@ import HoyCobran from "./HoyCobran";
 import Sos from "./Sos";
 import QuinielaPantalla, { type ModoQuiniela } from "./Quiniela";
 import ListaJuegos, { JUEGOS } from "./juegos/Juegos";
+import Castracion from "./Castracion";
+import { PALABRAS_CASTRACION, type Jornada } from "@/lib/castracion";
 import { ultimoResultado } from "@/lib/quiniela-comun";
 import { BotonPasa, FormularioPasa, useVecinos } from "./Pasa";
 import Sugerir from "./Sugerir";
@@ -106,6 +108,8 @@ export default function Inicio() {
   const [q, setQ] = useState("");
   const [vista, setVista] = useState<string | null>(null);
   const [oficinasAnses, setOficinasAnses] = useState<OficinaAnses[]>(ordenarOficinas(OFICINAS_ANSES));
+  const [jornadas, setJornadas] = useState<Jornada[]>([]);
+  useEffect(() => { fetch("/api/castracion").then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.jornadas) setJornadas(j.jornadas); }).catch(() => {}); }, []);
   useEffect(() => { fetch("/api/ansesof").then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.oficinas?.length) setOficinasAnses(j.oficinas); }).catch(() => {}); }, []);
   const [verTodas, setVerTodas] = useState(false);
   const [modoQuiniela, setModoQuiniela] = useState<ModoQuiniela>("quiniela");
@@ -295,6 +299,7 @@ export default function Inicio() {
       trabajo: s.trabajo.activa ? trabajo.filter((p) => coincide(`trabajo empleo changa ofrezco busco ${p.texto} ${p.rubro} ${p.barrio} ${p.horario}`)) : [],
       discapacidad: s.discapacidad.activa && coincide(`discapacidad cud certificado pase de colectivo gratis autismo tea imdipam taller protegido pension simbolo estacionamiento ${TRAMITES.map((t) => `${t.titulo} ${t.palabras}`).join(" ")}`),
       coop: s.coop.activa ? coop.filter((x) => coincide(`${PALABRAS_COOP} ${x.barrio} ${x.direccion}`)) : [],
+      castracion: s.castracion.activa && coincide(PALABRAS_CASTRACION),
       ansesof: s.ansesof.activa && (coincide(PALABRAS_ANSES_OF) || oficinasAnses.some((o) => coincide(`${o.nombre} ${o.direccion} ${o.localidad}`))),
       quiniela: s.quiniela.activa && coincide("quiniela quini quini6 quini 6 loteria resultados sorteo sorteos provincia nacional previa primera matutina vespertina nocturna"),
       ferias: s.trueque.activa ? trueque.ferias.filter((f) => coincide(`trueque feria ferias de trueque ${f.lugar} ${f.direccion} ${f.barrio} ${f.dias}`)) : [],
@@ -309,7 +314,7 @@ export default function Inicio() {
       clima: s.clima.activa && clima && coincide(`clima tiempo temperatura lluvia ${clima.ahora.etiqueta} ${clima.dias.map((d) => d.etiqueta).join(" ")}`) ? clima : null,
     };
   }, [busqueda, coop, oficinasAnses, lugares, mascotas, trueque, trabajo, rAnses.texto, d.tren, paros, cortes, programados, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
-  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.discapacidad || resultados.quiniela || resultados.coop.length || resultados.ansesof || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
+  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.discapacidad || resultados.quiniela || resultados.castracion || resultados.coop.length || resultados.ansesof || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
 
   // ---- Estado de cada cuadradito ----
   const hayGrave = (v: Novedad["vista"]) => novedades.some((n) => n.vista === v && n.gravedad === "grave");
@@ -765,6 +770,13 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "castracion" && s.castracion.activa)
+    return (
+      <Detalle color="castracion" titulo="Castración gratuita de mascotas" onVolver={volver}>
+        <Castracion jornadas={jornadas} />
+      </Detalle>
+    );
+
   if (vista === "ansesof")
     return (
       <Detalle color="ansesof" titulo={s.ansesof.titulo} onVolver={volver}>
@@ -888,6 +900,10 @@ export default function Inicio() {
             {resultados.trueque.length > 0 && (
               <div className="grupo"><h2>{s.trueque.titulo}</h2>
                 <ul className="lista">{resultados.trueque.map((p) => <PublicacionCard key={p.id} p={p} />)}</ul>
+              </div>)}
+            {resultados.castracion && (
+              <div className="grupo"><h2>{s.castracion.titulo}</h2>
+                <button className="tarjeta muni" onClick={() => abrir("castracion")}><b>Castración gratuita de mascotas</b><small>Turnos, jornadas en los barrios y contacto</small></button>
               </div>)}
             {resultados.ansesof && (
               <div className="grupo"><h2>{s.ansesof.titulo}</h2>
@@ -1021,6 +1037,10 @@ export default function Inicio() {
                 <Tile color="trueque" icono="trueque" titulo={s.trueque.titulo} onClick={() => abrir("trueque")}
                   estado={nuevasTrueque ? plural(nuevasTrueque, "nueva", "nuevas") : "Ver"} tono={nuevasTrueque ? "aviso" : "neutro"}
                   resumen={trueque.publicaciones.length ? `${plural(trueque.publicaciones.length, "publicación", "publicaciones")} de vecinos` : "Cambios entre vecinos"} />
+              )}
+              {s.castracion.activa && (
+                <Tile color="castracion" icono="emoji:🐾" titulo={s.castracion.titulo} estado="Ver" tono="neutro" onClick={() => abrir("castracion")}
+                  resumen="Turnos y jornadas en los barrios" />
               )}
               {s.ansesof.activa && (
                 <Tile color="ansesof" icono="ansesof" titulo={s.ansesof.titulo} estado="Ver" tono="neutro" onClick={() => abrir("ansesof")}

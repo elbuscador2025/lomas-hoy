@@ -23,6 +23,7 @@ export const config = {
     discapacidad: { activa: true, titulo: "Discapacidad" },
     coop: { activa: true, titulo: "COOP" },
     ansesof: { activa: true, titulo: "ANSES" },
+    castracion: { activa: true, titulo: "Castración gratuita" },
     noticias: { activa: true, titulo: "Noticias de Lomas" },
     // Avisos de vecinos (se ven en la campanita). Para apagarlos: activa: false.
     pasa: { activa: true, titulo: "Avisos de vecinos" },
