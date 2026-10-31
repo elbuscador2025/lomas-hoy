@@ -623,5 +623,5 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .franja-ver .link { color:#FFD54A; font-weight:800; font-size:inherit; }
 
 /* Noticias nuevas: arriba de todo y remarcadas */
-.noticia.nueva { background:#FFF1A8; border:4px solid #D9480F; border-radius:16px; }
-.etiqueta-nueva { align-self:flex-start; background:#D9480F; color:#fff; font-size:14px; font-weight:900; letter-spacing:.5px; padding:3px 10px; border-radius:999px; }
+.noticia.nueva { background:#FFF1A8; border:4px solid #D9480F; border-radius:16px; padding:12px; margin-bottom:10px; }
+.etiqueta-nueva { align-self:flex-start; background:#10213F; color:#fff; font-size:14px; font-weight:900; letter-spacing:.5px; padding:3px 10px; border-radius:999px; }
