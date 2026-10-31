@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { config } from "@/lomas.config.mjs";
 import {
   cargarDatos, armarNovedades, type Anses, clasificarTren, fechaLarga, hora, hoyMMDD, nombreLindo, proximasHoras,
@@ -123,6 +123,14 @@ export default function Inicio() {
   const [diaClima, setDiaClima] = useState(0); // día elegido en la pantalla del clima (0 = hoy)
   const push = usePush();
   const avisosApp = useAvisos();
+  // Noticias "nuevas": las publicadas después de la última vez que este celular entró a la sección (la primera vez, las de las últimas 24 horas)
+  const [vistoNoticias, setVistoNoticias] = useState<number | null>(null);
+  const enNoticias = useRef(false);
+  useEffect(() => { try { const v = Number(localStorage.getItem("lomas-hoy:noticias-visto")); if (v) setVistoNoticias(v); } catch {} }, []);
+  useEffect(() => {
+    if (vista === "noticias") { enNoticias.current = true; try { localStorage.setItem("lomas-hoy:noticias-visto", String(Date.now())); } catch {} }
+    else if (enNoticias.current) { enNoticias.current = false; setVistoNoticias(Date.now()); } // recién al salir: así en esta visita siguen remarcadas
+  }, [vista]);
   const [ollaEnlace, setOllaEnlace] = useState<string | null>(null); // llegó por el enlace de una olla (merendero)
   useEffect(() => { const o = new URLSearchParams(location.search).get("olla"); if (o && /^[a-f0-9]{8,32}$/.test(o)) setOllaEnlace(o); }, []);
   const [panel, setPanel] = useState<string | null>(null); // adónde lleva el enlace del pie: mi panel
@@ -255,7 +263,9 @@ export default function Inicio() {
   const nuevasTrueque = trueque.publicaciones.filter((p) => esNuevaTrueque(p, config.trueque.diasNuevas)).length;
   const ultimaQuiniela = ultimoResultado(d.quiniela?.contenido, hoyStr);
   const notasLomas = d.noticias?.contenido?.notas ?? [];
-  const notasHoy = notasLomas.filter((n) => ahoraAR(new Date(n.fecha)).slice(0, 10) === hoyStr).length;
+  const corteNoticias = vistoNoticias ?? Date.now() - 24 * 3600_000;
+  const linksNuevos = new Set(notasLomas.filter((n) => Date.parse(n.fecha) > corteNoticias).map((n) => n.link));
+  const notasHoy = linksNuevos.size;
   const lugaresDe = (vistaId: string) => lugares.filter((l) => CATEGORIAS_DE[vistaId].includes(l.categoria));
 
   function pedirUbicacion() {
@@ -762,7 +772,7 @@ export default function Inicio() {
   if (vista === "noticias")
     return (
       <Detalle color="noticias" titulo={s.noticias.titulo} onVolver={volver}>
-        <NoticiasLomas notas={notasLomas} sinDatos={!d.noticias?.contenido} />
+        <NoticiasLomas notas={notasLomas} nuevas={linksNuevos} sinDatos={!d.noticias?.contenido} />
       </Detalle>
     );
 
