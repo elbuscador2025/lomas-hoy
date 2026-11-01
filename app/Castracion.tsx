@@ -12,6 +12,10 @@ const fechaLarga = (f: string) => { const t = new Date(f + "T12:00:00").toLocale
 export default function Castracion({ jornadas, push }: { jornadas: Jornada[]; push: Push }) {
   return (
     <>
+      <section className="lugar-principal" aria-label="Jornadas en los barrios">
+        <a className="btn grande-btn" href={REDES_CRONOGRAMA[0].url} target="_blank" rel="noreferrer">📅 Ver las jornadas en los barrios</a>
+        <small>Los afiches de las próximas jornadas se publican ahí</small>
+      </section>
       <p className="vacio">Información para acceder al servicio municipal gratuito de castración de perros y gatos en Lomas de Zamora.</p>
 
       <h2>Sacar turno</h2>
