@@ -1,7 +1,10 @@
 import { redis, hoyArgentina } from "@/lib/servidor";
 
 // Guarda solo un número al azar por celu y por día. No hay nombres, ni IP, ni nada personal.
+// No se cuentan robots, vistas previas (WhatsApp, redes) ni navegadores automáticos de prueba.
+const ROBOT = /bot|crawl|spider|slurp|preview|facebookexternalhit|whatsapp|telegram|discord|headless|puppeteer|playwright|selenium|phantom|lighthouse|pagespeed|gtmetrix|uptime|monitor|curl|wget|python|java|go-http|node-fetch|axios|undici|vercel|okhttp|libwww/i;
 export async function POST(req: Request) {
+  if (ROBOT.test(req.headers.get("user-agent") ?? "")) return Response.json({ ok: true });
   const { id } = await req.json().catch(() => ({}));
   if (typeof id !== "string" || id.length < 8 || id.length > 64) return Response.json({ ok: false }, { status: 400 });
   const dia = hoyArgentina();

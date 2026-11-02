@@ -26,6 +26,7 @@ type Datos = {
   resumen: { visitantes_totales: number; volvieron_otro_dia: number } | null;
   reportes: { creado_en: string; seccion: string; mensaje: string }[];
   corridas?: { t: string; o: string }[];
+  celularesConAvisos?: number;
   quiniela?: { ultimo: string | null; problemas: string[] } | null;
 };
 
@@ -145,6 +146,7 @@ export default function Panel() {
             Visitantes distintos: <b>{datos.resumen?.visitantes_totales ?? 0}</b> · Volvieron otro día:{" "}
             <b>{datos.resumen?.volvieron_otro_dia ?? 0}</b>
           </p>
+          <p>Celulares con avisos activados: <b>{datos.celularesConAvisos ?? 0}</b></p>
           <h2>Por día</h2>
           <table>
             <thead><tr><th>Día</th><th>Visitantes</th><th>Que ya habían venido</th></tr></thead>

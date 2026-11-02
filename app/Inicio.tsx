@@ -12,7 +12,7 @@ import { haceCuanto } from "@/lib/hace";
 import { Icono } from "./Iconos";
 import Pie from "./Pie";
 import LugarCard from "./LugarCard";
-import Notificaciones, { CartelInstalar, CartelAvisos, BotonAvisosIPhone, SonidoAlTocar } from "./Notificaciones";
+import Notificaciones, { CartelInstalar, BotonAvisosIPhone, SonidoAlTocar } from "./Notificaciones";
 import MisAvisos, { useAvisos } from "./MisAvisos";
 import MapaLuz from "./MapaLuz";
 import { cuandoAlerta } from "@/lib/alertas-texto";
@@ -142,6 +142,7 @@ export default function Inicio() {
     fetch("/api/version", { cache: "no-store" }).then((r) => r.json()).then((x) => { if (x.v && process.env.NEXT_PUBLIC_VERSION && x.v !== process.env.NEXT_PUBLIC_VERSION) location.reload(); }).catch(() => {});
     // Visita anónima: un número al azar guardado en el celu, avisado una vez por día.
     try {
+      if (navigator.webdriver) throw 0; // navegador automático: no cuenta
       const hoy = new Date().toISOString().slice(0, 10);
       let id = localStorage.getItem("lomas-hoy:id");
       if (!id) { id = crypto.randomUUID(); localStorage.setItem("lomas-hoy:id", id); }
@@ -1085,7 +1086,7 @@ export default function Inicio() {
                   resumen="Policía, bomberos y reclamos" />
               )}
             </div>
-            <CartelInstalar /><CartelAvisos push={push} agua={aguaVisible} />
+            <CartelInstalar />
             <button className="btn whatsapp" onClick={compartirDia}>Compartir por WhatsApp</button>
           </>
         )}

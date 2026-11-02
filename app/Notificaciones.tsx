@@ -50,12 +50,13 @@ const AVISOS_QUE_LLEGAN: { icono: string; texto: string; activo: boolean }[] = [
   { icono: "tormenta", texto: "Se pronostica una tormenta fuerte", activo: config.push.tipos.tormenta.activa },
 ];
 
-// iPhone con la app instalada (abierta desde el ícono) y sin permiso: botón grande arriba de la pantalla principal. Al activarse desaparece.
-// En Safari sin instalar no aparece: ahí se muestra el cartel de "Compartir > Agregar a inicio".
+// Botón grande arriba de la pantalla principal cuando el celular no tiene permiso o no tiene suscripción. Al activarse desaparece.
+// iPhone: solo con la app instalada (abierta desde el ícono). En Safari sin instalar no aparece: ahí se muestra el cartel de "Compartir > Agregar a inicio".
+// Android: en Chrome o con la app instalada.
 export function BotonAvisosIPhone({ push }: { push: Push }) {
-  const [iphoneInstalado, setIphoneInstalado] = useState(false);
-  useEffect(() => setIphoneInstalado(esIOS() && estaInstalada()), []);
-  if (!iphoneInstalado || (push.estado !== "inactivo" && push.estado !== "denegado")) return null;
+  const [puede, setPuede] = useState(false);
+  useEffect(() => setPuede(esIOS() ? estaInstalada() : /android/i.test(navigator.userAgent)), []);
+  if (!puede || (push.estado !== "inactivo" && push.estado !== "denegado")) return null;
   return (
     <div className="aviso-iphone">
       {push.estado === "inactivo" ? (
@@ -65,34 +66,6 @@ export function BotonAvisosIPhone({ push }: { push: Push }) {
       )}
       {push.error && <p className="error">{push.error}</p>}
     </div>
-  );
-}
-
-// Cartel para activar los avisos. Pide el permiso del navegador solo al tocar "Activar avisos".
-export function CartelAvisos({ push, agua }: { push: Push; agua: boolean }) {
-  const [cerrado, setCerrado] = useState(true);
-  useEffect(() => setCerrado(estaCerrado("lomas-hoy:bienvenida") || (esIOS() && estaInstalada())), []);
-  if (cerrado || (push.estado !== "inactivo" && push.estado !== "iosSinInstalar")) return null;
-  return (
-    <section className="cartel" aria-label="Activar los avisos">
-      <b>Activá los avisos</b>
-      <p>Te suena el celular cuando pasa algo en Lomas:</p>
-      <ul className="que-llega">
-        {AVISOS_QUE_LLEGAN.filter((a) => a.activo && (agua || a.icono !== "gota")).map((a) => (
-          <li key={a.texto}><span className="icono-aviso"><Icono nombre={a.icono} tam={22} /></span>{a.texto}</li>
-        ))}
-      </ul>
-      {push.estado === "iosSinInstalar" ? (
-        <p>En iPhone los avisos solo funcionan si abrís la app desde el ícono de la pantalla de inicio. Primero instalala con los pasos de arriba y abrila desde ahí.</p>
-      ) : (
-        <>
-          <button className="btn ancho grande-btn" disabled={push.ocupado} onClick={() => push.activar(push.prefs)}>Activar avisos</button>
-          <small className="chico">Los podés apagar cuando quieras.</small>
-          {push.error && <p className="error">{push.error}</p>}
-        </>
-      )}
-      <button className="link" onClick={() => { guardarCierre("lomas-hoy:bienvenida"); setCerrado(true); }}>Ahora no</button>
-    </section>
   );
 }
 
