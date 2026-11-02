@@ -10,7 +10,7 @@ export const guardarRecord = (clave: string, valor: number) => { try { localStor
 
 // ---- Sonidos: tonos sintetizados con el navegador (no hay archivos de audio). Se apagan con el mismo interruptor de la app ----
 let audio: AudioContext | null = null;
-function tono(frecuencia: number, duracion: number, tipo: OscillatorType = "square", volumen = 0.05, retraso = 0, hasta?: number) {
+export function tono(frecuencia: number, duracion: number, tipo: OscillatorType = "square", volumen = 0.05, retraso = 0, hasta?: number) {
   try {
     const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     audio ??= new AC();

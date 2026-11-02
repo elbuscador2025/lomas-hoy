@@ -24,6 +24,7 @@ import HoyCobran from "./HoyCobran";
 import Sos from "./Sos";
 import QuinielaPantalla, { type ModoQuiniela } from "./Quiniela";
 import ListaJuegos, { JUEGOS } from "./juegos/Juegos";
+import Peques from "./juegos/peques/Peques";
 import Castracion from "./Castracion";
 import { OllaEnlace, CuadrosOlla } from "./Olla";
 import { PALABRAS_CASTRACION, type Jornada } from "@/lib/castracion";
@@ -753,6 +754,8 @@ export default function Inicio() {
         <ListaJuegos onAbrir={(id) => abrir(`juego-${id}`)} />
       </Detalle>
     );
+
+  if (vista === "juego-peques") return <Peques onSalir={volver} />; // modo chicos: pantalla completa, sin la barra ni el botón Volver de la app
 
   if (vista?.startsWith("juego-")) {
     const j = JUEGOS.find((x) => `juego-${x.id}` === vista);
