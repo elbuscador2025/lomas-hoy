@@ -1043,10 +1043,6 @@ export default function Inicio() {
               {s.agua.activa && aguaVisible && (
                 <Tile color="agua" icono="gota" titulo="Agua" estado={aguaEstado} tono={aguaTono} onClick={() => abrir("agua")} resumen={aguaResumen} />
               )}
-              {s.cuandosubo.activa && (
-                <Tile color="cuandosubo" icono="emoji:🚌" titulo={s.cuandosubo.titulo} estado="Abrir ↗" tono="neutro" onClick={() => window.open("https://www.argentina.gob.ar/sube/cuandosubo", "_blank", "noopener")}
-                  resumen="Más de 250 líneas · datos SUBE" />
-              )}
               {s.urgencias.activa && (
                 <>
                   <Tile color="guardias" icono="guardia" titulo="Guardias 24 hs" estado={plural(lugares.filter(tieneGuardia24).length, "lugar", "lugares")} tono="neutro" onClick={() => abrir("guardias")}
