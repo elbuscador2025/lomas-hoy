@@ -50,6 +50,7 @@ import { esNueva, type MascotaPublica } from "@/lib/mascotas-comun";
 import { esNuevaTrueque, type TruequePublico } from "@/lib/trueque-comun";
 import { esNuevaTrabajo, type PublicacionTrabajo } from "@/lib/trabajo-comun";
 import { usePush } from "./usePush";
+import Compartir from "./Compartir";
 
 type Coord = { lat: number; lng: number };
 type Tono = "ok" | "aviso" | "grave" | "neutro";
@@ -1109,7 +1110,7 @@ export default function Inicio() {
               )}
             </div>
             <CartelInstalar />
-            <button className="btn whatsapp" onClick={compartirDia}>Compartir por WhatsApp</button>
+            <Compartir onWhatsApp={compartirDia} />
           </>
         )}
         <button className="boton-sugerir" onClick={() => abrir("sugerir")}>💡 ¿Qué le agregarías a Lomas Hoy?</button>

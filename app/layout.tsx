@@ -3,8 +3,11 @@ import "./globals.css";
 import FeedbackToque from "./FeedbackToque";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://lomas-hoy.vercel.app"),
   title: "Lomas Hoy",
   description: "Lo que pasa hoy en Lomas de Zamora: tren, luz, clima y teléfonos útiles.",
+  openGraph: { title: "Lomas Hoy", description: "Clima, cortes de luz y agua, farmacias y cobros. Gratis para los vecinos de Lomas", siteName: "Lomas Hoy", locale: "es_AR", type: "website", url: "/" },
+  twitter: { card: "summary_large_image", title: "Lomas Hoy", description: "Clima, cortes de luz y agua, farmacias y cobros. Gratis para los vecinos de Lomas" },
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Lomas Hoy" },
   icons: {

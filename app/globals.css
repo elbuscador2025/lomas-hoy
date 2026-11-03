@@ -108,6 +108,11 @@ details[open] > summary > .flecha { transform:rotate(90deg); }
 .btn.grande-btn { width:100%; margin-top:12px; }
 .btn.whatsapp { width:100%; min-height:56px; background:#1fa855; margin-top:20px; font-size:18px; }
 .btn.whatsapp-chico { background:#1fa855; }
+.compartir-fila { display:flex; gap:10px; margin-top:20px; }
+.compartir-fila .btn { flex:1; min-height:56px; margin-top:0; font-size:16px; line-height:1.2; text-align:center; }
+.compartir-fila .btn.whatsapp { width:auto; margin-top:0; }
+.compartir-alt { display:flex; gap:8px; margin-top:10px; }
+.compartir-alt .btn { flex:1; text-align:center; }
 .btn:disabled { opacity:.5; cursor:not-allowed; }
 
 .pie { display:flex; flex-direction:column; gap:4px; margin-top:14px; font-size:13px; color:var(--suave); }
