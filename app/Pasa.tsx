@@ -57,7 +57,7 @@ function Aviso({ a, marcado, onSolucionado }: { a: AvisoPasa; marcado: boolean; 
       <div className="mascota-datos">
         <b>{t.emoji} Un vecino avisó: {t.nombre}</b>
         <span className="pasa-aviso-texto">{a.texto}</span>
-        <small>📍 {a.donde} · {haceCuanto(a.creado)}</small>
+        <small>📍 {a.donde}{a.barrio ? ` · ${a.barrio}` : ""} · {haceCuanto(a.creado)}</small>
         {a.solucionado
           ? <span className="pildora ok">✅ Ya se solucionó</span>
           : <div className="acciones"><button className="btn claro" disabled={marcado} onClick={solucionado}>{marcado ? "✅ Ya lo marcaste" : "✅ Ya se solucionó"}</button></div>}
@@ -89,6 +89,8 @@ export function AvisosVecinos({ vecinos }: { vecinos: Vecinos }) {
 export function FormularioPasa({ onListo }: { onListo: (publicado: boolean) => void }) {
   const [tipo, setTipo] = useState("");
   const [texto, setTexto] = useState("");
+  const [barrio, setBarrio] = useState("");
+  const [barrios, setBarrios] = useState<string[]>([]);
   const [donde, setDonde] = useState("");
   const [foto, setFoto] = useState<Blob | null>(null);
   const [vista, setVista] = useState("");
@@ -97,6 +99,7 @@ export function FormularioPasa({ onListo }: { onListo: (publicado: boolean) => v
   const [listo, setListo] = useState(false);
   const camara = useRef<HTMLInputElement>(null), galeria = useRef<HTMLInputElement>(null);
 
+  useEffect(() => { fetch("/api/barrios").then((r) => r.json()).then((l) => Array.isArray(l) && setBarrios(l)).catch(() => {}); }, []);
   async function elegirFoto(e: React.ChangeEvent<HTMLInputElement>) {
     const archivo = e.target.files?.[0];
     e.target.value = "";
@@ -115,11 +118,12 @@ export function FormularioPasa({ onListo }: { onListo: (publicado: boolean) => v
     if (texto.trim().length < 3) return setError("Contá qué pasa en pocas palabras.");
     const prohibido = motivoProhibidoPasa(texto);
     if (prohibido) return setError(prohibido);
-    if (donde.trim().length < 3) return setError("Contanos dónde pasó: la calle y el barrio.");
+    if (!barrio) return setError("Elegí en qué barrio pasó.");
+    if (donde.trim().length < 3) return setError("Contanos dónde exactamente: la calle o la esquina.");
     setEnviando(true);
     try {
       const f = new FormData();
-      f.append("tipo", tipo); f.append("texto", texto.trim()); f.append("calle", donde.trim());
+      f.append("tipo", tipo); f.append("texto", texto.trim()); f.append("barrio", barrio); f.append("calle", donde.trim());
       if (foto) f.append("foto", foto, "foto.jpg");
       f.append("dispositivo", dispositivo() || crypto.randomUUID());
       const r = await fetch("/api/pasa", { method: "POST", body: f });
@@ -150,8 +154,14 @@ export function FormularioPasa({ onListo }: { onListo: (publicado: boolean) => v
       <label>Contalo en pocas palabras (máx. {MAX_TEXTO_PASA})
         <textarea rows={3} maxLength={MAX_TEXTO_PASA} value={texto} onChange={(e) => setTexto(e.target.value)} />
       </label>
-      <label>¿Dónde pasó?
-        <input value={donde} maxLength={80} required placeholder="Calle y barrio (ej: Camino Negro e Itatí, Budge)" onChange={(e) => setDonde(e.target.value)} />
+      <label>¿En qué barrio?
+        <select value={barrio} required onChange={(e) => setBarrio(e.target.value)}>
+          <option value="">Elegí el barrio</option>
+          {barrios.map((b) => <option key={b}>{b}</option>)}
+        </select>
+      </label>
+      <label>¿Dónde exactamente?
+        <input value={donde} maxLength={80} required placeholder="ej: Homero y Limay" onChange={(e) => setDonde(e.target.value)} />
       </label>
       <div>
         <b>Agregar foto (opcional)</b>

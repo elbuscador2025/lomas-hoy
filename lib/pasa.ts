@@ -3,6 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { put, del } from "@vercel/blob";
 import { redis, hoyArgentina } from "@/lib/servidor";
 import { estaBloqueado, huella, agregarBloqueo } from "@/lib/moderacion";
+import { barriosActuales } from "@/lib/barrios";
 import { TIPOS_PASA, MAX_TEXTO_PASA, HORAS_PASA, motivoProhibidoPasa, type AvisoPasa } from "@/lib/pasa-comun";
 
 export const MAX_POR_DIA_PASA = 3;
@@ -39,9 +40,11 @@ export async function publicar(form: FormData, dispositivo: string): Promise<{ o
   const disp = huella(dispositivo);
   if (await estaBloqueado(null, disp)) return { ok: false, error: "No podés publicar desde este celular." };
 
-  // Dónde pasó lo escribe el vecino (calle y barrio): no se usa la ubicación del celular
+  // Dónde pasó lo escribe el vecino (barrio de la lista + calle o esquina): no se usa la ubicación del celular
+  const barrio = limpio(form.get("barrio"), 60);
+  if (!barrio || !(await barriosActuales()).includes(barrio)) return { ok: false, error: "Elegí en qué barrio pasó." };
   const donde = limpio(form.get("calle"), 80);
-  if (donde.length < 3) return { ok: false, error: "Contanos dónde pasó: la calle y el barrio." };
+  if (donde.length < 3) return { ok: false, error: "Contanos dónde exactamente: la calle o la esquina." };
 
   const id = randomUUID().slice(0, 10);
   let foto: Registro["foto"] = null;
@@ -59,7 +62,7 @@ export async function publicar(form: FormData, dispositivo: string): Promise<{ o
   }
   const ahora = new Date();
   const r: Registro = {
-    id, tipo, texto, barrio: "", donde, foto, creado: ahora.toISOString(),
+    id, tipo, texto, barrio, donde, foto, creado: ahora.toISOString(),
     vence: new Date(ahora.getTime() + HORAS_PASA * 3600_000).toISOString(), disp, situacion: "aprobada",
   };
   await redis([["HSET", "pasa", id, JSON.stringify(r)]]);
