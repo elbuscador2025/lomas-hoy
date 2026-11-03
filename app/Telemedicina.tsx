@@ -36,12 +36,8 @@ export default function Telemedicina() {
         <span className="dato">👨‍👩‍👧 Podés registrar a todo tu grupo familiar.</span>
       </section>
 
-      <h2>Qué necesitás</h2>
       <section className="lugar-principal" aria-label="Qué necesitás">
-        <span className="dato">📱 Un celular o dispositivo con internet, cámara y micrófono.</span>
-        <span className="dato">✉️ Un correo electrónico.</span>
-        <span className="dato">📝 Registrarte una sola vez en el portal: después gestionás todas tus consultas desde ahí.</span>
-        <span className="dato">📍 Saber tu código postal. Si tenés obra social, el número de afiliado.</span>
+        <span className="dato"><b>Necesitás:</b> vivir en Lomas y un celular con cámara e internet.</span>
       </section>
 
       <h2>Qué te mandan después</h2>
