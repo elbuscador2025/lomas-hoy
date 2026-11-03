@@ -111,6 +111,7 @@ details[open] > summary > .flecha { transform:rotate(90deg); }
 .compartir-fila { display:flex; gap:10px; margin-top:20px; }
 .compartir-fila .btn { flex:1; min-height:56px; margin-top:0; font-size:16px; line-height:1.2; text-align:center; }
 .compartir-fila .btn.whatsapp { width:auto; margin-top:0; }
+.compartir-fila .compartir-otras { background:var(--azul); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px; }
 .compartir-alt { display:flex; gap:8px; margin-top:10px; }
 .compartir-alt .btn { flex:1; text-align:center; }
 .btn:disabled { opacity:.5; cursor:not-allowed; }
