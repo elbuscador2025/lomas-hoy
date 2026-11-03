@@ -3,7 +3,7 @@
 // y no dependen de ninguna licencia ni recurso de terceros. Se apagan con el mismo interruptor de sonido de la app.
 import { tono } from "../comun";
 
-export type Sonar = "toque" | "pop" | "bien" | "uy" | "premio" | "barrer" | "toc" | "derrumbe" | "plop" | "vaca" | "perro" | "gato" | "pollito" | "caballo" | "pato";
+export type Sonar = "toque" | "pop" | "bien" | "uy" | "premio" | "barrer" | "toc" | "bocina" | "luces" | "fanfarria" | "plop" | "vaca" | "perro" | "gato" | "pollito" | "caballo" | "pato";
 
 let ctx: AudioContext | null = null;
 const contexto = () => {
@@ -48,12 +48,11 @@ export const SONIDOS: Record<Sonar, () => void> = {
   uy: () => tono(330, 0.22, "sine", 0.06, 0, 240),
   premio: () => { [523, 659, 784, 1046, 784, 1046, 1318].forEach((f, i) => tono(f, 0.15, "triangle", 0.08, i * 0.11)); },
   barrer: () => tono(900, 0.3, "sine", 0.05, 0, 220),
-  // Bloques: un "toc" suave al apoyar, y un derrumbe divertido (boing + golpecitos que caen)
+  // Bloques con guía: un "toc" suave al acomodar la pieza, y los sonidos del festejo
   toc: () => { tono(190, 0.08, "sine", 0.16, 0, 110); ruido(0.04, 500, 0.05); },
-  derrumbe: () => {
-    tono(700, 0.45, "sine", 0.1, 0, 120);
-    [0.05, 0.14, 0.23, 0.33, 0.42, 0.55, 0.68].forEach((r, i) => { tono(300 - i * 25, 0.09, "triangle", 0.1, r, 90); ruido(0.05, 400 + i * 80, 0.05, r); });
-  },
+  bocina: () => [0, 0.34].forEach((r) => { tono(349, 0.24, "sawtooth", 0.07, r); tono(440, 0.24, "sawtooth", 0.07, r); tono(523, 0.24, "square", 0.03, r); }),
+  luces: () => { tono(1568, 0.09, "sine", 0.1); [1175, 1568, 2093].forEach((f, i) => tono(f, 0.18, "triangle", 0.07, 0.08 + i * 0.09)); },
+  fanfarria: () => { [392, 392, 392, 523, 392, 523, 659].forEach((f, i) => { tono(f, 0.16, "sawtooth", 0.06, i * 0.13); tono(f * 1.5, 0.16, "triangle", 0.03, i * 0.13); }); },
   plop: () => { tono(520, 0.09, "sine", 0.16, 0, 160); tono(900, 0.05, "sine", 0.06, 0.01, 400); },
   // Animales (imitaciones propias, hechas con osciladores)
   vaca: () => voz({ tipo: "sawtooth", f: [[0, 95], [0.25, 125], [1.1, 88]], filtro: "bandpass", ff: [[0, 380], [0.4, 650], [1.1, 320]], q: 2.5, dur: 1.15, vol: 0.28, vib: [5, 5] }),

@@ -23,6 +23,7 @@ export default function Peques({ onSalir }: { onSalir?: () => void }) {
   const [pantalla, setPantalla] = useState<Pantalla>({ tipo: "menu" });
   const [sonido, setSonido] = useState(true);
   const [reteniendo, setReteniendo] = useState(false);
+  const atrasBloques = useRef<(() => void) | null>(null); // dentro de Bloques, el 🏠 de la barra vuelve a elegir dibujo
   const bloqueado = useRef(true), apilados = useRef(0), espera = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => setSonido(sonidoActivo()), []);
   const sonar = useCallback((s: Sonar) => { if (sonidoActivo()) SONIDOS[s](); }, []);
@@ -71,7 +72,7 @@ export default function Peques({ onSalir }: { onSalir?: () => void }) {
     <div className="pq" onContextMenu={(e) => e.preventDefault()}>
       <div className="pq-barra">
         {!enMenu
-          ? <button className="pq-casa" aria-label="Inicio" onPointerDown={(e) => { e.preventDefault(); sonar("toque"); setPantalla({ tipo: "menu" }); }}>🏠</button>
+          ? <button className="pq-casa" aria-label="Inicio" onPointerDown={(e) => { e.preventDefault(); sonar("toque"); if (atrasBloques.current) atrasBloques.current(); else setPantalla({ tipo: "menu" }); }}>🏠</button>
           : <span className="pq-casa vacio" />}
         <span className="pq-espacio" />
         <button className="pq-casa" aria-label={sonido ? "Silenciar" : "Activar sonido"} onPointerDown={(e) => { e.preventDefault(); const v = !sonido; setSonido(v); guardarSonido(v); if (v) SONIDOS.toque(); }}>{sonido ? "🔊" : "🔇"}</button>
@@ -96,7 +97,7 @@ export default function Peques({ onSalir }: { onSalir?: () => void }) {
           </>
         )}
         {pantalla.tipo === "pintar" && <Pintar key={pantalla.modo} modo={pantalla.modo} sonar={sonar} />}
-        {pantalla.tipo === "bloques" && <Bloques sonar={sonar} />}
+        {pantalla.tipo === "bloques" && <Bloques sonar={sonar} atras={atrasBloques} />}
         {pantalla.tipo === "granja" && <Granja sonar={sonar} />}
         {pantalla.tipo === "burbujas" && <Burbujas sonar={sonar} />}
       </div>
