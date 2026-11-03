@@ -26,6 +26,7 @@ import QuinielaPantalla, { type ModoQuiniela } from "./Quiniela";
 import ListaJuegos, { JUEGOS } from "./juegos/Juegos";
 import Peques from "./juegos/peques/Peques";
 import Castracion from "./Castracion";
+import Telemedicina, { PALABRAS_TELEMEDICINA } from "./Telemedicina";
 import { OllaEnlace, CuadrosOlla } from "./Olla";
 import { PALABRAS_CASTRACION, type Jornada } from "@/lib/castracion";
 import { ultimoResultado } from "@/lib/quiniela-comun";
@@ -315,6 +316,7 @@ export default function Inicio() {
       discapacidad: s.discapacidad.activa && coincide(`discapacidad cud certificado pase de colectivo gratis autismo tea imdipam taller protegido pension simbolo estacionamiento ${TRAMITES.map((t) => `${t.titulo} ${t.palabras}`).join(" ")}`),
       coop: s.coop.activa ? coop.filter((x) => coincide(`${PALABRAS_COOP} ${x.barrio} ${x.direccion}`)) : [],
       castracion: s.castracion.activa && coincide(PALABRAS_CASTRACION),
+      telemedicina: s.telemedicina.activa && coincide(PALABRAS_TELEMEDICINA),
       ansesof: s.ansesof.activa && (coincide(PALABRAS_ANSES_OF) || oficinasAnses.some((o) => coincide(`${o.nombre} ${o.direccion} ${o.localidad}`))),
       quiniela: s.quiniela.activa && coincide("quiniela quini quini6 quini 6 loteria resultados sorteo sorteos provincia nacional previa primera matutina vespertina nocturna"),
       ferias: s.trueque.activa ? trueque.ferias.filter((f) => coincide(`trueque feria ferias de trueque ${f.lugar} ${f.direccion} ${f.barrio} ${f.dias}`)) : [],
@@ -329,7 +331,7 @@ export default function Inicio() {
       clima: s.clima.activa && clima && coincide(`clima tiempo temperatura lluvia ${clima.ahora.etiqueta} ${clima.dias.map((d) => d.etiqueta).join(" ")}`) ? clima : null,
     };
   }, [busqueda, coop, oficinasAnses, lugares, mascotas, trueque, trabajo, rAnses.texto, d.tren, paros, cortes, programados, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
-  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.discapacidad || resultados.quiniela || resultados.castracion || resultados.coop.length || resultados.ansesof || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
+  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.discapacidad || resultados.quiniela || resultados.castracion || resultados.telemedicina || resultados.coop.length || resultados.ansesof || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
 
   // ---- Estado de cada cuadradito ----
   const hayGrave = (v: Novedad["vista"]) => novedades.some((n) => n.vista === v && n.gravedad === "grave");
@@ -787,6 +789,13 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "telemedicina" && s.telemedicina.activa)
+    return (
+      <Detalle color="telemedicina" titulo="Telemedicina Lomas" onVolver={volver}>
+        <Telemedicina />
+      </Detalle>
+    );
+
   if (vista === "castracion" && s.castracion.activa)
     return (
       <Detalle color="castracion" titulo="Castración gratuita de mascotas" onVolver={volver}>
@@ -893,6 +902,7 @@ export default function Inicio() {
               <button className="noche-btn" onClick={() => abrir("guardias")}>Guardias 24 hs</button>
               <button className="noche-btn" onClick={() => abrir("vets")}>Veterinarias de guardia</button>
               <button className="noche-btn" onClick={() => abrir("farmacias")}>Farmacias abiertas<small>Llamá antes de ir</small></button>
+              {s.telemedicina.activa && <button className="noche-btn noche-medico" onClick={() => abrir("telemedicina")}>🩺 ¿Necesitás un médico ahora?<small>Consultá por videollamada</small></button>}
             </div>
           </section>
         )}
@@ -920,6 +930,11 @@ export default function Inicio() {
               <div className="grupo"><h2>{s.trueque.titulo}</h2>
                 <ul className="lista">{resultados.trueque.map((p) => <PublicacionCard key={p.id} p={p} />)}</ul>
               </div>)}
+            {resultados.telemedicina && (
+              <div className="grupo"><h2>{s.telemedicina.titulo}</h2>
+                <button className="tarjeta muni" onClick={() => abrir("telemedicina")}><b>Telemedicina Lomas</b><small>Médico por videollamada, gratis · 24 hs</small></button>
+              </div>
+            )}
             {resultados.castracion && (
               <div className="grupo"><h2>{s.castracion.titulo}</h2>
                 <button className="tarjeta muni" onClick={() => abrir("castracion")}><b>Castración gratuita de mascotas</b><small>Turnos, jornadas en los barrios y contacto</small></button>
@@ -1041,6 +1056,10 @@ export default function Inicio() {
               {s.farmacias.activa && (
                 <Tile color="farmacias" icono="farmacia" titulo={s.farmacias.titulo} estado="Mapa" tono="neutro" onClick={() => abrir("farmacias")}
                   resumen="Farmacias abiertas ahora, cerca tuyo" />
+              )}
+              {s.telemedicina.activa && (
+                <Tile color="telemedicina" icono="emoji:🩺" titulo={s.telemedicina.titulo} estado="24 hs" tono="neutro" onClick={() => abrir("telemedicina")}
+                  resumen="Médico por videollamada · 24 hs" />
               )}
               {s.mascotas.activa && (
                 <Tile color="mascotas" icono="patita" titulo={s.mascotas.titulo} onClick={() => abrir("mascotas")}
