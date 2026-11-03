@@ -1,12 +1,12 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { COLORES, LAMINAS, LaminaSVG } from "./dibujos";
-import type { Sonar } from "./Peques";
+import type { Sonar } from "./sonidos";
 
 // PINTAR: dibujo libre con el dedo, o dibujos para colorear con un toque en cada parte. Nada se guarda ni se envía a ningún lado.
 const GRUESOS = [10, 22, 40];
 
-function Paleta({ color, onColor, sonar }: { color: string; onColor: (c: string) => void; sonar: Sonar }) {
+function Paleta({ color, onColor, sonar }: { color: string; onColor: (c: string) => void; sonar: (s: Sonar) => void }) {
   return (
     <div className="pq-paleta">
       {COLORES.map((c) => (
@@ -17,7 +17,7 @@ function Paleta({ color, onColor, sonar }: { color: string; onColor: (c: string)
   );
 }
 
-function Libre({ sonar }: { sonar: Sonar }) {
+function Libre({ sonar }: { sonar: (s: Sonar) => void }) {
   const lienzo = useRef<HTMLCanvasElement>(null), caja = useRef<HTMLDivElement>(null);
   const [color, setColor] = useState(COLORES[0].c);
   const [grueso, setGrueso] = useState(GRUESOS[1]);
@@ -81,7 +81,7 @@ function Libre({ sonar }: { sonar: Sonar }) {
   );
 }
 
-function Colorear({ sonar }: { sonar: Sonar }) {
+function Colorear({ sonar }: { sonar: (s: Sonar) => void }) {
   const [color, setColor] = useState(COLORES[0].c);
   const [n, setN] = useState(0);
   const [rellenos, setRellenos] = useState<Record<number, string>>({});
@@ -101,6 +101,6 @@ function Colorear({ sonar }: { sonar: Sonar }) {
   );
 }
 
-export default function Pintar({ modo, sonar }: { modo: "libre" | "colorear"; sonar: Sonar }) {
+export default function Pintar({ modo, sonar }: { modo: "libre" | "colorear"; sonar: (s: Sonar) => void }) {
   return <div className="pq-pintar">{modo === "libre" ? <Libre sonar={sonar} /> : <Colorear sonar={sonar} />}</div>;
 }

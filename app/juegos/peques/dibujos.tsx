@@ -8,71 +8,89 @@ export const COLORES = [
 ];
 const TINTA = "#10213F";
 
-// ---- Formas ----
-export const FORMAS = ["circulo", "cuadrado", "triangulo", "estrella", "corazon"] as const;
-const COLOR_FORMA: Record<string, string> = { circulo: "#E53935", cuadrado: "#1E63D6", triangulo: "#2E9E4F", estrella: "#FFC400", corazon: "#F06292" };
-export function Forma({ id }: { id: string }) {
-  const f = COLOR_FORMA[id], b = { fill: f, stroke: TINTA, strokeWidth: 4, strokeLinejoin: "round" as const };
+// ---- La Granja: seis animales de perfil, mirando a la derecha. La cola y las alas llevan una clase para animarlas al tocar ----
+export const GRANJA = ["vaca", "perro", "gato", "pollito", "caballo", "pato"] as const;
+export type NombreBicho = (typeof GRANJA)[number];
+const l = { stroke: TINTA, strokeWidth: 3.5, strokeLinejoin: "round" as const, strokeLinecap: "round" as const };
+const ojo = (x: number, y: number) => (<><circle cx={x} cy={y} r="4.2" fill={TINTA} /><circle cx={x + 1.3} cy={y - 1.3} r="1.3" fill="#fff" /></>);
+const patas = (xs: number[], color: string, y1 = 66, y2 = 92) => xs.map((x) => <rect key={x} x={x - 5} y={y1} width="10" height={y2 - y1} rx="4" fill={color} {...l} />);
+export function Bicho({ id }: { id: string }) {
   return (
-    <svg viewBox="0 0 100 100" aria-hidden>
-      {id === "circulo" && <circle cx="50" cy="50" r="38" {...b} />}
-      {id === "cuadrado" && <rect x="14" y="14" width="72" height="72" rx="8" {...b} />}
-      {id === "triangulo" && <polygon points="50,12 90,84 10,84" {...b} />}
-      {id === "estrella" && <polygon points="50,8 61,38 93,38 67,57 77,89 50,70 23,89 33,57 7,38 39,38" {...b} />}
-      {id === "corazon" && <path d="M50 88 C10 58 8 28 28 20 C40 15 48 22 50 30 C52 22 60 15 72 20 C92 28 90 58 50 88 Z" {...b} />}
+    <svg viewBox="0 0 130 100" aria-hidden>
+      {id === "vaca" && (<>
+        <path className="cola" d="M16 46 Q4 54 8 72" fill="none" {...l} /><circle cx="8" cy="74" r="5" fill="#10213F" />
+        {patas([32, 46, 78, 92], "#fff")}
+        <rect x="16" y="34" width="86" height="42" rx="20" fill="#fff" {...l} />
+        <path d="M34 40 Q50 36 52 50 Q46 62 34 56 Q26 48 34 40 Z M72 56 Q84 50 92 58 Q90 70 78 70 Q68 66 72 56 Z" fill="#10213F" />
+        <path d="M96 28 L100 16 M116 28 L120 16" {...l} fill="none" />
+        <ellipse cx="92" cy="32" rx="8" ry="5" fill="#fff" {...l} /><ellipse cx="124" cy="32" rx="6" ry="4" fill="#fff" {...l} />
+        <rect x="92" y="22" width="32" height="42" rx="15" fill="#fff" {...l} />
+        <ellipse cx="108" cy="54" rx="14" ry="10" fill="#F8A1B8" {...l} /><circle cx="102" cy="54" r="2.2" fill={TINTA} /><circle cx="114" cy="54" r="2.2" fill={TINTA} />
+        {ojo(100, 38)}{ojo(116, 38)}
+      </>)}
+      {id === "perro" && (<>
+        <path className="cola" d="M20 48 Q6 36 10 22" fill="none" stroke="#8A5A2B" strokeWidth="9" strokeLinecap="round" />
+        {patas([34, 48, 82, 96], "#C98B52", 62, 92)}
+        <ellipse cx="62" cy="54" rx="48" ry="22" fill="#D9A066" {...l} />
+        <path d="M98 34 Q116 28 122 38 L124 52 Q110 62 96 56 Z" fill="#D9A066" {...l} />
+        <ellipse cx="110" cy="30" rx="7" ry="14" transform="rotate(-18 110 30)" fill="#8A5A2B" {...l} />
+        <ellipse cx="121" cy="46" rx="9" ry="7" fill="#F3D2A8" {...l} /><ellipse cx="127" cy="44" rx="3.4" ry="2.6" fill={TINTA} />
+        {ojo(108, 42)}<path d="M114 56 Q121 62 124 55" fill="#F06292" {...l} strokeWidth="2.5" />
+      </>)}
+      {id === "gato" && (<>
+        <path className="cola" d="M20 60 Q2 56 6 32 Q8 20 16 22" fill="none" stroke="#F5A04A" strokeWidth="9" strokeLinecap="round" />
+        {patas([36, 50, 82, 94], "#F5A04A", 66, 92)}
+        <ellipse cx="62" cy="58" rx="44" ry="20" fill="#F5A04A" {...l} />
+        <path d="M52 44 Q58 38 64 44 M70 42 Q76 36 82 42" fill="none" stroke="#D9701A" strokeWidth="3" strokeLinecap="round" />
+        <polygon points="92,34 94,14 106,28" fill="#F5A04A" {...l} /><polygon points="118,34 120,14 108,28" fill="#F5A04A" {...l} />
+        <circle cx="106" cy="44" r="19" fill="#F5A04A" {...l} />{ojo(100, 42)}{ojo(113, 42)}
+        <polygon points="103,50 109,50 106,54" fill="#F06292" /><path d="M106 54 Q102 59 98 56 M106 54 Q110 59 114 56" fill="none" {...l} strokeWidth="2.5" />
+      </>)}
+      {id === "pollito" && (<>
+        <path d="M52 84 L50 94 M70 84 L72 94 M46 94 L56 94 M66 94 L76 94" stroke="#FF8A00" strokeWidth="4" strokeLinecap="round" />
+        <circle cx="62" cy="56" r="36" fill="#FFD93B" {...l} />
+        <path d="M40 18 Q36 8 44 6 M50 14 Q50 4 58 6" fill="none" {...l} />
+        <path className="ala" d="M38 56 Q22 54 20 70 Q34 78 48 68 Z" fill="#FFC400" {...l} />
+        <path className="ala" d="M86 56 Q102 54 104 70 Q90 78 76 68 Z" fill="#FFC400" {...l} />
+        {ojo(50, 46)}{ojo(76, 46)}
+        <polygon points="54,56 72,56 63,70" fill="#FF8A00" {...l} />
+      </>)}
+      {id === "caballo" && (<>
+        <path className="cola" d="M20 38 Q2 48 8 78 Q14 60 24 52" fill="#5A3A1C" {...l} />
+        {patas([34, 46, 80, 92], "#A8652B", 62, 94)}
+        <rect x="22" y="36" width="76" height="36" rx="17" fill="#B9742F" {...l} />
+        <path d="M88 44 L100 12 Q108 6 114 12 L124 36 Q126 48 116 52 L106 50 L98 62 Z" fill="#B9742F" {...l} />
+        <path d="M100 12 Q96 26 92 40 M104 10 L98 8" fill="none" stroke="#5A3A1C" strokeWidth="6" strokeLinecap="round" />
+        <polygon points="108,12 112,2 114,12" fill="#B9742F" {...l} />
+        {ojo(112, 26)}<ellipse cx="121" cy="43" rx="2.4" ry="3" fill={TINTA} />
+      </>)}
+      {id === "pato" && (<>
+        <path d="M54 82 L52 94 M72 82 L74 94 M46 94 L60 94 M66 94 L80 94" stroke="#FF8A00" strokeWidth="4" strokeLinecap="round" />
+        <path d="M18 56 Q6 40 14 34 Q26 46 38 44 L100 50 Q104 80 66 84 Q22 86 18 56 Z" fill="#FFD93B" {...l} />
+        <circle cx="94" cy="30" r="19" fill="#FFD93B" {...l} />
+        <path d="M108 30 Q128 28 128 36 Q126 44 108 40 Z" fill="#FF8A00" {...l} />
+        {ojo(94, 25)}
+        <path className="ala" d="M40 52 Q58 44 76 56 Q66 74 44 70 Q34 62 40 52 Z" fill="#FFC400" {...l} />
+      </>)}
     </svg>
   );
 }
 
-// ---- Colores (una mancha de cada color) ----
-export function Mancha({ id }: { id: string }) {
-  const c = COLORES.find((x) => x.id === id)?.c ?? "#999";
-  return <svg viewBox="0 0 100 100" aria-hidden><circle cx="50" cy="50" r="40" fill={c} stroke={TINTA} strokeWidth="4" /></svg>;
-}
-
-// ---- Animales ----
-export const ANIMALES = ["gato", "perro", "pez", "pollito", "conejo"] as const;
-const ojos = (x1: number, x2: number, y: number, r = 4.5) => (<><circle cx={x1} cy={y} r={r} fill={TINTA} /><circle cx={x2} cy={y} r={r} fill={TINTA} /><circle cx={x1 + 1.5} cy={y - 1.5} r={1.4} fill="#fff" /><circle cx={x2 + 1.5} cy={y - 1.5} r={1.4} fill="#fff" /></>);
-export function Animal({ id }: { id: string }) {
-  const l = { stroke: TINTA, strokeWidth: 3.5, strokeLinejoin: "round" as const, strokeLinecap: "round" as const };
+// ---- Íconos del menú ----
+export function IconoBloques() {
+  const b = { stroke: TINTA, strokeWidth: 4, strokeLinejoin: "round" as const };
   return (
     <svg viewBox="0 0 100 100" aria-hidden>
-      {id === "gato" && (<>
-        <polygon points="18,44 20,10 44,26" fill="#F5A04A" {...l} /><polygon points="82,44 80,10 56,26" fill="#F5A04A" {...l} />
-        <circle cx="50" cy="56" r="34" fill="#F5A04A" {...l} />{ojos(37, 63, 52)}
-        <polygon points="46,62 54,62 50,68" fill="#F06292" {...l} />
-        <path d="M50 68 Q44 76 38 72 M50 68 Q56 76 62 72" fill="none" {...l} />
-        <path d="M14 60 L32 62 M14 70 L32 67 M86 60 L68 62 M86 70 L68 67" fill="none" strokeWidth="2.5" stroke={TINTA} strokeLinecap="round" />
-      </>)}
-      {id === "perro" && (<>
-        <ellipse cx="22" cy="48" rx="13" ry="26" fill="#8A5A2B" {...l} /><ellipse cx="78" cy="48" rx="13" ry="26" fill="#8A5A2B" {...l} />
-        <circle cx="50" cy="52" r="32" fill="#D9A066" {...l} />{ojos(38, 62, 46)}
-        <ellipse cx="50" cy="64" rx="15" ry="11" fill="#F3D2A8" {...l} /><ellipse cx="50" cy="59" rx="6" ry="4.5" fill={TINTA} />
-        <path d="M44 70 Q50 78 56 70" fill="#F06292" {...l} />
-      </>)}
-      {id === "pez" && (<>
-        <polygon points="70,50 94,28 94,72" fill="#FF8A00" {...l} />
-        <ellipse cx="44" cy="50" rx="34" ry="24" fill="#29B6F6" {...l} />
-        <path d="M36 28 Q46 14 56 28" fill="#1E63D6" {...l} />
-        <circle cx="26" cy="46" r="5" fill="#fff" {...l} strokeWidth="2.5" /><circle cx="25" cy="46" r="2.2" fill={TINTA} />
-        <path d="M16 58 Q22 62 28 58" fill="none" {...l} strokeWidth="3" />
-        <path d="M46 36 Q52 50 46 64 M58 38 Q63 50 58 62" fill="none" stroke="#1E63D6" strokeWidth="3" strokeLinecap="round" />
-      </>)}
-      {id === "pollito" && (<>
-        <path d="M40 86 L36 94 M60 86 L64 94" stroke="#FF8A00" strokeWidth="4" strokeLinecap="round" />
-        <circle cx="50" cy="54" r="34" fill="#FFD93B" {...l} />
-        <path d="M20 58 Q8 52 16 44 Q26 50 28 60 Z" fill="#FFC400" {...l} /><path d="M80 58 Q92 52 84 44 Q74 50 72 60 Z" fill="#FFC400" {...l} />
-        <path d="M44 22 Q42 12 48 10 M52 20 Q54 10 60 12" fill="none" {...l} />
-        {ojos(38, 62, 48)}
-        <polygon points="42,58 58,58 50,70" fill="#FF8A00" {...l} />
-      </>)}
-      {id === "conejo" && (<>
-        <ellipse cx="36" cy="26" rx="11" ry="25" fill="#F2F2F2" {...l} /><ellipse cx="64" cy="26" rx="11" ry="25" fill="#F2F2F2" {...l} />
-        <ellipse cx="36" cy="28" rx="5" ry="17" fill="#F8BBD0" /><ellipse cx="64" cy="28" rx="5" ry="17" fill="#F8BBD0" />
-        <circle cx="50" cy="66" r="28" fill="#F2F2F2" {...l} />{ojos(39, 61, 62)}
-        <ellipse cx="50" cy="72" rx="5" ry="3.5" fill="#F06292" />
-        <path d="M50 75 Q44 82 38 78 M50 75 Q56 82 62 78" fill="none" {...l} strokeWidth="3" />
-      </>)}
+      <rect x="8" y="66" width="40" height="26" rx="3" fill="#E53935" {...b} /><rect x="52" y="66" width="40" height="26" rx="3" fill="#1E63D6" {...b} />
+      <rect x="22" y="40" width="40" height="26" rx="3" fill="#FFC400" {...b} /><polygon points="42,10 70,40 14,40" fill="#2E9E4F" {...b} />
+    </svg>
+  );
+}
+export function IconoBurbuja() {
+  return (
+    <svg viewBox="0 0 100 100" aria-hidden>
+      <circle cx="46" cy="56" r="34" fill="#BFE8FF" stroke={TINTA} strokeWidth="4" /><path d="M28 50 Q32 34 46 30" fill="none" stroke="#fff" strokeWidth="6" strokeLinecap="round" />
+      <circle cx="80" cy="22" r="13" fill="#FFD1E8" stroke={TINTA} strokeWidth="4" /><circle cx="76" cy="18" r="3" fill="#fff" />
     </svg>
   );
 }

@@ -644,32 +644,10 @@ body.pq-activo { overflow:hidden; overscroll-behavior:none; }
 .pq-cuerpo { flex:1; min-height:0; width:100%; max-width:560px; margin:0 auto; padding:4px 12px 12px; display:flex; flex-direction:column; gap:10px; }
 .pq-menu { flex:1; min-height:0; display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:minmax(0,1fr); gap:12px; }
 .pq-gran { min-height:0; border-radius:28px; background:#fff; border:4px solid #10213F !important; box-shadow:0 5px 0 #10213F; padding:12px; display:flex; align-items:center; justify-content:center; }
-.pq-gran:nth-child(1) { background:#FFE0E0; } .pq-gran:nth-child(2) { background:#FFF3BF; } .pq-gran:nth-child(3) { background:#D8F3DC; }
-.pq-gran:nth-child(4) { background:#D6E8FF; } .pq-gran:nth-child(5) { background:#EBDDFF; grid-column:1 / -1; }
+.pq-gran:nth-child(1) { background:#D6E8FF; } .pq-gran:nth-child(2) { background:#EBDDFF; } .pq-gran:nth-child(3) { background:#FFF3BF; }
+.pq-gran:nth-child(4) { background:#D8F3DC; } .pq-gran:nth-child(5) { background:#CFF3F7; grid-column:1 / -1; }
 .pq-gran svg { height:100%; width:100%; max-height:150px; }
 .pq-adultos { flex:none; margin:0; font-size:13px; text-align:center; color:#5B6580; }
-
-.pq-aprender { flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; gap:8px; position:relative; }
-.pq-estrellas { flex:none; display:flex; gap:6px; font-size:34px; line-height:1; color:#D5D9E4; }
-.pq-estrellas .llena { color:#FFB300; text-shadow:0 2px 0 #C77700; }
-.pq-estrellas .salta { animation:pq-salto .5s ease-in-out infinite alternate; }
-.pq-objetivo { flex:1.1; min-height:0; aspect-ratio:1; max-width:100%; border-radius:32px; background:#fff; border:5px solid #10213F; padding:14px; display:flex; }
-.pq-objetivo svg { width:100%; height:100%; }
-.pq-objetivo.bien { animation:pq-salto .35s ease-in-out 3 alternate; background:#E3F8E8; border-color:#1F8A4C; }
-.pq-igual { flex:none; font-size:34px; font-weight:900; line-height:1; }
-.pq-opciones { flex:1; min-height:0; width:100%; display:grid; gap:12px; }
-.pq-opciones.n2 { grid-template-columns:1fr 1fr; } .pq-opciones.n3 { grid-template-columns:1fr 1fr 1fr; }
-.pq-opcion { min-height:0; border-radius:26px; background:#fff; border:4px solid #10213F !important; box-shadow:0 5px 0 #10213F; padding:10px; display:flex; align-items:center; justify-content:center; }
-.pq-opcion svg { width:100%; height:100%; max-height:150px; }
-.pq-opcion.mal { animation:pq-sacudir .4s ease-in-out; }
-.pq-opcion.bien { background:#E3F8E8; border-color:#1F8A4C !important; animation:pq-salto .35s ease-in-out 3 alternate; }
-.pq-opcion.pista { animation:pq-pulso .7s ease-in-out infinite alternate; }
-@keyframes pq-salto { to { transform:translateY(-12px) scale(1.06); } }
-@keyframes pq-sacudir { 20% { transform:translateX(-10px); } 40% { transform:translateX(10px); } 60% { transform:translateX(-6px); } 80% { transform:translateX(6px); } }
-@keyframes pq-pulso { to { transform:scale(1.08); box-shadow:0 0 0 8px rgba(255,196,0,.55), 0 5px 0 #10213F; } }
-.pq-confeti { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
-.pq-confeti i { position:absolute; top:-20px; width:14px; height:14px; border-radius:3px; animation:pq-cae 1.3s ease-in forwards; }
-@keyframes pq-cae { to { transform:translateY(105vh) rotate(540deg); } }
 
 .pq-pintar { flex:1; min-height:0; display:flex; flex-direction:column; gap:8px; }
 .pq-lienzo { flex:1; min-height:0; border-radius:20px; border:4px solid #10213F; background:#fff; overflow:hidden; }
@@ -684,3 +662,41 @@ body.pq-activo { overflow:hidden; overscroll-behavior:none; }
 .pq-colorear { flex:1; min-height:0; display:flex; align-items:center; gap:6px; }
 .pq-lamina { flex:1; min-width:0; height:100%; background:#fff; border:4px solid #10213F; border-radius:20px; touch-action:none; }
 .pq-flecha { flex:none; width:48px; height:72px; border-radius:16px; background:#fff; border:3px solid #10213F !important; font-size:24px; padding:0; }
+
+/* Pequeños creativos: Bloques, La Granja y Burbujas */
+.pq-bloques { flex:1; min-height:0; display:flex; flex-direction:column; gap:8px; position:relative; }
+.pq-escena { flex:1; min-height:0; position:relative; border-radius:20px; border:4px solid #10213F; background:linear-gradient(#BFE8FF, #EAF8FF); overflow:hidden; touch-action:none; }
+.pq-pasto { position:absolute; left:0; right:0; bottom:0; background:#7BC96F; border-top:4px solid #10213F; }
+.pq-pieza { position:absolute; left:0; top:0; touch-action:none; will-change:transform; }
+.pq-pieza-dib { position:absolute; }
+.pq-pieza.fantasma { z-index:5; pointer-events:none; filter:drop-shadow(0 6px 6px rgba(16,33,63,.35)); }
+.pq-boom { position:absolute; top:8px; right:8px; z-index:6; width:64px; height:64px; border-radius:50%; background:#FFE98A; border:3px solid #10213F !important; font-size:32px; line-height:1; padding:0; box-shadow:0 4px 0 #10213F; }
+.pq-boom:active { transform:scale(.93); }
+.pq-bandeja { flex:none; height:96px; display:flex; align-items:center; gap:10px; padding:6px 10px; overflow-x:auto; overflow-y:hidden; touch-action:pan-x; background:#fff; border:4px solid #10213F; border-radius:20px; scrollbar-width:none; }
+.pq-bandeja::-webkit-scrollbar { display:none; }
+.pq-ficha { flex:none; width:74px; height:78px; display:flex; align-items:center; justify-content:center; border-radius:14px; background:#F3F5FB; touch-action:pan-x; }
+
+.pq-granja { flex:1; min-height:0; display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:minmax(0,1fr); gap:12px; }
+.pq-bicho { min-height:0; border-radius:26px; border:4px solid #10213F !important; box-shadow:0 5px 0 #10213F; padding:8px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.pq-bicho.b-vaca { background:#D8F3DC; } .pq-bicho.b-perro { background:#FFE7D1; } .pq-bicho.b-gato { background:#FFF3BF; }
+.pq-bicho.b-pollito { background:#FFFBD0; } .pq-bicho.b-caballo { background:#F3E3D3; } .pq-bicho.b-pato { background:#D6E8FF; }
+.pq-bicho:active { transform:scale(.96); }
+.pq-bicho-dib { display:flex; width:100%; height:100%; align-items:center; justify-content:center; }
+.pq-bicho svg { width:100%; height:100%; max-height:170px; overflow:visible; }
+.pq-bicho svg .cola, .pq-bicho svg .ala { transform-box:fill-box; }
+.pq-bicho svg .cola { transform-origin:90% 90%; } .pq-bicho svg .ala { transform-origin:50% 15%; }
+.pq-bicho.anim .pq-bicho-dib { animation:pq-brinco .7s ease-in-out; }
+.pq-bicho.anim .cola { animation:pq-cola .22s ease-in-out 6 alternate; }
+.pq-bicho.anim .ala { animation:pq-ala .16s ease-in-out 8 alternate; }
+@keyframes pq-brinco { 0%,100% { transform:translateY(0); } 25% { transform:translateY(-16px) rotate(-3deg); } 55% { transform:translateY(0); } 75% { transform:translateY(-8px) rotate(3deg); } }
+@keyframes pq-cola { from { transform:rotate(-20deg); } to { transform:rotate(20deg); } }
+@keyframes pq-ala { from { transform:rotate(-28deg); } to { transform:rotate(28deg); } }
+
+.pq-burbujas { flex:1; min-height:0; position:relative; overflow:hidden; border-radius:20px; border:4px solid #10213F; background:linear-gradient(#9FDBFF, #E8F7FF); touch-action:none; }
+.pq-burbuja { position:absolute; bottom:-170px; animation:pq-sube linear forwards; touch-action:none; }
+.pq-burbuja.roto { animation-play-state:paused; }
+.pq-bola { display:block; width:100%; height:100%; border-radius:50%; border:3px solid; animation:pq-bamboleo ease-in-out infinite alternate; }
+.pq-estrellita { position:absolute; left:50%; top:50%; font-style:normal; font-size:22px; line-height:1; animation:pq-vuela .6s ease-out forwards; }
+@keyframes pq-sube { to { transform:translateY(-130vh); } }
+@keyframes pq-bamboleo { from { transform:translateX(-12px); } to { transform:translateX(12px); } }
+@keyframes pq-vuela { from { transform:translate(-50%,-50%) rotate(var(--a)) translateY(0) scale(.4); opacity:1; } to { transform:translate(-50%,-50%) rotate(var(--a)) translateY(calc(var(--d) * -1)) scale(1.3); opacity:0; } }
