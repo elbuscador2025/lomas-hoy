@@ -1,17 +1,16 @@
 "use client";
 import BotonLlamar from "./BotonLlamar";
 
-// Números de emergencia. 911, 107, 100 y 103 figuran también en los teléfonos útiles del sitio del Municipio de Lomas de Zamora; 144 es la línea nacional.
+// Números de emergencia. 911, 100 y 103 figuran también en los teléfonos útiles del sitio del Municipio de Lomas de Zamora; 144 es la línea nacional.
+// Emergencia médica: según el Municipio (página de Telemedicina Lomas, verificada el 03/11/2026), desde un celular se llama al 4292-3896 y el 107 funciona solo desde teléfono fijo.
 const NUMEROS = [
   { n: "911", t: "Policía" },
-  { n: "107", t: "Ambulancia" },
   { n: "100", t: "Bomberos" },
   { n: "103", t: "Defensa Civil" },
   { n: "144", t: "Violencia de género" },
 ];
 // Números propios de Lomas (publicados por el Municipio)
 const LOCALES = [
-  { n: "4292-3896", t: "Emergencia médica en Lomas, desde celular", tel: "011 4292-3896" },
   { n: "147", t: "Centro de seguridad de Lomas", tel: "147" },
 ];
 
@@ -19,6 +18,15 @@ export default function Sos() {
   return (
     <>
       <ul className="sos-lista">
+        <li className="sos-fila sos-medica">
+          <b className="sos-num sos-grande">Emergencia médica (ambulancia) · <span style={{ whiteSpace: "nowrap" }}>4292-3896</span></b>
+          <BotonLlamar nombre="Emergencia médica (ambulancia)" numero="4292-3896" />
+        </li>
+        <li className="sos-fila">
+          <b className="sos-num">107 · Ambulancia</b>
+          <small className="sos-aclara">Solo desde teléfono fijo</small>
+          <BotonLlamar nombre="Ambulancia (desde teléfono fijo)" numero="107" />
+        </li>
         {NUMEROS.map((x) => (
           <li key={x.n} className="sos-fila">
             <b className="sos-num">{x.n} · {x.t}</b>

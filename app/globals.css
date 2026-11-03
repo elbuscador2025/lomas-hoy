@@ -445,6 +445,9 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .sos-fila { display:flex; flex-direction:column; gap:6px; background:#fff; border:1px solid var(--linea); border-radius:16px; padding:12px; }
 .sos-num { font-size:26px; line-height:1.2; }
 .sos-num.sos-local { font-size:19px; }
+.sos-fila.sos-medica { border:3px solid #C62828; background:#FDE8E8; }
+.sos-num.sos-grande { font-size:30px; color:#B71C1C; }
+.sos-aclara { font-size:15px; font-weight:700; color:#46506A; }
 
 .c-pasa { --c-bg:#FFE3D1; --c-fuerte:#C2410C; }
 .c-noticias { --c-bg:#DDE3F0; --c-fuerte:#1D2D50; }
