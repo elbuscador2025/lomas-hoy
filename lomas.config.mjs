@@ -25,6 +25,8 @@ export const config = {
     ansesof: { activa: true, titulo: "ANSES" },
     castracion: { activa: true, titulo: "Castración gratuita" },
     telemedicina: { activa: true, titulo: "Telemedicina" },
+    // Abre Cuándo SUBO (Transporte de la Nación). La versión web (cuandosubo.sube.gob.ar) entra en un bucle de redirecciones y no se puede abrir directo en una línea: se usa la página oficial del servicio.
+    cuandosubo: { activa: true, titulo: "¿Cuándo llega mi colectivo?" },
     noticias: { activa: true, titulo: "Noticias de Lomas" },
     // Avisos de vecinos (se ven en la campanita). Para apagarlos: activa: false.
     pasa: { activa: true, titulo: "Avisos de vecinos" },

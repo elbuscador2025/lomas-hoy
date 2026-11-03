@@ -601,6 +601,7 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 
 .c-castracion { --c-bg:#E3F4D0; --c-fuerte:#3F7A12; }
 .c-telemedicina { --c-bg:#D5F1F4; --c-fuerte:#0B6E80; }
+.c-cuandosubo { --c-bg:#E9E0FA; --c-fuerte:#5B2A9B; }
 .noche-medico { grid-column:1 / -1; min-height:56px; background:#0B6E80; }
 .aviso-emergencia { background:#FDE8E8; border:3px solid #C62828; border-radius:20px; padding:14px; margin:0 0 12px; display:flex; flex-direction:column; gap:8px; color:#10213F; }
 .aviso-emergencia b { font-size:20px; color:#B71C1C; }
