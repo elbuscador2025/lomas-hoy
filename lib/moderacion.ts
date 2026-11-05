@@ -1,6 +1,7 @@
 // Denuncias y bloqueos de Trueque y Trabajo para mayores de 50 años. Sin dependencias de las dos secciones: las pantallas de mi panel las juntan.
 import { createHash } from "node:crypto";
 import { redis } from "@/lib/servidor";
+import { conCandado } from "@/lib/candado";
 import { notificarAdmin } from "@/lib/push";
 
 import { MOTIVOS, MOTIVOS_ESTAFA, MOTIVOS_PASA } from "@/lib/moderacion-comun";
@@ -36,16 +37,19 @@ type Registro = { situacion: string; denuncias?: Denuncia[]; oculta?: boolean } 
 
 export async function denunciar(seccion: SeccionDenunciable, id: string, motivo: string, dispositivo: string, resumen: string) {
   if (!(seccion === "pasa" ? MOTIVOS_PASA : MOTIVOS).includes(motivo)) return false;
-  const [j] = await redis([["HGET", seccion, id]]);
-  if (!j) return false;
-  const r = JSON.parse(j as string) as Registro;
-  if (r.situacion !== "aprobada") return false;
-  const disp = huella(dispositivo);
-  const lista = (r.denuncias ?? []).filter((d) => d.disp !== disp);
-  lista.push({ motivo, disp, t: new Date().toISOString() });
-  const oculta = lista.length >= DENUNCIAS_PARA_OCULTAR || !!r.oculta;
-  await redis([["HSET", seccion, id, JSON.stringify({ ...r, denuncias: lista, oculta })]]);
-  return { avisar: () => notificarAdmin(oculta ? "Publicación oculta por denuncias" : "Nueva denuncia", `${motivo}: ${resumen.slice(0, 100)}`, `/panel#${seccion}`) };
+  // Con candado: las denuncias de una misma publicación se guardan de a una, así que tres juntas se cuentan las tres
+  return conCandado(`den:${seccion}:${id}`, async () => {
+    const [j] = await redis([["HGET", seccion, id]]);
+    if (!j) return false as const;
+    const r = JSON.parse(j as string) as Registro;
+    if (r.situacion !== "aprobada") return false as const;
+    const disp = huella(dispositivo);
+    const lista = (r.denuncias ?? []).filter((d) => d.disp !== disp);
+    lista.push({ motivo, disp, t: new Date().toISOString() });
+    const oculta = lista.length >= DENUNCIAS_PARA_OCULTAR || !!r.oculta;
+    await redis([["HSET", seccion, id, JSON.stringify({ ...r, denuncias: lista, oculta })]]);
+    return { avisar: () => notificarAdmin(oculta ? "Publicación oculta por denuncias" : "Nueva denuncia", `${motivo}: ${resumen.slice(0, 100)}`, `/panel#${seccion}`) };
+  });
 }
 // Mi revisión: la publicación vuelve a verse y se borran las denuncias
 export async function dejarPublicada(seccion: SeccionDenunciable, id: string) {

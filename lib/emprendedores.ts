@@ -4,6 +4,7 @@ import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypt
 import { del } from "@vercel/blob";
 import { put, operacionesDelMes, LIMITE_OPERACIONES } from "@/lib/blobcuenta";
 import { redis, hoyArgentina } from "@/lib/servidor";
+import { conCandado } from "@/lib/candado";
 import { estaBloqueado, huella, agregarBloqueo, DENUNCIAS_PARA_OCULTAR } from "@/lib/moderacion";
 import { MOTIVOS_EMP } from "@/lib/moderacion-comun";
 import { motivoProhibidoPasa } from "@/lib/pasa-comun";
@@ -207,18 +208,20 @@ export async function denunciar(id: string, cid: string | undefined, motivo: str
     lista.push({ motivo, disp, t: new Date().toISOString() });
     return { ...x, denuncias: lista, oculta: lista.length >= DENUNCIAS_PARA_OCULTAR || !!x.oculta };
   };
-  if (cid) {
+  if (cid) return conCandado(`den:emp:${id}:${cid}`, async () => { // con candado: tres denuncias juntas se cuentan las tres
     const [j] = await redis([["HGET", claveC(id), cid]]);
-    if (!j) return false;
+    if (!j) return false as const;
     const c = marcar(JSON.parse(j as string) as Comentario);
     await redis([["HSET", claveC(id), cid, JSON.stringify(c)]]);
     return { avisar: () => notificarAdmin(c.oculta ? "Comentario oculto por denuncias" : "Denuncia de un comentario", `${motivo}: ${c.texto.slice(0, 100)}`, "/panel#emprendedores") };
-  }
-  const r = await uno(id);
-  if (!r) return false;
-  const x = marcar(r);
-  await redis([["HSET", "emp", id, JSON.stringify(x)]]);
-  return { avisar: () => notificarAdmin(x.oculta ? "Emprendimiento oculto por denuncias" : "Denuncia de un emprendimiento", `${motivo}: ${r.titulo.slice(0, 100)}`, "/panel#emprendedores") };
+  });
+  return conCandado(`den:emp:${id}`, async () => {
+    const r = await uno(id);
+    if (!r) return false as const;
+    const x = marcar(r);
+    await redis([["HSET", "emp", id, JSON.stringify(x)]]);
+    return { avisar: () => notificarAdmin(x.oculta ? "Emprendimiento oculto por denuncias" : "Denuncia de un emprendimiento", `${motivo}: ${r.titulo.slice(0, 100)}`, "/panel#emprendedores") };
+  });
 }
 
 // ---- Mi panel ----
