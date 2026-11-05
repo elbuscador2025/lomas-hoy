@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { CATEGORIAS, type Lugar } from "@/lib/datos";
 import PanelBarrios from "./PanelBarrios";
 import PanelTrueque from "./PanelTrueque";
+import PanelEmprendedores from "./PanelEmprendedores";
+import BlobUso from "./BlobUso";
 import PanelTrabajo from "./PanelTrabajo";
 import PanelBloqueados from "./PanelBloqueados";
 import PanelDenuncias from "./PanelDenuncias";
@@ -36,7 +38,7 @@ const fecha = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone:
 export default function Panel() {
   const [datos, setDatos] = useState<Datos | null>(null);
   const [lugares, setLugares] = useState<Lugar[]>([]);
-  const [pestana, setPestana] = useState<"stats" | "lugares" | "barrios" | "push" | "mascotas" | "anses" | "coop" | "ansesof" | "castracion" | "merenderos" | "pasa" | "sugerencias" | "agua" | "trueque" | "trabajo" | "bloqueados" | "denuncias">("stats");
+  const [pestana, setPestana] = useState<"stats" | "lugares" | "barrios" | "push" | "mascotas" | "anses" | "coop" | "ansesof" | "castracion" | "merenderos" | "pasa" | "sugerencias" | "agua" | "trueque" | "emprendedores" | "trabajo" | "bloqueados" | "denuncias">("stats");
   const [editando, setEditando] = useState<(Lugar & { tels: string; direccionOriginal?: string }) | null>(null);
   const [mensaje, setMensaje] = useState("");
 
@@ -46,6 +48,7 @@ export default function Panel() {
   useEffect(() => {
     if (location.hash === "#mascotas") setPestana("mascotas");
     if (location.hash === "#trueque") setPestana("trueque");
+    if (location.hash === "#emprendedores") setPestana("emprendedores");
     if (location.hash === "#trabajo") setPestana("trabajo");
     if (location.hash === "#denuncias") setPestana("denuncias");
     post("/api/panel").then(async (r) => { if (r.ok) { setDatos(await r.json()); cargarLugares(); } });
@@ -91,6 +94,7 @@ export default function Panel() {
       </div>
       <AvisarmeAqui />
       <MiCuenta />
+      <BlobUso />
       <div className="pestanas">
         <button className={`btn ${pestana === "stats" ? "" : "claro"}`} onClick={() => setPestana("stats")}>Visitas y reportes</button>
         <button className={`btn ${pestana === "lugares" ? "" : "claro"}`} onClick={() => setPestana("lugares")}>Lugares ({lugares.length})</button>
@@ -106,6 +110,7 @@ export default function Panel() {
         <button className={`btn ${pestana === "coop" ? "" : "claro"}`} onClick={() => setPestana("coop")}>COOP</button>
         <button className={`btn ${pestana === "agua" ? "" : "claro"}`} onClick={() => setPestana("agua")}>Agua</button>
         <button className={`btn ${pestana === "trueque" ? "" : "claro"}`} onClick={() => setPestana("trueque")}>Trueque</button>
+        {config.secciones.emprendedores.activa && <button className={`btn ${pestana === "emprendedores" ? "" : "claro"}`} onClick={() => setPestana("emprendedores")}>Emprendedores</button>}
         <button className={`btn ${pestana === "trabajo" ? "" : "claro"}`} onClick={() => setPestana("trabajo")}>Trabajo</button>
         <button className={`btn ${pestana === "bloqueados" ? "" : "claro"}`} onClick={() => setPestana("bloqueados")}>Bloqueados</button>
         <button className={`btn ${pestana === "denuncias" ? "" : "claro"}`} onClick={() => setPestana("denuncias")}>Denuncias</button>
@@ -113,6 +118,7 @@ export default function Panel() {
 
       {pestana === "barrios" && <PanelBarrios />}
       {pestana === "trueque" && <PanelTrueque />}
+      {pestana === "emprendedores" && config.secciones.emprendedores.activa && <PanelEmprendedores />}
       {pestana === "trabajo" && <PanelTrabajo />}
       {pestana === "bloqueados" && <PanelBloqueados />}
       {pestana === "denuncias" && <PanelDenuncias />}

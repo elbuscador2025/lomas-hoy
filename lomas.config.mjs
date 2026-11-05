@@ -28,6 +28,8 @@ export const config = {
     noticias: { activa: true, titulo: "Noticias de Lomas" },
     // Avisos de vecinos (se ven en la campanita). Para apagarlos: activa: false.
     pasa: { activa: true, titulo: "Avisos de vecinos" },
+    // Emprendedores: los vecinos publican lo que ofrecen (con conversación propia en cada publicación). Para apagarla: activa: false.
+    emprendedores: { activa: true, titulo: "Emprendedores" },
     quiniela: { activa: true, titulo: "Quiniela y Quini 6" },
     quini6: { activa: true, titulo: "Quini 6" },
   },

@@ -1,6 +1,7 @@
 // "Pasa en Lomas": avisos de vecinos sobre lo que pasa en la calle. Se publican al instante, duran 24 horas (con su foto) y no tienen comentarios ni notificaciones.
 import { createHash, randomUUID } from "node:crypto";
-import { put, del } from "@vercel/blob";
+import { del } from "@vercel/blob";
+import { put } from "@/lib/blobcuenta";
 import { redis, hoyArgentina } from "@/lib/servidor";
 import { estaBloqueado, huella, agregarBloqueo } from "@/lib/moderacion";
 import { barriosActuales } from "@/lib/barrios";

@@ -26,6 +26,7 @@ import QuinielaPantalla, { type ModoQuiniela } from "./Quiniela";
 import ListaJuegos, { JUEGOS } from "./juegos/Juegos";
 import Peques from "./juegos/peques/Peques";
 import Castracion from "./Castracion";
+import Emprendedores from "./Emprendedores";
 import Telemedicina, { PALABRAS_TELEMEDICINA } from "./Telemedicina";
 import { OllaEnlace, CuadrosOlla } from "./Olla";
 import { PALABRAS_CASTRACION, type Jornada } from "@/lib/castracion";
@@ -839,6 +840,13 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista?.startsWith("emprendedores") && s.emprendedores.activa)
+    return (
+      <Detalle color="emprendedores" titulo={s.emprendedores.titulo} onVolver={volver}>
+        <Emprendedores vista={vista} abrir={abrir} volver={volver} />
+      </Detalle>
+    );
+
   if (vista === "trueque")
     return (
       <Detalle color="trueque" titulo={s.trueque.titulo} onVolver={volver}>
@@ -1076,6 +1084,10 @@ export default function Inicio() {
                 <Tile color="trueque" icono="trueque" titulo={s.trueque.titulo} onClick={() => abrir("trueque")}
                   estado={nuevasTrueque ? plural(nuevasTrueque, "nueva", "nuevas") : "Ver"} tono={nuevasTrueque ? "aviso" : "neutro"}
                   resumen={trueque.publicaciones.length ? `${plural(trueque.publicaciones.length, "publicación", "publicaciones")} de vecinos` : "Cambios entre vecinos"} />
+              )}
+              {s.emprendedores.activa && (
+                <Tile color="emprendedores" icono="emoji:🛍️" titulo={s.emprendedores.titulo} estado="Nuevo" tono="aviso" onClick={() => abrir("emprendedores")}
+                  resumen="Mostrá lo que ofrecés y encontrá clientes" />
               )}
               {s.castracion.activa && (
                 <Tile color="castracion" icono="emoji:🐾" titulo={s.castracion.titulo} estado="Ver" tono="neutro" onClick={() => abrir("castracion")}

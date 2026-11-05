@@ -1,6 +1,7 @@
 // Trueque entre vecinos: guardado, moderación, fotos y limpieza. Todo se valida acá, en el servidor.
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { put, del } from "@vercel/blob";
+import { del } from "@vercel/blob";
+import { put } from "@/lib/blobcuenta";
 import { config } from "@/lomas.config.mjs";
 import { redis, hoyArgentina } from "@/lib/servidor";
 import { ahoraAR } from "@/lib/avisos";
