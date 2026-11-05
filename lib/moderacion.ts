@@ -31,7 +31,7 @@ export async function desbloquear(id: string) {
   await redis([["HDEL", "bloqueados", id]]);
 }
 
-// ---- Denuncias: cada celular cuenta una sola vez por publicación; con 3 se oculta hasta que yo la revise ----
+// ---- Denuncias: cada celular cuenta una sola vez por publicación; con 3 se oculta hasta que yo la revise. La denuncia se guarda antes de responder (así dos denuncias casi juntas no se pisan); el aviso para mí sale después. ----
 type Registro = { situacion: string; denuncias?: Denuncia[]; oculta?: boolean } & Record<string, unknown>;
 
 export async function denunciar(seccion: SeccionDenunciable, id: string, motivo: string, dispositivo: string, resumen: string) {
@@ -45,8 +45,7 @@ export async function denunciar(seccion: SeccionDenunciable, id: string, motivo:
   lista.push({ motivo, disp, t: new Date().toISOString() });
   const oculta = lista.length >= DENUNCIAS_PARA_OCULTAR || !!r.oculta;
   await redis([["HSET", seccion, id, JSON.stringify({ ...r, denuncias: lista, oculta })]]);
-  await notificarAdmin(oculta ? "Publicación oculta por denuncias" : "Nueva denuncia", `${motivo}: ${resumen.slice(0, 100)}`, `/panel#${seccion}`);
-  return true;
+  return { avisar: () => notificarAdmin(oculta ? "Publicación oculta por denuncias" : "Nueva denuncia", `${motivo}: ${resumen.slice(0, 100)}`, `/panel#${seccion}`) };
 }
 // Mi revisión: la publicación vuelve a verse y se borran las denuncias
 export async function dejarPublicada(seccion: SeccionDenunciable, id: string) {

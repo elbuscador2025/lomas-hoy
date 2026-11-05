@@ -23,6 +23,7 @@ export async function POST(req: Request) {
   const [j] = await redis([["HGET", seccion, id]]);
   if (!j) return Response.json({ ok: false }, { status: 404 });
   const r = JSON.parse(j as string) as { ofrezco?: string; texto?: string }; // en "pasa" el aviso se llama texto
-  after(() => denunciar(seccion, id, String(c.motivo ?? ""), dispositivo, r.ofrezco ?? r.texto ?? "").catch((e) => console.error("denuncia", e)));
+  const hecho = await denunciar(seccion, id, String(c.motivo ?? ""), dispositivo, r.ofrezco ?? r.texto ?? "").catch((e) => { console.error("denuncia", e); return false as const; });
+  if (hecho) after(() => hecho.avisar().catch((e) => console.error("denuncia", e)));
   return Response.json({ ok: true });
 }
