@@ -53,6 +53,7 @@ export function leerTren(html, cfg) {
 }
 
 // ---- Luz: mapa de cortes del ENRE ----
+const sinSD = (v) => (v && !/^s\/d$/i.test(v) ? v : null); // el ENRE escribe "S/D" cuando no sabe
 export function leerLuz(js, cfg) {
   if (!js.includes("addressPoints_Cuadro_D")) throw new Error("Formato del ENRE no reconocido");
   const cortes = [];
@@ -67,6 +68,7 @@ export function leerLuz(js, cfg) {
       localidad: campo("Localidad")?.replace(/^LAVALLOL$/i, "LLAVALLOL") ?? null,
       usuarios,
       lat: Number(lat), lng: Number(lng), // punto que informa el ENRE para ese corte (sirve para ubicar la localidad en el mapa)
+      subestacion: sinSD(campo("Subestacion")), alimentador: sinSD(campo("Alimentador")), // para juntar los registros del mismo corte
       normalizacion: cuerpo.match(/normalizacion:\s*([\d-]+ [\d:]+)/)?.[1] ?? null, // hora de Argentina
     });
   }

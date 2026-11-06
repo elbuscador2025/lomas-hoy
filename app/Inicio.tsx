@@ -4,7 +4,7 @@ import { config } from "@/lomas.config.mjs";
 import {
   cargarDatos, armarNovedades, type Anses, clasificarTren, fechaLarga, hora, hoyMMDD, nombreLindo, proximasHoras,
   CATEGORIAS, ordenarLugares, distanciaKm, distanciaTexto, normalizar, mapaBusqueda, mapaBuscador, ZONA,
-  type Todo, type Lugar, type Novedad, agruparCortes,
+  type Todo, type Lugar, type Novedad, eventosLuz, tituloCorte,
   textoCorteAgua,
 } from "@/lib/datos";
 import { ahoraAR } from "@/lib/avisos";
@@ -226,7 +226,7 @@ export default function Inicio() {
   const tren = d.tren?.contenido ? clasificarTren(d.tren.contenido.novedades, hoyMMDD()) : null;
   const luzVieja = !!d.luz?.ok_en && Date.now() - new Date(d.luz.ok_en).getTime() > 60 * 60_000; // si hace más de una hora que no se pudo leer, no se muestra como actual
   const cortes = luzVieja ? [] : (d.luz?.contenido?.cortes ?? []);
-  const zonasLuz = agruparCortes(cortes);
+  const zonasLuz = eventosLuz(cortes);
   // Cortes programados: si la última lectura falló o los datos tienen más de 3 horas, no se dice "no hay cortes"
   const progFalla = !d.programados?.contenido || !!d.programados.error || !d.programados.ok_en || Date.now() - new Date(d.programados.ok_en).getTime() > 3 * 3600_000;
   const alertasLuz = novedades.filter((n) => n.vista === "luz");
@@ -325,7 +325,7 @@ export default function Inicio() {
       tren: s.tren.activa ? (d.tren?.contenido?.novedades ?? []).filter((n) => coincide(`${s.tren.titulo} tren roca ${n.ramal} ${n.motivo}`)) : [],
       paros: s.colectivos.activa ? paros.filter((p) => coincide(`colectivo colectivos paro uta ${p.titular}`)) : [],
       programados: s.luz.activa ? programados.filter((c) => coincide(`corte programado luz edesur ${c.localidad} ${c.motivo}`)) : [],
-      luz: s.luz.activa ? zonasLuz.filter((z) => coincide(`${s.luz.titulo} luz corte edesur ${z.nombre}`)) : [],
+      luz: s.luz.activa ? zonasLuz.filter((z) => coincide(`${s.luz.titulo} luz corte edesur ${z.titulo}`)) : [],
       mascotas: s.mascotas.activa ? mascotas.filter((m) => coincide(`mascota mascotas perdida perdido encontrada encontrado ${m.especie} ${m.barrio} ${m.descripcion}`)) : [],
       agua: s.agua.activa && aguaVisible && coincide("agua aysa corte cortes de agua"),
       anses: s.anses.activa && coincide("anses cobran cobro hoy cobran jubilacion jubilaciones jubilados pension auh asignacion"),
@@ -579,10 +579,9 @@ export default function Inicio() {
           ) : (
             <ul className="lista">
               {zonasLuz.map((z) => (
-                <li key={z.nombre}>
-                  <b>{z.nombre}</b> · {plural(z.usuarios, "usuario", "usuarios")} sin luz
-                  <br />
-                  {z.hasta ? `Hora estimada de normalización: ${z.hasta.slice(11, 16)} hs` : "Sin hora estimada de normalización"}
+                <li key={z.id}>
+                  <b>{z.titulo}</b> · {plural(z.usuarios, "usuario", "usuarios")} · {z.hasta ? `vuelve aprox. ${z.hasta.slice(11, 16)} hs` : "sin hora estimada"}
+                  {z.subestacion && <><br /><small>Subestación {nombreLindo(z.subestacion).replace(/ De /g, " de ").replace(/^Heroes/, "Héroes")}</small></>}
                 </li>
               ))}
             </ul>
@@ -983,7 +982,7 @@ export default function Inicio() {
               </div>)}
             {resultados.luz.length > 0 && (
               <div className="grupo"><h2>Cortes de luz</h2>
-                {resultados.luz.map((x) => <p key={x.nombre} className="tarjeta aviso"><b>{x.nombre}</b><span>{plural(x.usuarios, "usuario", "usuarios")} · {x.hasta ? `hasta las ${x.hasta.slice(11, 16)} hs` : "sin hora estimada"}</span></p>)}
+                {resultados.luz.map((x) => <p key={x.id} className="tarjeta aviso"><b>{x.titulo}</b><span>{plural(x.usuarios, "usuario", "usuarios")} · {x.hasta ? `vuelve aprox. ${x.hasta.slice(11, 16)} hs` : "sin hora estimada"}</span></p>)}
               </div>)}
             {resultados.programados.length > 0 && (
               <div className="grupo"><h2>Cortes programados</h2>
@@ -1047,7 +1046,7 @@ export default function Inicio() {
             <div className="grilla">
               {s.luz.activa && (
                 <Tile color="luz" icono="luz" titulo="Luz" estado={luzEstado} tono={luzTono} onClick={() => abrir("luz")}
-                  resumen={(!d.luz?.contenido || luzVieja ? "Sin datos por ahora" : zonasLuz.length === 0 ? "Sin cortes" : zonasLuz.length === 1 ? `Corte en ${zonasLuz[0].nombre} · ${plural(zonasLuz[0].usuarios, "usuario", "usuarios")}` : `Cortes en ${zonasLuz.length} zonas`) + (programados.length ? ` · ${plural(programados.length, "programado", "programados")}` : "")} />
+                  resumen={(!d.luz?.contenido || luzVieja ? "Sin datos por ahora" : zonasLuz.length === 0 ? "Sin cortes" : zonasLuz.length === 1 ? `${tituloCorte(zonasLuz[0].barrio, null)} · ${plural(zonasLuz[0].usuarios, "usuario", "usuarios")}` : `Cortes en ${zonasLuz.length} zonas`) + (programados.length ? ` · ${plural(programados.length, "programado", "programados")}` : "")} />
               )}
               {s.agua.activa && aguaVisible && (
                 <Tile color="agua" icono="gota" titulo="Agua" estado={aguaEstado} tono={aguaTono} onClick={() => abrir("agua")} resumen={aguaResumen} />

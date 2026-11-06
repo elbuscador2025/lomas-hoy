@@ -10,7 +10,7 @@ export type AvisoTren = {
 };
 export type Tren = { novedades: AvisoTren[] };
 export type Luz = {
-  cortes: { tension: "media" | "baja" | "otra"; localidad: string | null; usuarios: number; normalizacion: string | null; lat?: number; lng?: number }[];
+  cortes: { tension: "media" | "baja" | "otra"; localidad: string | null; usuarios: number; normalizacion: string | null; lat?: number; lng?: number; subestacion?: string | null; alimentador?: string | null; barrio?: string | null; calle?: string | null }[]; // barrio y calle los agrega el sitio (OpenStreetMap) a partir del punto que informa el ENRE
 };
 export type EstadoClima = { icono: string; etiqueta: string };
 export type HoraClima = { hora: string; temp: number; sensacion: number | null; viento: number | null; lluvia: number | null; lluviaCap?: number } & EstadoClima;
@@ -146,21 +146,13 @@ export function armarNovedades(d: Todo, luz: { alertaDesdeUsuarios: number; grav
       novedades.push({ id: `tren${i}`, vista: "tren", gravedad: x.grave ? "grave" : "aviso", titulo: `Roca: ${x.ramal}`, detalle: x.motivo }));
   }
   if (activas.luz && d.luz?.contenido) {
-    const porLocalidad = new Map<string, { usuarios: number; hasta: string | null }>();
-    for (const c of d.luz.contenido.cortes) {
-      const k = c.localidad ?? "Lomas de Zamora";
-      const a = porLocalidad.get(k) ?? { usuarios: 0, hasta: null };
-      a.usuarios += c.usuarios;
-      if (c.normalizacion && (!a.hasta || c.normalizacion > a.hasta)) a.hasta = c.normalizacion;
-      porLocalidad.set(k, a);
-    }
-    for (const [loc, a] of porLocalidad) {
+    for (const a of eventosLuz(d.luz.contenido.cortes)) {
       if (a.usuarios < luz.alertaDesdeUsuarios) continue; // los cortes chicos solo se ven dentro de Luz
       novedades.push({
         vista: "luz",
-        id: `luz${loc}`,
+        id: `luz${a.id}`,
         gravedad: a.usuarios >= luz.graveDesdeUsuarios ? "grave" : "aviso",
-        titulo: `Corte de luz en ${nombreLindo(loc)}`,
+        titulo: a.titulo,
         detalle: `${a.usuarios} ${a.usuarios === 1 ? "usuario afectado" : "usuarios afectados"}` + (a.hasta ? ` · hasta las ${a.hasta.slice(11, 16)} hs` : ""),
       });
     }
@@ -232,23 +224,48 @@ export function mapaBusqueda(texto: string, yo: { lat: number; lng: number } | n
   return `https://www.google.com/maps/search/${encodeURIComponent(q)}/@${c.lat.toFixed(5)},${c.lng.toFixed(5)},${yo ? 15 : 13}z`;
 }
 
-// Lo que el ENRE llama "Zona Rural" (o no dice) no es un barrio: se agrupa como "Otras zonas de Lomas". El resto, con el nombre real de la localidad.
-export const OTRAS_ZONAS = "Otras zonas de Lomas";
+// ---- Cortes de luz del momento ----
+// El ENRE manda un registro por cada grupo de usuarios (con su localidad, a veces "Zona Rural", y un punto). Los registros del mismo corte se juntan en un solo renglón:
+// los que cuelgan del mismo alimentador (o, si no lo dicen, los que están a menos de 1,2 km y tienen la misma hora de vuelta). El barrio y la calle salen de las coordenadas (OpenStreetMap).
+export type EventoLuz = { id: string; titulo: string; barrio: string | null; calle: string | null; usuarios: number; hasta: string | null; subestacion: string | null; lat?: number; lng?: number };
 const sinAcentos = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
-export function nombreZonaLuz(loc: string | null | undefined) {
-  if (!loc || /rural|^s\/d$|sin dato|desconoc/i.test(loc)) return OTRAS_ZONAS;
+function localidadLinda(loc: string | null | undefined) {
+  if (!loc || /rural|^s\/d$|sin dato|desconoc/i.test(loc.trim()) || sinAcentos(loc) === sinAcentos(config.ciudad)) return null; // "Lomas de Zamora" es el partido, no un barrio
   const conocida = config.localidades.find((l: string) => sinAcentos(l) === sinAcentos(loc) || (sinAcentos(loc) === "lavallol" && sinAcentos(l) === "llavallol"));
   return conocida ?? nombreLindo(loc).replace(/ De /g, " de ");
 }
-// Un renglón por lugar: total de usuarios sin luz y la hora estimada más tardía. Los lugares con más usuarios primero; "Otras zonas" al final.
-export function agruparCortes(cortes: Luz["cortes"]) {
-  const m = new Map<string, { nombre: string; usuarios: number; hasta: string | null }>();
+const km = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+  const r = Math.PI / 180, dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(h));
+};
+type CorteLuz = Luz["cortes"][number];
+export function gruposDeCortes(cortes: CorteLuz[]) {
+  const grupos: { clave: string; base: string; miembros: CorteLuz[] }[] = [];
   for (const c of cortes) {
-    const nombre = nombreZonaLuz(c.localidad);
-    const a = m.get(nombre) ?? { nombre, usuarios: 0, hasta: null };
-    a.usuarios += c.usuarios;
-    if (c.normalizacion && (!a.hasta || c.normalizacion > a.hasta)) a.hasta = c.normalizacion;
-    m.set(nombre, a);
+    const ali = c.alimentador && !/^s\/d$/i.test(c.alimentador) ? c.alimentador : null;
+    const base = `${c.normalizacion ?? "?"}|${c.tension}`;
+    let g = ali
+      ? grupos.find((x) => x.clave === `a:${ali}|${base}`)
+      : c.lat != null && c.lng != null
+        ? grupos.find((x) => x.clave.startsWith("p:") && x.base === base && x.miembros.some((m) => m.lat != null && m.lng != null && km({ lat: m.lat, lng: m.lng }, { lat: c.lat!, lng: c.lng! }) <= 1.2))
+        : grupos.find((x) => x.clave === `l:${c.localidad}|${base}`);
+    if (!g) { g = { clave: ali ? `a:${ali}|${base}` : c.lat != null ? `p:${grupos.length}|${base}` : `l:${c.localidad}|${base}`, base, miembros: [] }; grupos.push(g); }
+    g.miembros.push(c);
   }
-  return [...m.values()].sort((a, b) => Number(a.nombre === OTRAS_ZONAS) - Number(b.nombre === OTRAS_ZONAS) || b.usuarios - a.usuarios);
+  return grupos.map((g) => ({ ...g, miembros: g.miembros.sort((x, y) => y.usuarios - x.usuarios) })); // el primero es el grupo más grande: de ahí sale el punto del corte
+}
+export function tituloCorte(barrio: string | null, calle: string | null) {
+  if (barrio) return calle ? `Corte en ${barrio}, cerca de ${calle}` : `Corte en ${barrio}`;
+  return calle ? `Corte en Lomas de Zamora, cerca de ${calle}` : "Corte en Lomas de Zamora (zona no informada)";
+}
+export function eventosLuz(cortes: CorteLuz[]): EventoLuz[] {
+  return gruposDeCortes(cortes).map((g) => {
+    const rep = g.miembros[0];
+    const barrio = g.miembros.find((m) => m.barrio)?.barrio ?? g.miembros.map((m) => localidadLinda(m.localidad)).find(Boolean) ?? null;
+    const calle = rep.calle ?? g.miembros.find((m) => m.calle)?.calle ?? null;
+    const hasta = g.miembros.reduce<string | null>((t, m) => (m.normalizacion && (!t || m.normalizacion > t) ? m.normalizacion : t), null);
+    const subestacion = g.miembros.find((m) => m.subestacion && !/^s\/d$/i.test(m.subestacion))?.subestacion ?? null;
+    return { id: `${g.clave}|${rep.lat?.toFixed(3) ?? ""}`, titulo: tituloCorte(barrio, calle), barrio, calle, usuarios: g.miembros.reduce((t, m) => t + m.usuarios, 0), hasta, subestacion, lat: rep.lat, lng: rep.lng };
+  }).sort((a, b) => b.usuarios - a.usuarios);
 }
