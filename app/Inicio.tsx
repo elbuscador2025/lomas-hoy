@@ -541,7 +541,7 @@ export default function Inicio() {
   if (vista === "luz") {
     return (
       <Detalle color="luz" titulo={s.luz.titulo} onVolver={volver}>
-        {config.programados.activa && (
+        {config.programados.activa && !progFalla && programados.length > 0 && ( // el bloque solo aparece si hay cortes programados reales
           <div className="bloque">
             <h2>Cortes programados</h2>
             {progFalla ? (
