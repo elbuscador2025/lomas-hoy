@@ -759,3 +759,5 @@ html { font-size:16px; -webkit-text-size-adjust:100%; -moz-text-size-adjust:100%
 .emp-foto-elegida img { width:100%; height:100%; object-fit:cover; border-radius:12px; display:block; }
 .emp-foto-elegida button { position:absolute; top:-8px; right:-8px; width:28px; height:28px; border-radius:50%; border:0; background:#C62828; color:#fff; font-size:14px; cursor:pointer; }
 .emp-aviso-rojo { background:#FDE8E8; border-color:#C62828; color:#7A1111; }
+
+.c-empleo { --c-bg:#E4EAFB; --c-fuerte:#3949AB; }

@@ -25,6 +25,7 @@ export const config = {
     ansesof: { activa: true, titulo: "ANSES" },
     castracion: { activa: true, titulo: "Castración gratuita" },
     telemedicina: { activa: true, titulo: "Telemedicina" },
+    empleo: { activa: true, titulo: "Buscar empleo" },
     noticias: { activa: true, titulo: "Noticias de Lomas" },
     // Avisos de vecinos (se ven en la campanita). Para apagarlos: activa: false.
     pasa: { activa: true, titulo: "Avisos de vecinos" },

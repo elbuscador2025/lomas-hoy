@@ -27,6 +27,7 @@ import ListaJuegos, { JUEGOS } from "./juegos/Juegos";
 import Peques from "./juegos/peques/Peques";
 import Castracion from "./Castracion";
 import Emprendedores from "./Emprendedores";
+import Empleo, { PALABRAS_EMPLEO } from "./Empleo";
 import Telemedicina, { PALABRAS_TELEMEDICINA } from "./Telemedicina";
 import { OllaEnlace, CuadrosOlla } from "./Olla";
 import { PALABRAS_CASTRACION, type Jornada } from "@/lib/castracion";
@@ -319,6 +320,7 @@ export default function Inicio() {
       coop: s.coop.activa ? coop.filter((x) => coincide(`${PALABRAS_COOP} ${x.barrio} ${x.direccion}`)) : [],
       castracion: s.castracion.activa && coincide(PALABRAS_CASTRACION),
       telemedicina: s.telemedicina.activa && coincide(PALABRAS_TELEMEDICINA),
+      empleo: s.empleo.activa && coincide(PALABRAS_EMPLEO),
       ansesof: s.ansesof.activa && (coincide(PALABRAS_ANSES_OF) || oficinasAnses.some((o) => coincide(`${o.nombre} ${o.direccion} ${o.localidad}`))),
       quiniela: s.quiniela.activa && coincide("quiniela quini quini6 quini 6 loteria resultados sorteo sorteos provincia nacional previa primera matutina vespertina nocturna"),
       ferias: s.trueque.activa ? trueque.ferias.filter((f) => coincide(`trueque feria ferias de trueque ${f.lugar} ${f.direccion} ${f.barrio} ${f.dias}`)) : [],
@@ -333,7 +335,7 @@ export default function Inicio() {
       clima: s.clima.activa && clima && coincide(`clima tiempo temperatura lluvia ${clima.ahora.etiqueta} ${clima.dias.map((d) => d.etiqueta).join(" ")}`) ? clima : null,
     };
   }, [busqueda, coop, oficinasAnses, lugares, mascotas, trueque, trabajo, rAnses.texto, d.tren, paros, cortes, programados, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
-  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.discapacidad || resultados.quiniela || resultados.castracion || resultados.telemedicina || resultados.coop.length || resultados.ansesof || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
+  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.discapacidad || resultados.quiniela || resultados.castracion || resultados.telemedicina || resultados.empleo || resultados.coop.length || resultados.ansesof || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
 
   // ---- Estado de cada cuadradito ----
   const hayGrave = (v: Novedad["vista"]) => novedades.some((n) => n.vista === v && n.gravedad === "grave");
@@ -790,6 +792,13 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "empleo" && s.empleo.activa)
+    return (
+      <Detalle color="empleo" titulo={s.empleo.titulo} onVolver={volver}>
+        <Empleo />
+      </Detalle>
+    );
+
   if (vista === "telemedicina" && s.telemedicina.activa)
     return (
       <Detalle color="telemedicina" titulo="Telemedicina Lomas" onVolver={volver}>
@@ -938,6 +947,11 @@ export default function Inicio() {
               <div className="grupo"><h2>{s.trueque.titulo}</h2>
                 <ul className="lista">{resultados.trueque.map((p) => <PublicacionCard key={p.id} p={p} />)}</ul>
               </div>)}
+            {resultados.empleo && (
+              <div className="grupo"><h2>{s.empleo.titulo}</h2>
+                <button className="tarjeta muni" onClick={() => abrir("empleo")}><b>Buscar empleo</b><small>Portal Empleo oficial y gratuito · para todas las edades</small></button>
+              </div>
+            )}
             {resultados.telemedicina && (
               <div className="grupo"><h2>{s.telemedicina.titulo}</h2>
                 <button className="tarjeta muni" onClick={() => abrir("telemedicina")}><b>Telemedicina Lomas</b><small>Médico por videollamada, gratis · 24 hs</small></button>
@@ -1102,6 +1116,10 @@ export default function Inicio() {
               )}
               <Tile color="juegos" icono="emoji:🎮" titulo="Juegos" estado="Gratis" tono="neutro" onClick={() => abrir("juegos")}
                 resumen="Apilá, La Viborita y Ta-Te-Ti" />
+              {s.empleo.activa && (
+                <Tile color="empleo" icono="emoji:💼" titulo={s.empleo.titulo} estado="Gratis" tono="neutro" onClick={() => abrir("empleo")}
+                  resumen="Empleo oficial y gratuito · para todas las edades" />
+              )}
               {s.coop.activa && (
                 <Tile color="coop" icono="coop" titulo={s.coop.titulo} estado="Ver" tono="neutro" onClick={() => { setCoopElegida(""); abrir("coop"); }}
                   resumen="Luminarias, poda, árboles y arreglos del barrio" />
