@@ -1,9 +1,9 @@
 "use client";
 import Pie from "./Pie";
 
-// Buscar empleo: solo informa y manda al Portal Empleo, la plataforma oficial y gratuita del Estado (dirección verificada el 07/11/2026: abre el sitio del Estado "Formando Capital Humano · Portal Empleo").
+// Portal Empleo: solo informa y manda al portal oficial y gratuito del Estado (dirección verificada el 07/11/2026).
 // No se carga ni se guarda ningún dato personal acá: el CV y las postulaciones se hacen en el portal oficial.
-export const URL_PORTAL_EMPLEO = "https://www.portalempleo.gob.ar";
+export const URL_PORTAL_EMPLEO = "https://portalempleo.gob.ar/portada"; // abre directo el Portal Empleo (la dirección sin /portada pasa antes por una página de inicio del Estado)
 export const PALABRAS_EMPLEO = "empleo trabajo cv curriculum curriculum vitae buscar trabajo buscar empleo oferta ofertas laborales busqueda laboral portal empleo cursos formacion capacitacion gratis oficial";
 
 export default function Empleo() {

@@ -949,7 +949,7 @@ export default function Inicio() {
               </div>)}
             {resultados.empleo && (
               <div className="grupo"><h2>{s.empleo.titulo}</h2>
-                <button className="tarjeta muni" onClick={() => abrir("empleo")}><b>Buscar empleo</b><small>Portal Empleo oficial y gratuito · para todas las edades</small></button>
+                <button className="tarjeta muni" onClick={() => abrir("empleo")}><b>Portal Empleo</b><small>Empleo oficial y gratuito · para todas las edades</small></button>
               </div>
             )}
             {resultados.telemedicina && (
