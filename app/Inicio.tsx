@@ -24,7 +24,8 @@ import HoyCobran from "./HoyCobran";
 import Sos from "./Sos";
 import QuinielaPantalla, { type ModoQuiniela } from "./Quiniela";
 import ListaJuegos, { JUEGOS } from "./juegos/Juegos";
-import Peques from "./juegos/peques/Peques";
+import dynamic from "next/dynamic";
+const Peques = dynamic(() => import("./juegos/peques/Peques"), { ssr: false }); // modo chicos: se descarga recién al abrirlo
 import Castracion from "./Castracion";
 import Emprendedores from "./Emprendedores";
 import Empleo, { PALABRAS_EMPLEO } from "./Empleo";
