@@ -770,10 +770,21 @@ html { font-size:16px; -webkit-text-size-adjust:100%; -moz-text-size-adjust:100%
 .c-comunidad { --c-bg:#E2ECFA; --c-fuerte:#1D5FA8; }
 .pasos-comunidad { margin:4px 0 10px; padding-left:22px; display:flex; flex-direction:column; gap:6px; }
 
-/* Cosmo Lomas (juego de naves) */
-.cosmo-cancha { width:min(92vw, 420px, calc((100dvh - 240px) * 0.643)); max-width:100%; }
-.cosmo-lienzo { width:100%; aspect-ratio:360 / 560; background:#05060F; }
-.cosmo-lienzo canvas { display:block; width:100% !important; height:100% !important; }
-.cosmo-banner { position:absolute; top:34%; left:0; right:0; text-align:center; font-size:30px; font-weight:900; color:#FFE14A; text-shadow:0 2px 0 #10213F, 0 0 14px rgba(255,225,74,.6); pointer-events:none; animation:cosmo-banner 1.5s ease-out both; }
+/* Cosmo Lomas (juego de naves): pantalla completa, sin barra de la app ni scroll */
+body.cosmo-activo { overflow:hidden; overscroll-behavior:none; }
+.cosmo-pantalla { position:fixed; inset:0; z-index:9999; display:flex; flex-direction:column; background:#05060F; color:#fff; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:none; overscroll-behavior:none; padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+.cosmo-hud { flex:none; display:flex; align-items:center; justify-content:space-between; gap:6px; height:34px; padding:0 8px; background:#0B1230; border-bottom:1px solid #1B2655; font-size:13px; color:#B9C3E6; white-space:nowrap; }
+.cosmo-hud b { color:#fff; font-size:15px; margin-left:3px; }
+.cosmo-hud .cosmo-salir { flex:none; height:26px; padding:0 10px; border:1px solid #3A4A8C; border-radius:13px; background:transparent; color:#fff; font:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+.cosmo-hud .cosmo-vidas { color:#FF6B8A; letter-spacing:1px; }
+.cosmo-area { position:relative; flex:1; min-height:0; background:#05060F; overflow:hidden; }
+.cosmo-lienzo { position:absolute; inset:0; }
+.cosmo-lienzo canvas { display:block; }
+.cosmo-botones { position:absolute; top:6px; right:6px; z-index:3; display:flex; gap:6px; }
+.cosmo-botones button { width:36px; height:36px; padding:0; display:grid; place-items:center; border:1px solid rgba(255,255,255,.28); border-radius:50%; background:rgba(11,18,48,.72); color:#fff; font-size:16px; line-height:1; cursor:pointer; }
+.cosmo-botones button:active { transform:scale(.92); }
+.cosmo-area .jg-capa { z-index:2; }
+.cosmo-banner { position:absolute; top:34%; left:0; right:0; text-align:center; font-size:30px; font-weight:900; color:#FFE14A; text-shadow:0 2px 0 #10213F, 0 0 14px rgba(255,225,74,.6); pointer-events:none; z-index:2; animation:cosmo-banner 1.5s ease-out both; }
 @keyframes cosmo-banner { 0% { opacity:0; transform:scale(.6); } 20% { opacity:1; transform:scale(1.05); } 80% { opacity:1; } 100% { opacity:0; transform:scale(1.15); } }
-.cosmo-doble { position:absolute; bottom:6px; left:0; right:0; text-align:center; font-size:14px; font-weight:800; color:#FFE14A; pointer-events:none; }
+.cosmo-doble { position:absolute; bottom:8px; left:0; right:0; text-align:center; font-size:14px; font-weight:800; color:#FFE14A; pointer-events:none; z-index:2; }
+.cosmo-ayuda { font-size:14px !important; color:#B9C3E6; line-height:1.4; }

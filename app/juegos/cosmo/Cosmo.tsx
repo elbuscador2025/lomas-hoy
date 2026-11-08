@@ -1,11 +1,11 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type PhaserTipos from "phaser";
-import { BotonSonido, guardarRecord, leerRecord, tono, useSonido } from "../comun";
+import { guardarRecord, leerRecord, tono, useSonido } from "../comun";
 import type { ControlCosmo, EstadoCosmo } from "./juego";
 
-// COSMO LOMAS: naves contra invasores (2D, Phaser). Nada del juego se descarga hasta tocar "Jugar":
-// ahí recién se pide el motor (/juegos/phaser.min.js, que el service worker no guarda) y el código del juego.
+// COSMO LOMAS: naves contra invasores (2D, Phaser). Ocupa toda la pantalla del celular.
+// Nada del juego se descarga hasta tocar "Jugar": ahí recién se pide el motor (/juegos/phaser.min.js, que el service worker no guarda) y el código del juego.
 const CLAVE = "cosmo";
 let promesaMotor: Promise<typeof PhaserTipos> | null = null;
 const cargarMotor = () => (promesaMotor ??= new Promise<typeof PhaserTipos>((ok, mal) => {
@@ -18,7 +18,7 @@ const cargarMotor = () => (promesaMotor ??= new Promise<typeof PhaserTipos>((ok,
   document.head.appendChild(s);
 }));
 
-export default function Cosmo() {
+export default function Cosmo({ onSalir }: { onSalir?: () => void }) {
   const zona = useRef<HTMLDivElement>(null), control = useRef<ControlCosmo | null>(null), recordRef = useRef(0);
   const [pantalla, setPantalla] = useState<"inicio" | "cargando" | "error" | "juego">("inicio");
   const [est, setEst] = useState<EstadoCosmo | null>(null);
@@ -28,7 +28,11 @@ export default function Cosmo() {
   const { activo, alternar } = useSonido();
 
   useEffect(() => { const r = leerRecord(CLAVE); recordRef.current = r; setRecord(r); }, []);
-  useEffect(() => () => { control.current?.destruir(); control.current = null; }, []);
+  // mientras se juega, la página de atrás no se mueve ni hace scroll
+  useEffect(() => {
+    document.body.classList.add("cosmo-activo");
+    return () => { document.body.classList.remove("cosmo-activo"); control.current?.destruir(); control.current = null; };
+  }, []);
   // si se sale de la app o se apaga la pantalla, el juego queda en pausa
   useEffect(() => {
     const alOcultar = () => { if (document.hidden) control.current?.pausar(); };
@@ -59,17 +63,25 @@ export default function Cosmo() {
     } catch { setPantalla("error"); }
   }
 
-  const fase = est?.fase;
+  const fase = est?.fase, vidas = Math.max(0, est?.vidas ?? 3);
   return (
-    <div className="jg cosmo">
-      <div className="jg-estado">
-        <span><small>Puntos</small><b>{est?.puntos ?? 0}</b></span>
-        <span><small>Récord</small><b>{Math.max(record, est?.puntos ?? 0)}</b></span>
-        <span><small>Vidas</small><b aria-label={`${est?.vidas ?? 3} vidas`}>{"♥".repeat(Math.max(0, est?.vidas ?? 3)) || "–"}</b></span>
-        <span><small>Nivel</small><b>{est?.nivel ?? 1}</b></span>
+    <div className="cosmo-pantalla">
+      <div className="cosmo-hud">
+        <button className="cosmo-salir" onClick={onSalir} aria-label="Salir del juego">‹ Salir</button>
+        <span>Puntos<b>{est?.puntos ?? 0}</b></span>
+        <span>Récord<b>{Math.max(record, est?.puntos ?? 0)}</b></span>
+        <span className="cosmo-vidas" aria-label={`${vidas} vidas`}>{"♥".repeat(vidas) || "–"}</span>
+        <span>Nivel<b>{est?.nivel ?? 1}</b></span>
       </div>
-      <div className="jg-cancha cosmo-cancha">
+      <div className="cosmo-area">
         <div ref={zona} className="cosmo-lienzo" />
+        <div className="cosmo-botones">
+          {pantalla === "juego" && fase !== "fin" && (
+            <button onClick={() => (fase === "pausa" ? control.current?.reanudar() : control.current?.pausar())} aria-label={fase === "pausa" ? "Seguir" : "Pausa"}>{fase === "pausa" ? "▶" : "⏸"}</button>
+          )}
+          {pantalla === "juego" && <button onClick={() => control.current?.reiniciar()} aria-label="Reiniciar">↻</button>}
+          <button onClick={alternar} aria-pressed={!activo} aria-label={activo ? "Silenciar sonidos" : "Activar sonidos"}>{activo ? "🔊" : "🔇"}</button>
+        </div>
         {pantalla === "juego" && banner > 0 && fase === "jugando" && <div className="cosmo-banner">Oleada {banner}</div>}
         {pantalla === "juego" && est?.doble && fase === "jugando" && <div className="cosmo-doble">⚡ Disparo doble</div>}
         {pantalla !== "juego" && (
@@ -77,6 +89,7 @@ export default function Cosmo() {
             {pantalla === "inicio" && <>
               <b>Cosmo Lomas</b>
               <span>Defendé el cielo de los invasores de colores</span>
+              <span className="cosmo-ayuda">Deslizá el dedo para mover la nave: dispara sola.<br />En la compu: ← → o A D.</span>
               {record > 0 && <em>Tu récord: {record}</em>}
               <button className="jg-grande" onClick={jugar}>Jugar</button>
             </>}
@@ -96,14 +109,6 @@ export default function Cosmo() {
           </div>
         )}
       </div>
-      <div className="jg-acciones">
-        {pantalla === "juego" && fase !== "fin" && (
-          <button className="jg-mini destacado" onClick={() => (fase === "pausa" ? control.current?.reanudar() : control.current?.pausar())}>{fase === "pausa" ? "▶ Seguir" : "⏸ Pausa"}</button>
-        )}
-        {pantalla === "juego" && <button className="jg-mini" onClick={() => control.current?.reiniciar()}>↻ Reiniciar</button>}
-        <BotonSonido activo={activo} onClick={alternar} />
-      </div>
-      <p className="jg-ayuda">Deslizá el dedo para mover la nave: dispara sola. En la compu: ← → o A D.</p>
     </div>
   );
 }

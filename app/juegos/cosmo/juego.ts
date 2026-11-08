@@ -11,7 +11,7 @@ export type ControlCosmo = { pausar: () => void; reanudar: () => void; reiniciar
 type Img = PhaserTipos.GameObjects.Image;
 type Invasor = { img: Img; col: number; fila: number; tipo: number; vivo: boolean };
 
-const W = 360, H = 560, Y_NAVE = H - 58;
+const W = 360; // ancho del juego; el alto se adapta a la pantalla (así el juego llena todo el lugar disponible)
 const AN_INV = 22, AL_INV = 16, SX = 34, SY = 26; // tamaño de cada invasor y separación
 const BAJA = 14; // cuánto bajan al llegar al borde
 
@@ -33,6 +33,8 @@ const entero = (hex: string) => parseInt(hex.slice(1), 16);
 
 export function crearJuego(Phaser: typeof PhaserTipos, parent: HTMLElement, avisar: (e: EstadoCosmo) => void): ControlCosmo {
   let esc: Escena | null = null;
+  const caja = parent.getBoundingClientRect();
+  const H = Math.round(Math.min(780, Math.max(480, W * (caja.height / Math.max(1, caja.width))))), Y_NAVE = H - 58;
 
   class Escena extends Phaser.Scene {
     fase: Fase = "jugando";
@@ -130,7 +132,7 @@ export function crearJuego(Phaser: typeof PhaserTipos, parent: HTMLElement, avis
       }
       this.total = this.invasores.length; this.dir = 1; this.cuadro = 0; this.esperando = false; this.entrando = true;
       this.pos.ox = (W - ((cols - 1) * SX + AN_INV)) / 2 + AN_INV / 2; this.pos.oy = -filas * SY - 20;
-      this.tweens.add({ targets: this.pos, oy: 62, duration: 1000, ease: "Cubic.easeOut", onComplete: () => { this.entrando = false; } });
+      this.tweens.add({ targets: this.pos, oy: 86, duration: 1000, ease: "Cubic.easeOut", onComplete: () => { this.entrando = false; } });
       this.tEnemigo = 1.2;
       SON.oleada();
       this.avisarEstado();
@@ -266,7 +268,7 @@ export function crearJuego(Phaser: typeof PhaserTipos, parent: HTMLElement, avis
       this.tOvni -= dt;
       if (!this.ovni && this.tOvni <= 0 && vivos.length > 5 && !this.entrando) {
         const desdeIzq = Math.random() < 0.5;
-        this.ovni = this.add.image(desdeIzq ? -24 : W + 24, 24, "ovni").setDepth(3);
+        this.ovni = this.add.image(desdeIzq ? -24 : W + 24, 46, "ovni").setDepth(3);
         (this.ovni as Img & { sentido?: number }).sentido = desdeIzq ? 1 : -1;
         this.tOvni = 16 + Math.random() * 12; SON.ovni();
       }
