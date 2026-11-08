@@ -761,3 +761,8 @@ html { font-size:16px; -webkit-text-size-adjust:100%; -moz-text-size-adjust:100%
 .emp-aviso-rojo { background:#FDE8E8; border-color:#C62828; color:#7A1111; }
 
 .c-empleo { --c-bg:#E4EAFB; --c-fuerte:#3949AB; }
+
+/* Portal Empleo: primer cuadradito, a todo el ancho (las dos columnas) y con el ícono más grande */
+.tile-ancho { width:100%; margin-top:16px; }
+.tile-ancho + .grilla { margin-top:12px; }
+.tile-ancho .tile-emoji { font-size:40px; }

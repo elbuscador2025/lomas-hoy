@@ -65,11 +65,11 @@ const TITULO_DE: Record<string, string> = {
   guardias: "Guardias 24 hs", salitas: "Salitas", vets: "Veterinarias y salud animal", otros: "Emergencias y servicios",
 };
 
-function Tile({ icono, titulo, resumen, estado, tono, onClick, color }: {
-  color: string; icono: string; titulo: string; resumen: React.ReactNode; estado: string; tono: Tono; onClick: () => void;
+function Tile({ icono, titulo, resumen, estado, tono, onClick, color, ancho }: {
+  ancho?: boolean; color: string; icono: string; titulo: string; resumen: React.ReactNode; estado: string; tono: Tono; onClick: () => void;
 }) {
   return (
-    <button className={`tile coloreado c-${color}`} onClick={onClick}>
+    <button className={`tile coloreado c-${color}${ancho ? " tile-ancho" : ""}`} onClick={onClick}>
       <span className="tile-arriba">
         <span className="tile-icono">{icono === "bola" ? <span className="tile-emoji" aria-hidden>🎱</span> : icono.startsWith("emoji:") ? <span className="tile-emoji" aria-hidden>{icono.slice(6)}</span> : <Icono nombre={icono} tam={28} />}</span>
         <span className={`pildora ${tono}`}>{estado}</span>
@@ -1057,6 +1057,10 @@ export default function Inicio() {
                 {notasHoy > 0 && <span className="bn-etiqueta">{plural(notasHoy, "nueva", "nuevas")}</span>}
               </button>
             )}
+            {s.empleo.activa && (
+              <Tile ancho color="empleo" icono="emoji:💼" titulo={s.empleo.titulo} estado="Gratis" tono="neutro" onClick={() => abrir("empleo")}
+                resumen="Empleo oficial y gratuito · para todas las edades" />
+            )}
             <div className="grilla">
               {s.luz.activa && (
                 <Tile color="luz" icono="luz" titulo="Luz" estado={luzEstado} tono={luzTono} onClick={() => abrir("luz")}
@@ -1116,10 +1120,6 @@ export default function Inicio() {
               )}
               <Tile color="juegos" icono="emoji:🎮" titulo="Juegos" estado="Gratis" tono="neutro" onClick={() => abrir("juegos")}
                 resumen="Apilá, La Viborita y Ta-Te-Ti" />
-              {s.empleo.activa && (
-                <Tile color="empleo" icono="emoji:💼" titulo={s.empleo.titulo} estado="Gratis" tono="neutro" onClick={() => abrir("empleo")}
-                  resumen="Empleo oficial y gratuito · para todas las edades" />
-              )}
               {s.coop.activa && (
                 <Tile color="coop" icono="coop" titulo={s.coop.titulo} estado="Ver" tono="neutro" onClick={() => { setCoopElegida(""); abrir("coop"); }}
                   resumen="Luminarias, poda, árboles y arreglos del barrio" />
