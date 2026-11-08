@@ -788,3 +788,6 @@ body.cosmo-activo { overflow:hidden; overscroll-behavior:none; }
 @keyframes cosmo-banner { 0% { opacity:0; transform:scale(.6); } 20% { opacity:1; transform:scale(1.05); } 80% { opacity:1; } 100% { opacity:0; transform:scale(1.15); } }
 .cosmo-doble { position:absolute; bottom:8px; left:0; right:0; text-align:center; font-size:14px; font-weight:800; color:#FFE14A; pointer-events:none; z-index:2; }
 .cosmo-ayuda { font-size:14px !important; color:#B9C3E6; line-height:1.4; }
+
+/* Panel: Código QR */
+.qr-grande { display:block; width:100%; max-width:420px; height:auto; aspect-ratio:1; margin:12px auto; border:3px solid #10213F; border-radius:12px; background:#fff; image-rendering:pixelated; }

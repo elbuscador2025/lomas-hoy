@@ -13,6 +13,7 @@
     "@vercel/blob": "^2.8.1",
     "leaflet": "^1.9.4",
     "next": "16.4.4",
+    "qrcode-generator": "2.0.4",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "web-push": "^3.6.7"

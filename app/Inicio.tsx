@@ -151,6 +151,7 @@ export default function Inicio() {
     // Visita anónima: un número al azar guardado en el celu, avisado una vez por día.
     try {
       if (navigator.webdriver) throw 0; // navegador automático: no cuenta
+      if (localStorage.getItem("lomas-hoy:dueno")) throw 0; // el celular del dueño (donde se abrió el panel) no cuenta como visitante
       const hoy = new Date().toISOString().slice(0, 10);
       let id = localStorage.getItem("lomas-hoy:id");
       if (!id) { id = crypto.randomUUID(); localStorage.setItem("lomas-hoy:id", id); }
