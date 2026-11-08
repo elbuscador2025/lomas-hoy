@@ -215,3 +215,17 @@ test("control básico del Quini 6: 6 números distintos entre 00 y 45 y fecha no
   assert.match(controlarQuini(q("2026-10-25", ["00", "02", "03", "08", "19", "19"]), "2026-10-27").motivo, /repetidos/);
   assert.match(controlarQuini(q("2026-10-29", ok), "2026-10-27").motivo, /futura/);
 });
+
+import { buscarEventos } from "./fuentes.mjs";
+test("agenda: toma las notas que anuncian eventos en Lomas y descarta las que hablan en pasado o de otro lugar", () => {
+  const nota = (titular) => ({ titular, link: `https://x/${encodeURIComponent(titular)}`, fecha: new Date(), medio: "Diario" });
+  const r = buscarEventos([
+    nota("Banfield tendrá su primer festival de fanzines con talleres y música"),
+    nota("Lomas realizó la primera Expo Inclusiva en Plaza Grigera"),
+    nota("Expo Lomas 2026 reunió a más de 120 mil personas durante cuatro jornadas"),
+    nota("Festival gratis en Córdoba este fin de semana"),
+    nota("El Polaco toca gratis este domingo en Lanús"),
+    nota("Lomas de Zamora abrió una nueva inscripción gratuita para talleres"),
+  ], cfg);
+  assert.deepEqual(r.map((x) => x.titulo), ["Banfield tendrá su primer festival de fanzines con talleres y música", "Lomas de Zamora abrió una nueva inscripción gratuita para talleres"]);
+});

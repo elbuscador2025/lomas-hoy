@@ -14,8 +14,10 @@ import { enriquecerAgua } from "@/lib/agua";
 import { enriquecerLuz } from "@/lib/luzzonas";
 import { rotarQuini } from "@/lib/quini";
 import { registrarControles } from "@/lib/controles";
+import { fusionarAgenda, evaluarAgenda } from "@/lib/agenda";
+import { controlarEnlacesSiToca } from "@/lib/enlaces";
 
-export const CLAVES_VALIDAS = ["tren", "luz", "colectivos", "programados", "agua", "pronostico", "mascotas", "subte", "alertas", "noticias", "quiniela", "quini6"];
+export const CLAVES_VALIDAS = ["tren", "luz", "colectivos", "programados", "agua", "pronostico", "mascotas", "subte", "alertas", "noticias", "agenda", "quiniela", "quini6"];
 
 // Si falló la lectura (contenido vacío), se conserva el último dato bueno y solo se anota el error.
 export async function guardarDato(clave: string, contenido: any, error?: unknown) { // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -24,6 +26,7 @@ export async function guardarDato(clave: string, contenido: any, error?: unknown
   if (contenido) {
     if (clave === "quini6") contenido = await rotarQuini(contenido).catch(() => contenido); // último sorteo y el anterior
     if (clave === "luz") contenido = await enriquecerLuz(contenido).catch(() => contenido); // barrio y calle aproximada de cada corte (OpenStreetMap, con memoria para no repetir consultas)
+    if (clave === "agenda") contenido = await fusionarAgenda(contenido).catch(() => contenido); // suma lo nuevo a lo que ya estaba y saca lo vencido
     if (clave === "agua") contenido = await enriquecerAgua(contenido).catch(() => contenido); // lee el texto completo de las notas nuevas (barrios y horario)
     await redis([["SET", llave, JSON.stringify({ clave, contenido, ok_en: ahora, intento_en: ahora, error: null })]]);
     // Los avisos salen después de responder: si fallan, el dato ya quedó guardado.
@@ -31,10 +34,12 @@ export async function guardarDato(clave: string, contenido: any, error?: unknown
     if (clave === "tren") after(() => evaluarTren(contenido).catch((e) => console.error("push tren", e)));
     if (clave === "programados") after(() => evaluarProgramados(contenido).catch((e) => console.error("push programados", e)));
     if (clave === "mascotas") after(() => Promise.all([mantener(), mantenerTrueque(), mantenerTrabajo(), mantenerPasa(), mantenerEmprendedores(), mantenerCastracion(), mantenerOllas(), evaluarResumen()]).catch((e) => console.error("mascotas", e)));
+    if (clave === "mascotas") after(() => controlarEnlacesSiToca().catch((e) => console.error("control de enlaces", e))); // una vez por semana revisa los enlaces oficiales
     if (clave === "colectivos") after(() => evaluarColectivos(contenido).catch((e) => console.error("push colectivos", e)));
     if (clave === "subte") after(() => evaluarSubte(contenido).catch((e) => console.error("push subte", e)));
     if (clave === "alertas") after(() => evaluarAlertasSmn(contenido).catch((e) => console.error("push alertas", e)));
     if (clave === "pronostico") after(() => evaluarTormenta(contenido).catch((e) => console.error("push tormenta", e)));
+    if (clave === "agenda") after(() => evaluarAgenda().catch((e) => console.error("push agenda", e)));
     if (clave === "agua") after(() => evaluarAgua().catch((e) => console.error("push agua", e)));
   } else {
     const [previo] = await redis([["GET", llave]]);

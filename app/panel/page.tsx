@@ -6,6 +6,7 @@ import PanelTrueque from "./PanelTrueque";
 import PanelEmprendedores from "./PanelEmprendedores";
 import PanelQR from "./PanelQR";
 import BlobUso from "./BlobUso";
+import ControlEnlaces from "./ControlEnlaces";
 import PanelTrabajo from "./PanelTrabajo";
 import PanelBloqueados from "./PanelBloqueados";
 import PanelDenuncias from "./PanelDenuncias";
@@ -96,6 +97,7 @@ export default function Panel() {
       <AvisarmeAqui />
       <MiCuenta />
       <BlobUso />
+      <ControlEnlaces />
       <div className="pestanas">
         <button className={`btn ${pestana === "stats" ? "" : "claro"}`} onClick={() => setPestana("stats")}>Visitas y reportes</button>
         <button className={`btn ${pestana === "lugares" ? "" : "claro"}`} onClick={() => setPestana("lugares")}>Lugares ({lugares.length})</button>

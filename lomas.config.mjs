@@ -27,6 +27,7 @@ export const config = {
     telemedicina: { activa: true, titulo: "Telemedicina" },
     empleo: { activa: true, titulo: "Portal Empleo" },
     comunidad: { activa: true, titulo: "Trámites municipales" },
+    agenda: { activa: true, titulo: "Agenda de Lomas" },
     noticias: { activa: true, titulo: "Noticias de Lomas" },
     // Avisos de vecinos (se ven en la campanita). Para apagarlos: activa: false.
     pasa: { activa: true, titulo: "Avisos de vecinos" },
@@ -172,6 +173,9 @@ export const config = {
     diasMaximos: 3, // una nota de diario deja de mostrarse a los 3 días
   },
 
+  // Agenda de Lomas: notas de los diarios locales que anuncian eventos. Cada una se ve estos días y después desaparece sola.
+  agenda: { diasVigencia: 15 },
+
   // Notificaciones al celular (web push).
   push: {
     tipos: {
@@ -193,6 +197,8 @@ export const config = {
       trueque: { activa: true, porDefecto: false, titulo: "Trueque" },
       // Apagado de entrada. Como mucho un aviso por día, a las 19, juntando los trabajos nuevos.
       trabajo: { activa: true, porDefecto: false, titulo: "Trabajo para mayores de 50 años" },
+      // Apagado de entrada. Como mucho un aviso por día (nunca de 23 a 7), juntando las notas de eventos nuevas.
+      agenda: { activa: true, porDefecto: false, titulo: "Agenda de Lomas" },
     },
     horaResumen: { desde: "07:00", hasta: "10:00" }, // el resumen sale en la primera vuelta del proceso automático después de las 7
     maximoPorDia: 6, // por celular, sumando todos los tipos

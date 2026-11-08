@@ -2,7 +2,7 @@
 // Las usan dos "cadetes": el despertador externo (el sitio, en /api/actualizar) y GitHub Actions (scripts/actualizar.mjs, de respaldo).
 // Si una fuente falla, no se pisa el último dato bueno: solo se anota el error.
 import { config as cfg } from "../lomas.config.mjs";
-import { leerTren, leerLuz, leerRss, buscarParos, buscarAgua, leerProgramados, leerSubte, armarNoticias } from "./fuentes.mjs";
+import { leerTren, leerLuz, leerRss, buscarParos, buscarAgua, buscarEventos, leerProgramados, leerSubte, armarNoticias } from "./fuentes.mjs";
 import { leerAlertas } from "./alertas.mjs";
 import { leerListaCiudad, leerResultadoCiudad, leerProvincia, componerDias, leerQuiniCompleto, URL_CIUDAD, URL_CIUDAD_DATOS, URL_PROVINCIA, leerQuiniNacion, URL_QUINI_NACION, controlarYComponer, controlarQuini } from "./quiniela.mjs";
 import { leerPronostico, urlOpenMeteo, leerPron5d, leerZipSmn, URL_SMN_5DIAS } from "./clima.mjs";
@@ -72,6 +72,8 @@ export async function correrTareas({ guardar, env = process.env, log = console }
       const d = await leerLocales();
       return { notas: armarNoticias([d.notas], cfg.noticias.maximo), diariosLeidos: d.diariosLeidos, diariosSinLeer: d.diariosSinLeer };
     },
+    // Agenda de Lomas: de las notas de los diarios locales, las que anuncian eventos (reglas fijas)
+    agenda: async () => ({ notas: buscarEventos((await leerLocales()).notas, cfg) }),
     // Quiniela (6 quinielas): hoy y el último día con sorteos, de la fuente oficial apenas lo publica.
     quiniela: async () => {
       const hoy = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10); // fecha de hoy en Argentina

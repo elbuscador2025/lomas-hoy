@@ -262,3 +262,20 @@ export function cuandoEnTexto(texto) {
   const nombreDia = dia ? { manana: "mañana", miercoles: "miércoles", sabado: "sábado" }[dia] ?? dia : "";
   return `${nombreDia}${nombreDia && num ? " " + num : ""}${nombreDia ? " " : ""}de ${hs(h1, m1)} a ${hs(h2, m2)} hs`;
 }
+
+// ---- Agenda de Lomas: notas de los diarios locales que ANUNCIAN eventos (reglas fijas, sin IA) ----
+// Una nota entra si el título habla de un evento o actividad (festival, feria, show, gratis, inscripción, taller...), nombra un lugar de Lomas y no está en pasado ("se realizó", "culminó", "fue un éxito"...).
+// No se sacan fechas ni lugares de la nota: solo se muestra el título y el enlace a la nota completa.
+const EVENTO_AGENDA = /\b(festival(es)?|feria(s)?|show(s)?|recital(es)?|concierto(s)?|gratis|gratuit[oa]s?|inscripcion(es)?|inscribite|taller(es)?|actividad(es)?|evento(s)?|agenda|espectaculo(s)?|obra de teatro|proyeccion(es)?|funcion(es)?|exposicion|expo|kermes|jornada(s)?|capacitacion(es)?|curso(s)?)\b/;
+const PASADO_AGENDA = /\b(se realizo|se realizaron|realizo|realizaron|se llevo a cabo|se llevaron a cabo|culmino|culminaron|fue un exito|finalizo|finalizaron|concluyo|concluyeron|tuvo lugar|participaron|participo|vivieron|disfrutaron|se vivio|se lleno|reunio|recorrieron|recorrio|recibieron|recibio|dejo|congrego|conmemoraron|celebraron|inauguraron|inauguro|entregaron|presentaron|volvio a sonar|se capacitaron|aprendieron|estuvo|cuadruplico|encontraron|crearon|creo|hicieron|logro|lograron|superaron|visitaron|asistieron|asistio|completaron|cerro|cerraron|por que|son claves|telemedicina)\b/;
+export function buscarEventos(notas, cfg, ahora = new Date()) {
+  const lugar = palabras([...cfg.localidades, "lomas", "lomense", "lomenses", "unlz", "municipio", "plaza grigera", "teatro del municipio", "auditorio sur"]);
+  const vistos = new Set();
+  return notas
+    .filter((n) => n.titular && /^https?:\/\//.test(n.link) && !Number.isNaN(n.fecha.getTime()))
+    .filter((n) => ahora - n.fecha <= cfg.agenda.diasVigencia * 86400_000 && n.fecha - ahora < 86400_000)
+    .filter((n) => { const t = sinTildes(n.titular); return EVENTO_AGENDA.test(t) && lugar.test(t) && !PASADO_AGENDA.test(t); })
+    .filter((n) => !vistos.has(n.link) && vistos.add(n.link))
+    .sort((a, b) => b.fecha - a.fecha)
+    .map((n) => ({ titulo: sentencia(n.titular.replace(/\s+/g, " ").trim()).slice(0, 220), medio: n.medio, link: n.link, fecha: n.fecha.toISOString() }));
+}

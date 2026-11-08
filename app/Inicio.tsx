@@ -31,6 +31,7 @@ import Castracion from "./Castracion";
 import Emprendedores from "./Emprendedores";
 import Empleo, { PALABRAS_EMPLEO } from "./Empleo";
 import Comunidad, { PALABRAS_COMUNIDAD } from "./Comunidad";
+import Agenda, { PALABRAS_AGENDA } from "./Agenda";
 import Telemedicina, { PALABRAS_TELEMEDICINA } from "./Telemedicina";
 import { OllaEnlace, CuadrosOlla } from "./Olla";
 import { PALABRAS_CASTRACION, type Jornada } from "@/lib/castracion";
@@ -232,6 +233,7 @@ export default function Inicio() {
   const luzVieja = !!d.luz?.ok_en && Date.now() - new Date(d.luz.ok_en).getTime() > 60 * 60_000; // si hace más de una hora que no se pudo leer, no se muestra como actual
   const cortes = luzVieja ? [] : (d.luz?.contenido?.cortes ?? []);
   const zonasLuz = eventosLuz(cortes);
+  const notasAgenda = (d.agenda?.contenido?.notas ?? []).filter((n) => Date.now() - new Date(n.fecha).getTime() <= config.agenda.diasVigencia * 86400_000); // cada nota se ve hasta 15 días
   // Cortes programados: si la última lectura falló o los datos tienen más de 3 horas, no se dice "no hay cortes"
   const progFalla = !d.programados?.contenido || !!d.programados.error || !d.programados.ok_en || Date.now() - new Date(d.programados.ok_en).getTime() > 3 * 3600_000;
   const alertasLuz = novedades.filter((n) => n.vista === "luz");
@@ -326,6 +328,7 @@ export default function Inicio() {
       telemedicina: s.telemedicina.activa && coincide(PALABRAS_TELEMEDICINA),
       empleo: s.empleo.activa && coincide(PALABRAS_EMPLEO),
       comunidad: s.comunidad.activa && coincide(PALABRAS_COMUNIDAD),
+      agenda: s.agenda.activa && coincide(PALABRAS_AGENDA),
       ansesof: s.ansesof.activa && (coincide(PALABRAS_ANSES_OF) || oficinasAnses.some((o) => coincide(`${o.nombre} ${o.direccion} ${o.localidad}`))),
       quiniela: s.quiniela.activa && coincide("quiniela quini quini6 quini 6 loteria resultados sorteo sorteos provincia nacional previa primera matutina vespertina nocturna"),
       ferias: s.trueque.activa ? trueque.ferias.filter((f) => coincide(`trueque feria ferias de trueque ${f.lugar} ${f.direccion} ${f.barrio} ${f.dias}`)) : [],
@@ -340,7 +343,7 @@ export default function Inicio() {
       clima: s.clima.activa && clima && coincide(`clima tiempo temperatura lluvia ${clima.ahora.etiqueta} ${clima.dias.map((d) => d.etiqueta).join(" ")}`) ? clima : null,
     };
   }, [busqueda, coop, oficinasAnses, lugares, mascotas, trueque, trabajo, rAnses.texto, d.tren, paros, cortes, programados, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
-  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.discapacidad || resultados.quiniela || resultados.castracion || resultados.telemedicina || resultados.empleo || resultados.comunidad || resultados.coop.length || resultados.ansesof || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
+  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.discapacidad || resultados.quiniela || resultados.castracion || resultados.telemedicina || resultados.empleo || resultados.comunidad || resultados.agenda || resultados.coop.length || resultados.ansesof || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
 
   // ---- Estado de cada cuadradito ----
   const hayGrave = (v: Novedad["vista"]) => novedades.some((n) => n.vista === v && n.gravedad === "grave");
@@ -799,6 +802,13 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "agenda" && s.agenda.activa)
+    return (
+      <Detalle color="agenda" titulo={s.agenda.titulo} onVolver={volver}>
+        <Agenda notas={notasAgenda} push={push} sinDatos={!d.agenda?.contenido} />
+      </Detalle>
+    );
+
   if (vista === "comunidad" && s.comunidad.activa)
     return (
       <Detalle color="comunidad" titulo={s.comunidad.titulo} onVolver={volver}>
@@ -961,6 +971,11 @@ export default function Inicio() {
               <div className="grupo"><h2>{s.trueque.titulo}</h2>
                 <ul className="lista">{resultados.trueque.map((p) => <PublicacionCard key={p.id} p={p} />)}</ul>
               </div>)}
+            {resultados.agenda && (
+              <div className="grupo"><h2>{s.agenda.titulo}</h2>
+                <button className="tarjeta muni" onClick={() => abrir("agenda")}><b>Agenda de Lomas</b><small>Eventos y actividades en Lomas{notasAgenda.length ? ` · ${notasAgenda.length} notas` : ""}</small></button>
+              </div>
+            )}
             {resultados.comunidad && (
               <div className="grupo"><h2>{s.comunidad.titulo}</h2>
                 <button className="tarjeta muni" onClick={() => abrir("comunidad")}><b>Trámites municipales</b><small>Turnos y trámites online · Comunidad Lomas</small></button>
@@ -1109,6 +1124,10 @@ export default function Inicio() {
               {s.comunidad.activa && (
                 <Tile color="comunidad" icono="emoji:🏛️" titulo={s.comunidad.titulo} estado="Online" tono="neutro" onClick={() => abrir("comunidad")}
                   resumen="Turnos y trámites online · Comunidad Lomas" />
+              )}
+              {s.agenda.activa && (
+                <Tile color="agenda" icono="emoji:🎉" titulo={s.agenda.titulo} estado={notasAgenda.length ? plural(notasAgenda.length, "nota", "notas") : "Ver"} tono="neutro" onClick={() => abrir("agenda")}
+                  resumen="Eventos y actividades en Lomas" />
               )}
               {s.mascotas.activa && (
                 <Tile color="mascotas" icono="patita" titulo={s.mascotas.titulo} onClick={() => abrir("mascotas")}
