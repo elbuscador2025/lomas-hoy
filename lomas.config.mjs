@@ -26,6 +26,7 @@ export const config = {
     castracion: { activa: true, titulo: "Castración gratuita" },
     telemedicina: { activa: true, titulo: "Telemedicina" },
     empleo: { activa: true, titulo: "Portal Empleo" },
+    comunidad: { activa: true, titulo: "Trámites municipales" },
     noticias: { activa: true, titulo: "Noticias de Lomas" },
     // Avisos de vecinos (se ven en la campanita). Para apagarlos: activa: false.
     pasa: { activa: true, titulo: "Avisos de vecinos" },

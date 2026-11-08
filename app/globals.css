@@ -766,3 +766,6 @@ html { font-size:16px; -webkit-text-size-adjust:100%; -moz-text-size-adjust:100%
 .tile-ancho { width:100%; margin-top:16px; }
 .tile-ancho + .grilla { margin-top:12px; }
 .tile-ancho .tile-emoji { font-size:40px; }
+
+.c-comunidad { --c-bg:#E2ECFA; --c-fuerte:#1D5FA8; }
+.pasos-comunidad { margin:4px 0 10px; padding-left:22px; display:flex; flex-direction:column; gap:6px; }

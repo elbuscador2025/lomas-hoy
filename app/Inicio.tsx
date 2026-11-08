@@ -28,6 +28,7 @@ import Peques from "./juegos/peques/Peques";
 import Castracion from "./Castracion";
 import Emprendedores from "./Emprendedores";
 import Empleo, { PALABRAS_EMPLEO } from "./Empleo";
+import Comunidad, { PALABRAS_COMUNIDAD } from "./Comunidad";
 import Telemedicina, { PALABRAS_TELEMEDICINA } from "./Telemedicina";
 import { OllaEnlace, CuadrosOlla } from "./Olla";
 import { PALABRAS_CASTRACION, type Jornada } from "@/lib/castracion";
@@ -321,6 +322,7 @@ export default function Inicio() {
       castracion: s.castracion.activa && coincide(PALABRAS_CASTRACION),
       telemedicina: s.telemedicina.activa && coincide(PALABRAS_TELEMEDICINA),
       empleo: s.empleo.activa && coincide(PALABRAS_EMPLEO),
+      comunidad: s.comunidad.activa && coincide(PALABRAS_COMUNIDAD),
       ansesof: s.ansesof.activa && (coincide(PALABRAS_ANSES_OF) || oficinasAnses.some((o) => coincide(`${o.nombre} ${o.direccion} ${o.localidad}`))),
       quiniela: s.quiniela.activa && coincide("quiniela quini quini6 quini 6 loteria resultados sorteo sorteos provincia nacional previa primera matutina vespertina nocturna"),
       ferias: s.trueque.activa ? trueque.ferias.filter((f) => coincide(`trueque feria ferias de trueque ${f.lugar} ${f.direccion} ${f.barrio} ${f.dias}`)) : [],
@@ -335,7 +337,7 @@ export default function Inicio() {
       clima: s.clima.activa && clima && coincide(`clima tiempo temperatura lluvia ${clima.ahora.etiqueta} ${clima.dias.map((d) => d.etiqueta).join(" ")}`) ? clima : null,
     };
   }, [busqueda, coop, oficinasAnses, lugares, mascotas, trueque, trabajo, rAnses.texto, d.tren, paros, cortes, programados, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
-  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.discapacidad || resultados.quiniela || resultados.castracion || resultados.telemedicina || resultados.empleo || resultados.coop.length || resultados.ansesof || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
+  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.discapacidad || resultados.quiniela || resultados.castracion || resultados.telemedicina || resultados.empleo || resultados.comunidad || resultados.coop.length || resultados.ansesof || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
 
   // ---- Estado de cada cuadradito ----
   const hayGrave = (v: Novedad["vista"]) => novedades.some((n) => n.vista === v && n.gravedad === "grave");
@@ -792,6 +794,13 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "comunidad" && s.comunidad.activa)
+    return (
+      <Detalle color="comunidad" titulo={s.comunidad.titulo} onVolver={volver}>
+        <Comunidad />
+      </Detalle>
+    );
+
   if (vista === "empleo" && s.empleo.activa)
     return (
       <Detalle color="empleo" titulo={s.empleo.titulo} onVolver={volver}>
@@ -947,6 +956,11 @@ export default function Inicio() {
               <div className="grupo"><h2>{s.trueque.titulo}</h2>
                 <ul className="lista">{resultados.trueque.map((p) => <PublicacionCard key={p.id} p={p} />)}</ul>
               </div>)}
+            {resultados.comunidad && (
+              <div className="grupo"><h2>{s.comunidad.titulo}</h2>
+                <button className="tarjeta muni" onClick={() => abrir("comunidad")}><b>Trámites municipales</b><small>Turnos y trámites online · Comunidad Lomas</small></button>
+              </div>
+            )}
             {resultados.empleo && (
               <div className="grupo"><h2>{s.empleo.titulo}</h2>
                 <button className="tarjeta muni" onClick={() => abrir("empleo")}><b>Portal Empleo</b><small>Empleo oficial y gratuito · para todas las edades</small></button>
@@ -1086,6 +1100,10 @@ export default function Inicio() {
               {s.telemedicina.activa && (
                 <Tile color="telemedicina" icono="emoji:🩺" titulo={s.telemedicina.titulo} estado="24 hs" tono="neutro" onClick={() => abrir("telemedicina")}
                   resumen="Médico por videollamada · 24 hs" />
+              )}
+              {s.comunidad.activa && (
+                <Tile color="comunidad" icono="emoji:🏛️" titulo={s.comunidad.titulo} estado="Online" tono="neutro" onClick={() => abrir("comunidad")}
+                  resumen="Turnos y trámites online · Comunidad Lomas" />
               )}
               {s.mascotas.activa && (
                 <Tile color="mascotas" icono="patita" titulo={s.mascotas.titulo} onClick={() => abrir("mascotas")}
