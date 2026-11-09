@@ -61,11 +61,11 @@ export function GuardiasPantalla(p: Props) {
   );
 }
 
-// Farmacias de 24 horas (siempre abiertas, también de noche y feriados). Teléfonos de la web oficial de Farma24; de Econofarma no hay un número confiable, por eso solo lleva "Cómo llegar".
+// Farmacias de 24 horas (siempre abiertas, también de noche y feriados). Teléfonos de la web oficial de Farma24; el de Econofarma lo confirmó el dueño de la app llamando.
 const FARMA24 = { fuente: "Farma24 – sucursales (sitio oficial)", fuenteUrl: "https://www.farma24.com.ar/p/sucursales" };
 const FARMACIAS_24: Lugar[] = [
   { id: "f24-farma24-8101", categoria: "farmacias", nombre: "Farma24+", direccion: "Av. Hipólito Yrigoyen 8101", localidad: "Lomas de Zamora", telefonos: ["011 4242-4000"], horario: "Abierta las 24 hs", ...FARMA24 },
-  { id: "f24-econofarma-9301", categoria: "farmacias", nombre: "Econofarma", direccion: "Av. Hipólito Yrigoyen 9301", localidad: "Lomas de Zamora", telefonos: [], horario: "Abierta las 24 hs", fuente: "OpenStreetMap (colaborativo)", fuenteUrl: "https://www.openstreetmap.org" },
+  { id: "f24-econofarma-9301", categoria: "farmacias", nombre: "Econofarma", direccion: "Av. Hipólito Yrigoyen 9301", localidad: "Lomas de Zamora", telefonos: ["011 2178-7719"], horario: "Abierta las 24 hs", fuente: "Confirmado por teléfono", fuenteUrl: "" },
   { id: "f24-hiper-temperley-324", categoria: "farmacias", nombre: "Hiper Temperley", direccion: "Dorrego 324", localidad: "Temperley", telefonos: ["011 4292-6230"], horario: "Abierta las 24 hs", ...FARMA24 },
 ];
 
