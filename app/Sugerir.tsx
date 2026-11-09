@@ -4,8 +4,8 @@ import { useState } from "react";
 const dispositivo = () => { try { return localStorage.getItem("lomas-hoy:id") ?? ""; } catch { return ""; } };
 
 // "¿Qué le agregarías a Lomas Hoy?": un cuadro para escribir y Enviar. No pide ningún dato.
-export default function Sugerir() {
-  const [texto, setTexto] = useState("");
+export default function Sugerir({ inicial = "" }: { inicial?: string }) {
+  const [texto, setTexto] = useState(inicial);
   const [estado, setEstado] = useState<"" | "enviando" | "listo">("");
   const [error, setError] = useState("");
   async function enviar(e: React.FormEvent) {

@@ -7,6 +7,7 @@ import PanelEmprendedores from "./PanelEmprendedores";
 import PanelQR from "./PanelQR";
 import BlobUso from "./BlobUso";
 import ControlEnlaces from "./ControlEnlaces";
+import BusquedasSinResultado from "./BusquedasSinResultado";
 import PanelTrabajo from "./PanelTrabajo";
 import PanelBloqueados from "./PanelBloqueados";
 import PanelDenuncias from "./PanelDenuncias";
@@ -167,6 +168,7 @@ export default function Panel() {
               ))}
             </tbody>
           </table>
+          <BusquedasSinResultado />
           <h2>Reportes de error</h2>
           {datos.reportes.length === 0 && <p>Todavía no hay reportes.</p>}
           <ul className="lista">

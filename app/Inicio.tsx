@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { config } from "@/lomas.config.mjs";
 import {
   cargarDatos, armarNovedades, type Anses, clasificarTren, fechaLarga, hora, hoyMMDD, nombreLindo, proximasHoras,
-  CATEGORIAS, ordenarLugares, distanciaKm, distanciaTexto, normalizar, mapaBusqueda, mapaBuscador, ZONA,
+  CATEGORIAS, ordenarLugares, distanciaKm, distanciaTexto, normalizar, mapaBusqueda, ZONA,
   type Todo, type Lugar, type Novedad, eventosLuz, tituloCorte,
   textoCorteAgua,
 } from "@/lib/datos";
@@ -30,21 +30,20 @@ const Cosmo = dynamic(() => import("./juegos/cosmo/Cosmo"), { ssr: false });
 const Obra = dynamic(() => import("./juegos/obra/Obra"), { ssr: false }); // modo chicos: se descarga recién al abrirlo
 import Castracion from "./Castracion";
 import Emprendedores from "./Emprendedores";
-import Empleo, { PALABRAS_EMPLEO } from "./Empleo";
-import Comunidad, { PALABRAS_COMUNIDAD } from "./Comunidad";
-import Agenda, { PALABRAS_AGENDA } from "./Agenda";
-import Telemedicina, { PALABRAS_TELEMEDICINA } from "./Telemedicina";
+import Empleo from "./Empleo";
+import Comunidad from "./Comunidad";
+import Agenda from "./Agenda";
+import Telemedicina from "./Telemedicina";
 import { OllaEnlace, CuadrosOlla } from "./Olla";
-import { PALABRAS_CASTRACION, type Jornada } from "@/lib/castracion";
+import { type Jornada } from "@/lib/castracion";
 import { ultimoResultado } from "@/lib/quiniela-comun";
 import { BotonPasa, FormularioPasa, useVecinos } from "./Pasa";
 import Sugerir from "./Sugerir";
 import NoticiasLomas from "./Noticias";
 import { GuardiasPantalla, SalitasPantalla, tieneGuardia24, esSalita } from "./Salud";
 import OficinasAnses from "./OficinasAnses";
-import { OFICINAS_ANSES, PALABRAS_ANSES_OF, ordenarOficinas, type OficinaAnses } from "@/lib/ansesof";
+import { OFICINAS_ANSES, TEL_ANSES, ordenarOficinas, type OficinaAnses } from "@/lib/ansesof";
 import { COOP_OFICIALES, PALABRAS_COOP, type Coop } from "@/lib/coop";
-import { TRAMITES } from "@/lib/discapacidad";
 import { estadoHorario, esDeNocheVet } from "@/lib/horarios";
 import { transporteDe } from "@/lib/transporte";
 import { MascotaCard, ListaMascotas, FormularioMascota } from "./Mascotas";
@@ -52,6 +51,7 @@ import { ListaTrabajo, FormularioTrabajo } from "./Trabajo";
 import { TrabajoCard } from "./Trabajo";
 import { ListaTrueque, FormularioTrueque, FormularioFeria, PublicacionCard, FeriaCard } from "./Trueque";
 import { avisosDeFeriado } from "@/lib/feriados";
+import { buscarSecciones, coincideTexto, limpiar } from "@/lib/buscador";
 import { resumenAnses, terminaciones, fechaPago, URL_ANSES } from "@/lib/anses";
 import { esNueva, type MascotaPublica } from "@/lib/mascotas-comun";
 import { esNuevaTrueque, type TruequePublico } from "@/lib/trueque-comun";
@@ -117,6 +117,8 @@ export default function Inicio() {
   const [yo, setYo] = useState<Coord | null>(null);
   const [errorUbicacion, setErrorUbicacion] = useState(false);
   const [q, setQ] = useState("");
+  const [sugerido, setSugerido] = useState(""); // lo que se buscó y no se encontró (llega escrito a la pantalla de sugerencias)
+  const enviadas = useRef(new Set<string>());
   const [vista, setVista] = useState<string | null>(null);
   const [oficinasAnses, setOficinasAnses] = useState<OficinaAnses[]>(ordenarOficinas(OFICINAS_ANSES));
   const [jornadas, setJornadas] = useState<Jornada[]>([]);
@@ -226,6 +228,13 @@ export default function Inicio() {
 
   const d: Todo = datos ?? {};
   const aguaVisible = !!d.agua; // el servidor solo manda "agua" si el interruptor del panel está prendido
+  const lineaDe = (id: string, base: string) =>
+    id === "anses" ? rAnses.texto || base
+    : id === "clima" && clima ? `Ahora ${Math.round(clima.ahora.temp)}° · ${clima.ahora.etiqueta}`
+    : id === "agua" && aguaVisible ? aguaResumen
+    : id === "agenda" && notasAgenda.length ? `Eventos y actividades en Lomas · ${plural(notasAgenda.length, "nota", "notas")}`
+    : id === "quiniela" && ultimaQuiniela ? ultimaQuiniela
+    : base;
   const botonVolverInicio = <button className="btn claro ancho" onClick={cerrarBusqueda}>Volver al inicio</button>;
   const { novedades } = armarNovedades(d, config.luz, { tren: s.tren.activa, luz: s.luz.activa });
   const ahora = ahoraAR();
@@ -313,38 +322,40 @@ export default function Inicio() {
   const busqueda = normalizar(q.trim());
   const resultados = useMemo(() => {
     if (!busqueda) return null;
-    const palabras = busqueda.split(/\s+/);
-    const coincide = (texto: string) => { const t = normalizar(texto); return palabras.every((p) => t.includes(p)); };
+    const coincide = (texto: string) => coincideTexto(q, texto); // perdona tildes, plurales y errores de tipeo
+    const activa = (clave: string | null) => clave === null || !!(s as unknown as Record<string, { activa: boolean }>)[clave]?.activa;
     const cat = (id: string) => CATEGORIAS.find((c) => c.id === id);
     return {
+      secciones: buscarSecciones(q).filter((x) => activa(x.clave) && (x.id !== "agua" || aguaVisible)),
+      oficinas: s.ansesof.activa ? oficinasAnses.filter((o) => coincide(`${o.nombre} ${o.direccion} ${o.localidad} anses`)) : [],
       lugares: ordenarLugares(
         lugares.filter((l) => coincide([l.nombre, l.direccion, l.localidad, l.telefonos.join(" "), l.horario, cat(l.categoria)?.titulo, cat(l.categoria)?.claves].join(" "))),
         yo,
       ),
       trueque: s.trueque.activa ? trueque.publicaciones.filter((p) => coincide(`trueque cambio ${p.ofrezco} ${p.busco} ${p.categoria} ${p.barrio}`)) : [],
       trabajo: s.trabajo.activa ? trabajo.filter((p) => coincide(`trabajo empleo changa ofrezco busco ${p.texto} ${p.rubro} ${p.barrio} ${p.horario}`)) : [],
-      discapacidad: s.discapacidad.activa && coincide(`discapacidad cud certificado pase de colectivo gratis autismo tea imdipam taller protegido pension simbolo estacionamiento ${TRAMITES.map((t) => `${t.titulo} ${t.palabras}`).join(" ")}`),
       coop: s.coop.activa ? coop.filter((x) => coincide(`${PALABRAS_COOP} ${x.barrio} ${x.direccion}`)) : [],
-      castracion: s.castracion.activa && coincide(PALABRAS_CASTRACION),
-      telemedicina: s.telemedicina.activa && coincide(PALABRAS_TELEMEDICINA),
-      empleo: s.empleo.activa && coincide(PALABRAS_EMPLEO),
-      comunidad: s.comunidad.activa && coincide(PALABRAS_COMUNIDAD),
-      agenda: s.agenda.activa && coincide(PALABRAS_AGENDA),
-      ansesof: s.ansesof.activa && (coincide(PALABRAS_ANSES_OF) || oficinasAnses.some((o) => coincide(`${o.nombre} ${o.direccion} ${o.localidad}`))),
-      quiniela: s.quiniela.activa && coincide("quiniela quini quini6 quini 6 loteria resultados sorteo sorteos provincia nacional previa primera matutina vespertina nocturna"),
       ferias: s.trueque.activa ? trueque.ferias.filter((f) => coincide(`trueque feria ferias de trueque ${f.lugar} ${f.direccion} ${f.barrio} ${f.dias}`)) : [],
       tren: s.tren.activa ? (d.tren?.contenido?.novedades ?? []).filter((n) => coincide(`${s.tren.titulo} tren roca ${n.ramal} ${n.motivo}`)) : [],
       paros: s.colectivos.activa ? paros.filter((p) => coincide(`colectivo colectivos paro uta ${p.titular}`)) : [],
       programados: s.luz.activa ? programados.filter((c) => coincide(`corte programado luz edesur ${c.localidad} ${c.motivo}`)) : [],
       luz: s.luz.activa ? zonasLuz.filter((z) => coincide(`${s.luz.titulo} luz corte edesur ${z.titulo}`)) : [],
       mascotas: s.mascotas.activa ? mascotas.filter((m) => coincide(`mascota mascotas perdida perdido encontrada encontrado ${m.especie} ${m.barrio} ${m.descripcion}`)) : [],
-      agua: s.agua.activa && aguaVisible && coincide("agua aysa corte cortes de agua"),
-      anses: s.anses.activa && coincide("anses cobran cobro hoy cobran jubilacion jubilaciones jubilados pension auh asignacion"),
-      farmacias: s.farmacias.activa && coincide("farmacia farmacias turno turnos de turno remedios medicamentos"),
-      clima: s.clima.activa && clima && coincide(`clima tiempo temperatura lluvia ${clima.ahora.etiqueta} ${clima.dias.map((d) => d.etiqueta).join(" ")}`) ? clima : null,
     };
   }, [busqueda, coop, oficinasAnses, lugares, mascotas, trueque, trabajo, rAnses.texto, d.tren, paros, cortes, programados, clima, yo]); // eslint-disable-line react-hooks/exhaustive-deps
-  const hayResultados = resultados && (resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.discapacidad || resultados.quiniela || resultados.castracion || resultados.telemedicina || resultados.empleo || resultados.comunidad || resultados.agenda || resultados.coop.length || resultados.ansesof || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length || resultados.agua || resultados.anses || resultados.farmacias || resultados.clima);
+  const hayResultados = resultados && (resultados.secciones.length || resultados.oficinas.length || resultados.lugares.length || resultados.trueque.length || resultados.trabajo.length || resultados.coop.length || resultados.ferias.length || resultados.tren.length || resultados.paros.length || resultados.luz.length || resultados.programados.length || resultados.mascotas.length);
+  // Lo que se buscó y no se encontró se anota (solo el texto, sin datos personales) para saber qué le falta a la app
+  useEffect(() => {
+    const t = q.trim();
+    if (!resultados || hayResultados || t.length < 3 || lugares.length === 0) return; // sin datos cargados todavía no se puede decir que no hay nada
+    const id = window.setTimeout(() => {
+      const clave = limpiar(t);
+      if (!clave || enviadas.current.has(clave)) return;
+      enviadas.current.add(clave);
+      fetch("/api/busqueda", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: t }) }).catch(() => {});
+    }, 1500);
+    return () => window.clearTimeout(id);
+  }, [q, resultados, hayResultados, lugares.length]);
 
   // ---- Estado de cada cuadradito ----
   const hayGrave = (v: Novedad["vista"]) => novedades.some((n) => n.vista === v && n.gravedad === "grave");
@@ -758,7 +769,7 @@ export default function Inicio() {
   if (vista === "sugerir")
     return (
       <Detalle titulo="Tu idea" onVolver={volver}>
-        <Sugerir />
+        <Sugerir inicial={sugerido ? `Me gustaría que Lomas Hoy tenga: ${sugerido}` : ""} />
       </Detalle>
     );
 
@@ -969,51 +980,44 @@ export default function Inicio() {
 
         {resultados ? (
           <section aria-live="polite">
-            {!hayResultados && <p className="vacio">No encontramos nada para “{q.trim()}”.</p>}
+            {resultados.secciones.length > 0 && (
+              <div className="grupo busca-secciones">
+                {resultados.secciones.map((x) => (
+                  <div key={x.id} className="sec-tarjeta">
+                    <b>{x.titulo}</b>
+                    <span>{lineaDe(x.id, x.linea)}</span>
+                    <button className="btn" onClick={() => { if (x.vista === "coop") setCoopElegida(""); abrir(x.vista); }}>Entrar ›</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {resultados.oficinas.length > 0 && (
+              <div className="grupo"><h2>Oficinas de ANSES</h2>
+                <ul className="lista">
+                  {resultados.oficinas.map((o) => (
+                    <li key={o.id} className="tarjeta oficina-anses">
+                      <span className="of-nombre">{o.nombre}</span>
+                      <b className="of-dir">{o.direccion}</b>
+                      <span className="of-loc">{o.localidad}</span>
+                      {o.horario && <span className="dato"><Icono nombre="reloj" tam={18} /> {o.horario}</span>}
+                      <span className="dato"><Icono nombre="telefono" tam={18} /> {TEL_ANSES} · Línea de ANSES</span>
+                      <div className="acciones">
+                        <BotonLlamar nombre="ANSES" numero={TEL_ANSES} />
+                        <a className="btn claro" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(o.lat != null && o.lng != null ? `${o.lat},${o.lng}` : `${o.direccion}, ${o.localidad}, Buenos Aires`)}`}>Cómo llegar</a>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {resultados.trueque.length > 0 && (
               <div className="grupo"><h2>{s.trueque.titulo}</h2>
                 <ul className="lista">{resultados.trueque.map((p) => <PublicacionCard key={p.id} p={p} />)}</ul>
-              </div>)}
-            {resultados.agenda && (
-              <div className="grupo"><h2>{s.agenda.titulo}</h2>
-                <button className="tarjeta muni" onClick={() => abrir("agenda")}><b>Agenda de Lomas</b><small>Eventos y actividades en Lomas{notasAgenda.length ? ` · ${notasAgenda.length} notas` : ""}</small></button>
-              </div>
-            )}
-            {resultados.comunidad && (
-              <div className="grupo"><h2>{s.comunidad.titulo}</h2>
-                <button className="tarjeta muni" onClick={() => abrir("comunidad")}><b>Trámites municipales</b><small>Turnos y trámites online · Comunidad Lomas</small></button>
-              </div>
-            )}
-            {resultados.empleo && (
-              <div className="grupo"><h2>{s.empleo.titulo}</h2>
-                <button className="tarjeta muni" onClick={() => abrir("empleo")}><b>Portal Empleo</b><small>Empleo oficial y gratuito · para todas las edades</small></button>
-              </div>
-            )}
-            {resultados.telemedicina && (
-              <div className="grupo"><h2>{s.telemedicina.titulo}</h2>
-                <button className="tarjeta muni" onClick={() => abrir("telemedicina")}><b>Telemedicina Lomas</b><small>Médico por videollamada, gratis · 24 hs</small></button>
-              </div>
-            )}
-            {resultados.castracion && (
-              <div className="grupo"><h2>{s.castracion.titulo}</h2>
-                <button className="tarjeta muni" onClick={() => abrir("castracion")}><b>Castración gratuita de mascotas</b><small>Turnos, jornadas en los barrios y contacto</small></button>
-              </div>)}
-            {resultados.ansesof && (
-              <div className="grupo"><h2>{s.ansesof.titulo}</h2>
-                <button className="tarjeta muni" onClick={() => abrir("ansesof")}><b>Oficinas y turnos de ANSES</b><small>Se atiende solo con turno · Teléfono 130</small></button>
-              </div>)}
-            {resultados.quiniela && (
-              <div className="grupo"><h2>{s.quiniela.titulo}</h2>
-                <button className="tarjeta muni" onClick={() => abrir("quiniela")}><b>{ultimaQuiniela ?? "Resultados de hoy"}</b><small>Ver los resultados de la Quiniela y del Quini 6</small></button>
               </div>)}
             {resultados.coop.length > 0 && (
               <div className="grupo"><h2>{s.coop.titulo}</h2>
                 {resultados.coop.length > 6 ? <button className="tarjeta muni" onClick={() => { setCoopElegida(""); abrir("coop"); }}><b>Elegí tu barrio</b><small>Luminarias, poda, árboles y arreglos del barrio</small></button>
                   : resultados.coop.map((x) => <button key={x.id} className="tarjeta muni" onClick={() => { setCoopElegida(x.id); abrir("coop"); }}><b>COOP {x.barrio}</b><small>{x.direccion}</small></button>)}
-              </div>)}
-            {resultados.discapacidad && (
-              <div className="grupo"><h2>{s.discapacidad.titulo}</h2>
-                <button className="tarjeta muni" onClick={() => abrir("discapacidad")}><b>Trámites, certificado (CUD) y ayuda</b><small>Ver la sección Discapacidad</small></button>
               </div>)}
             {resultados.trabajo.length > 0 && (
               <div className="grupo"><h2>{s.trabajo.titulo}</h2>
@@ -1039,35 +1043,20 @@ export default function Inicio() {
               <div className="grupo"><h2>Cortes programados</h2>
                 {resultados.programados.map((c) => <p key={c.id + c.inicio} className="tarjeta aviso"><b>{c.localidad}</b><span>{diaCorto(c.inicio.slice(0, 10))}, de {horaCorte(c.inicio)} a {horaCorte(c.fin)} hs</span><small>Horario estimado, según Edesur</small></p>)}
               </div>)}
-            {resultados.agua && (
-              <div className="grupo"><h2>{s.agua.titulo}</h2>
-                <button className="tarjeta muni" onClick={() => abrir("agua")}><b>{aguaResumen}</b><small>Ver los cortes de agua</small></button>
-              </div>)}
-            {resultados.anses && (
-              <div className="grupo"><h2>{s.anses.titulo}</h2>
-                <button className="tarjeta muni" onClick={() => abrir("anses")}><b>{rAnses.texto}</b><small>Ver el calendario del mes</small></button>
-              </div>)}
             {resultados.mascotas.length > 0 && (
               <div className="grupo"><h2>{s.mascotas.titulo}</h2>
                 <ul className="lista">{resultados.mascotas.map((m) => <MascotaCard key={m.id} m={m} />)}</ul>
               </div>)}
-            {resultados.farmacias && (
-              <div className="grupo"><h2>{s.farmacias.titulo}</h2>
-                <p>Todavía no tenemos el cronograma oficial de turnos.</p>
-                <a className="btn grande-btn" target="_blank" rel="noreferrer" href={mapaFarmacias}>Ver farmacias abiertas ahora</a>
-                <small className="chico">{TEXTO_FARMACIAS}</small>
-              </div>)}
-            {resultados.clima && (
-              <div className="grupo"><h2>Clima</h2><p className="tarjeta ok"><b>{Math.round(resultados.clima.ahora.temp)}° · {resultados.clima.ahora.etiqueta}</b></p></div>)}
             {resultados.lugares.length > 0 && (
               <div className="grupo"><h2>Lugares</h2>
                 <ul className="lista">{resultados.lugares.map((l) => <LugarCard key={l.id} lugar={l} km={km(l)} />)}</ul>
               </div>)}
             {!hayResultados && (
-              <a className="btn grande-btn" target="_blank" rel="noreferrer"
-                href={mapaBuscador(q.trim(), yo, centroLomas, config.ciudad)}>
-                Buscar “{q.trim()}” en Google Maps
-              </a>
+              <div className="busca-nada">
+                <b>Todavía no tengo eso en Lomas Hoy</b>
+                <span>Buscaste “{q.trim()}”. Si te hace falta, avisanos y lo vemos.</span>
+                <button className="btn grande-btn" onClick={() => { setSugerido(q.trim()); abrir("sugerir"); }}>Sugerir que lo agreguen</button>
+              </div>
             )}
             {botonVolverInicio}
           </section>

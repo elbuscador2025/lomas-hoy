@@ -809,3 +809,13 @@ body.cosmo-activo { overflow:hidden; overscroll-behavior:none; }
 .obra-btn.chico { width:56px; height:56px; font-size:22px; }
 .obra-btn.salto { width:90px; height:90px; font-size:15px; font-weight:900; letter-spacing:.5px; background:rgba(255,200,61,.42); border-color:rgba(255,226,140,.8); }
 .obra-btn.salto:active { background:rgba(255,200,61,.8); }
+
+/* Buscador: tarjetas de sección y "no encontré nada" */
+.busca-secciones { display:flex; flex-direction:column; gap:10px; margin-top:8px; }
+.sec-tarjeta { display:flex; flex-direction:column; gap:4px; padding:14px; border-radius:18px; background:var(--gris-azul); border:2px solid var(--linea); }
+.sec-tarjeta b { font-size:19px; line-height:1.25; }
+.sec-tarjeta span { color:var(--suave); font-size:15px; }
+.sec-tarjeta .btn { align-self:flex-start; margin-top:6px; min-height:46px; }
+.busca-nada { display:flex; flex-direction:column; gap:8px; padding:16px; border-radius:18px; background:var(--gris-azul); margin:10px 0; }
+.busca-nada b { font-size:21px; }
+.busca-nada span { color:var(--suave); }
