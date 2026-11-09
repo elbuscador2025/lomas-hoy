@@ -81,6 +81,11 @@ export function FarmaciasPantalla({ mapa }: { mapa: string }) {
   );
 }
 
+// Acceso de la noche: solo las tres de 24 horas, sin botón de Google ni otras farmacias.
+export function FarmaciasNoche() {
+  return <ul className="lista">{FARMACIAS_24.map((l) => <Tarjeta key={l.id} l={l} grande />)}</ul>;
+}
+
 export function SalitasPantalla(p: Props) {
   const [barrio, setBarrio] = useState("");
   const todas = p.lugares.filter(esSalita);

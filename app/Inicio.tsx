@@ -40,7 +40,7 @@ import { ultimoResultado } from "@/lib/quiniela-comun";
 import { BotonPasa, FormularioPasa, useVecinos } from "./Pasa";
 import Sugerir from "./Sugerir";
 import NoticiasLomas from "./Noticias";
-import { GuardiasPantalla, SalitasPantalla, FarmaciasPantalla, tieneGuardia24, esSalita } from "./Salud";
+import { GuardiasPantalla, SalitasPantalla, FarmaciasPantalla, FarmaciasNoche, tieneGuardia24, esSalita } from "./Salud";
 import OficinasAnses from "./OficinasAnses";
 import { OFICINAS_ANSES, TEL_ANSES, ordenarOficinas, type OficinaAnses } from "@/lib/ansesof";
 import { COOP_OFICIALES, PALABRAS_COOP, type Coop } from "@/lib/coop";
@@ -670,6 +670,13 @@ export default function Inicio() {
     );
   }
 
+  if (vista === "farmacias-noche")
+    return (
+      <Detalle color="farmacias" titulo="🌙 Farmacias abiertas toda la noche" onVolver={volver}>
+        <FarmaciasNoche />
+      </Detalle>
+    );
+
   if (vista === "farmacias")
     return (
       <Detalle color="farmacias" titulo={s.farmacias.titulo} onVolver={volver}>
@@ -951,7 +958,7 @@ export default function Inicio() {
             <div className="noche-botones">
               <button className="noche-btn" onClick={() => abrir("guardias")}>Guardias 24 hs</button>
               <button className="noche-btn" onClick={() => abrir("vets")}>Veterinarias de guardia</button>
-              <button className="noche-btn" onClick={() => abrir("farmacias")}>Farmacias abiertas<small>Llamá antes de ir</small></button>
+              <button className="noche-btn" onClick={() => abrir("farmacias-noche")}>Farmacias abiertas<small>Llamá antes de ir</small></button>
               {s.telemedicina.activa && <button className="noche-btn noche-medico" onClick={() => abrir("telemedicina")}>🩺 ¿Necesitás un médico ahora?<small>Consultá por videollamada</small></button>}
             </div>
           </section>
