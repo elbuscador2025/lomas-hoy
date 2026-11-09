@@ -673,6 +673,7 @@ export default function Inicio() {
   if (vista === "farmacias")
     return (
       <Detalle color="farmacias" titulo={s.farmacias.titulo} onVolver={volver}>
+        <a className="btn grande-btn" target="_blank" rel="noreferrer" href={mapaBusqueda("farmacias abiertas ahora", yo, { lat: config.clima.latitud, lng: config.clima.longitud }, config.ciudad)}>🕒 Ver farmacias abiertas ahora ↗</a>
         <FarmaciasPantalla lugares={lugares} yo={yo} km={km} onUbicacion={pedirUbicacion} errorUbicacion={errorUbicacion} ahora={ahora} verTodas={verTodas} onVerTodas={() => setVerTodas(true)} />
         {lugares.length === 0 && <SinDatos />}
       </Detalle>
@@ -1103,7 +1104,7 @@ export default function Inicio() {
               )}
               {s.farmacias.activa && (
                 <Tile color="farmacias" icono="farmacia" titulo={s.farmacias.titulo} estado={plural(lugares.filter((l) => l.categoria === "farmacias").length, "farmacia", "farmacias")} tono="neutro" onClick={() => abrir("farmacias")}
-                  resumen="Las más cercanas, con teléfono" />
+                  resumen="Farmacias abiertas ahora · cerca tuyo" />
               )}
               {s.telemedicina.activa && (
                 <Tile color="telemedicina" icono="emoji:🩺" titulo={s.telemedicina.titulo} estado="24 hs" tono="neutro" onClick={() => abrir("telemedicina")}
