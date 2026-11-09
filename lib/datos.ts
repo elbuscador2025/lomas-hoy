@@ -169,6 +169,7 @@ export const nombreLindo = (s: string) =>
 export const CATEGORIAS: { id: string; titulo: string; claves?: string }[] = [
   { id: "guardias", titulo: "Guardias médicas y hospitales", claves: "hospital guardia urgencia" },
   { id: "salitas", titulo: "Salitas (centros de salud)", claves: "salita sala centro de salud caps" },
+  { id: "farmacias", titulo: "Farmacias" },
   { id: "veterinarias", titulo: "Veterinarias y salud animal", claves: "veterinaria veterinario perro gato mascota zoonosis animal" },
   { id: "comisarias", titulo: "Comisarías" },
   { id: "bomberos", titulo: "Bomberos" },

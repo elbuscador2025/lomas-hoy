@@ -40,7 +40,7 @@ import { ultimoResultado } from "@/lib/quiniela-comun";
 import { BotonPasa, FormularioPasa, useVecinos } from "./Pasa";
 import Sugerir from "./Sugerir";
 import NoticiasLomas from "./Noticias";
-import { GuardiasPantalla, SalitasPantalla, tieneGuardia24, esSalita } from "./Salud";
+import { GuardiasPantalla, SalitasPantalla, FarmaciasPantalla, tieneGuardia24, esSalita } from "./Salud";
 import OficinasAnses from "./OficinasAnses";
 import { OFICINAS_ANSES, TEL_ANSES, ordenarOficinas, type OficinaAnses } from "@/lib/ansesof";
 import { COOP_OFICIALES, PALABRAS_COOP, type Coop } from "@/lib/coop";
@@ -100,7 +100,6 @@ function Detalle({ titulo, onVolver, color, pantalla, children }: { titulo: stri
   );
 }
 
-const TEXTO_FARMACIAS = "En feriados y de noche, llamá antes de ir: en el mapa tocá la farmacia y después “Llamar”.";
 
 const SinDatos = ({ error }: { error?: string | null }) => (
   <p className="vacio">Sin datos por ahora.{error ? " La fuente no respondió." : ""}</p>
@@ -212,7 +211,7 @@ export default function Inicio() {
   }, []);
   useEffect(() => { window.scrollTo({ top: 0 }); if (vista === "clima") setDiaClima(0); }, [vista]);
   // Guardias y veterinarias de guardia: se ordenan por cercanía solas (la primera vez el navegador pide el permiso)
-  useEffect(() => { setVerTodas(false); if ((vista === "guardias" || vista === "vets") && !yo) pedirUbicacion(); }, [vista]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setVerTodas(false); if ((vista === "guardias" || vista === "vets" || vista === "farmacias") && !yo) pedirUbicacion(); }, [vista]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Al empezar a escribir se anota un paso en el historial: el "atrás" del celular cierra la búsqueda en vez de salir de la app.
   const cambiarBusqueda = (texto: string) => {
@@ -329,7 +328,7 @@ export default function Inicio() {
       secciones: buscarSecciones(q).filter((x) => activa(x.clave) && (x.id !== "agua" || aguaVisible)),
       oficinas: s.ansesof.activa ? oficinasAnses.filter((o) => coincide(`${o.nombre} ${o.direccion} ${o.localidad} anses`)) : [],
       lugares: ordenarLugares(
-        lugares.filter((l) => coincide([l.nombre, l.direccion, l.localidad, l.telefonos.join(" "), l.horario, cat(l.categoria)?.titulo, cat(l.categoria)?.claves].join(" "))),
+        lugares.filter((l) => l.categoria !== "farmacias" ? coincide([l.nombre, l.direccion, l.localidad, l.telefonos.join(" "), l.horario, cat(l.categoria)?.titulo, cat(l.categoria)?.claves].join(" ")) : coincide([l.nombre, l.direccion].join(" "))),
         yo,
       ),
       trueque: s.trueque.activa ? trueque.publicaciones.filter((p) => coincide(`trueque cambio ${p.ofrezco} ${p.busco} ${p.categoria} ${p.barrio}`)) : [],
@@ -368,7 +367,6 @@ export default function Inicio() {
   const vets = lugaresDe("vets");
   const abiertas24 = vets.filter((l) => /24 hs/i.test(l.horario)).length;
   const centroLomas = { lat: config.clima.latitud, lng: config.clima.longitud }; // el partido de Lomas de Zamora
-  const mapaFarmacias = mapaBusqueda("farmacias abiertas ahora", yo, centroLomas, config.ciudad);
 
   // ---- Pantallas de detalle ----
   if (vista === "clima") {
@@ -675,10 +673,8 @@ export default function Inicio() {
   if (vista === "farmacias")
     return (
       <Detalle color="farmacias" titulo={s.farmacias.titulo} onVolver={volver}>
-        <p>Todavía no tenemos el cronograma oficial de turnos.</p>
-        <a className="btn grande-btn" target="_blank" rel="noreferrer" href={mapaFarmacias}>Ver farmacias abiertas ahora</a>
-        <small className="chico">{TEXTO_FARMACIAS}</small>
-        <p className="vacio">Se abre Google Maps y busca las farmacias abiertas {yo ? "cerca de tu ubicación" : `en ${config.ciudad}`}.</p>
+        <FarmaciasPantalla lugares={lugares} yo={yo} km={km} onUbicacion={pedirUbicacion} errorUbicacion={errorUbicacion} ahora={ahora} verTodas={verTodas} onVerTodas={() => setVerTodas(true)} />
+        {lugares.length === 0 && <SinDatos />}
       </Detalle>
     );
 
@@ -1106,8 +1102,8 @@ export default function Inicio() {
                 </>
               )}
               {s.farmacias.activa && (
-                <Tile color="farmacias" icono="farmacia" titulo={s.farmacias.titulo} estado="Mapa" tono="neutro" onClick={() => abrir("farmacias")}
-                  resumen="Farmacias abiertas ahora, cerca tuyo" />
+                <Tile color="farmacias" icono="farmacia" titulo={s.farmacias.titulo} estado={plural(lugares.filter((l) => l.categoria === "farmacias").length, "farmacia", "farmacias")} tono="neutro" onClick={() => abrir("farmacias")}
+                  resumen="Las más cercanas, con teléfono" />
               )}
               {s.telemedicina.activa && (
                 <Tile color="telemedicina" icono="emoji:🩺" titulo={s.telemedicina.titulo} estado="24 hs" tono="neutro" onClick={() => abrir("telemedicina")}

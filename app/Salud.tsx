@@ -61,6 +61,21 @@ export function GuardiasPantalla(p: Props) {
   );
 }
 
+// Farmacias: las 3 más cercanas grandes y "Ver todas". No hay lista oficial de turnos que se pueda leer sola: se avisa que hay que llamar.
+export function FarmaciasPantalla(p: Props) {
+  const lista = ordenarLugares(p.lugares.filter((l) => l.categoria === "farmacias"), p.yo);
+  return (
+    <>
+      <p className="salud-aviso">Llamá antes de ir para confirmar que esté abierta. De noche y en feriados, solo atienden las de turno.</p>
+      {p.yo ? <p className="vacio">Ordenado por cercanía a tu ubicación.</p> : <button className="btn claro ancho" onClick={p.onUbicacion}><Icono nombre="pin" tam={20} /> Ordenar por cercanía</button>}
+      {p.errorUbicacion && <p className="aviso-pie">No pudimos obtener tu ubicación. Revisá el permiso del navegador.</p>}
+      <ul className="lista">{(p.verTodas ? lista : lista.slice(0, 3)).map((l) => <Tarjeta key={l.id} l={l} km={p.km(l)} grande />)}</ul>
+      {!p.verTodas && lista.length > 3 && <button className="btn claro ancho" onClick={p.onVerTodas}>Ver todas ({lista.length})</button>}
+      {lista.length === 0 && <p className="vacio">No hay farmacias cargadas por ahora.</p>}
+    </>
+  );
+}
+
 export function SalitasPantalla(p: Props) {
   const [barrio, setBarrio] = useState("");
   const todas = p.lugares.filter(esSalita);

@@ -3,7 +3,7 @@ import { redis } from "@/lib/servidor";
 import { esAdmin } from "@/lib/cuentas";
 import { geocodificar } from "@/scripts/geocodificar.mjs";
 
-const CATEGORIAS = ["veterinarias", "guardias", "salitas", "comisarias", "bomberos", "servicios"];
+const CATEGORIAS = ["veterinarias", "guardias", "salitas", "comisarias", "bomberos", "servicios", "farmacias"];
 const texto = (v: unknown, max = 200) => String(v ?? "").trim().slice(0, max);
 
 // Panel: listar, guardar (crear o corregir) y borrar lugares. Pide la contraseña en cada llamada.
