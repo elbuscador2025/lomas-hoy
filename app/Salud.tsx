@@ -69,15 +69,14 @@ const FARMACIAS_24: Lugar[] = [
   { id: "f24-hiper-temperley-324", categoria: "farmacias", nombre: "Hiper Temperley", direccion: "Dorrego 324", localidad: "Temperley", telefonos: ["011 4292-6230"], horario: "Abierta las 24 hs", ...FARMA24 },
 ];
 
-// Farmacias: primero las 24 horas, después el botón para buscar otra en Google Maps. La lista grande de PAMI no se muestra (queda en la base y en el panel).
+// Farmacias: primero el botón de Google Maps (abiertas cerca), después las de 24 horas. La lista grande de PAMI no se muestra (queda en la base y en el panel).
 export function FarmaciasPantalla({ mapa }: { mapa: string }) {
   return (
     <>
-      <h2 className="farm-titulo">🏥 Abiertas las 24 horas</h2>
-      <p className="farm-sub">Siempre abiertas, también de noche y feriados</p>
+      <a className="btn grande-btn" target="_blank" rel="noreferrer" href={mapa}>🕒 Ver farmacias abiertas cerca tuyo</a>
+      <h2 className="farm-titulo">🌙 De noche y feriados: abiertas las 24 horas</h2>
+      <p className="farm-sub">Si no encontrás ninguna abierta cerca, estas nunca cierran</p>
       <ul className="lista">{FARMACIAS_24.map((l) => <Tarjeta key={l.id} l={l} grande />)}</ul>
-      <a className="btn grande-btn" target="_blank" rel="noreferrer" href={mapa}>🔎 Buscar otra farmacia abierta cerca</a>
-      <p className="salud-aviso">Las de 24 horas nunca cierran. Si buscás otra, llamá antes de ir para confirmar que esté abierta.</p>
     </>
   );
 }

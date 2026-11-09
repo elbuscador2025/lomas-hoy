@@ -77,7 +77,7 @@ function Tile({ icono, titulo, resumen, estado, tono, onClick, color, ancho }: {
     <button className={`tile coloreado c-${color}${ancho ? " tile-ancho" : ""}`} onClick={onClick}>
       <span className="tile-arriba">
         <span className="tile-icono">{icono === "bola" ? <span className="tile-emoji" aria-hidden>🎱</span> : icono.startsWith("emoji:") ? <span className="tile-emoji" aria-hidden>{icono.slice(6)}</span> : <Icono nombre={icono} tam={28} />}</span>
-        <span className={`pildora ${tono}`}>{estado}</span>
+        {estado && <span className={`pildora ${tono}`}>{estado}</span>}
       </span>
       <b>{titulo}</b>
       {resumen ? <span className="tile-resumen">{resumen}</span> : null}
@@ -1101,8 +1101,7 @@ export default function Inicio() {
                 </>
               )}
               {s.farmacias.activa && (
-                <Tile color="farmacias" icono="farmacia" titulo={s.farmacias.titulo} estado="24 hs" tono="neutro" onClick={() => abrir("farmacias")}
-                  resumen="Farmacias abiertas ahora · cerca tuyo" />
+                <Tile color="farmacias" icono="farmacia" titulo={s.farmacias.titulo} estado="" tono="neutro" onClick={() => abrir("farmacias")} resumen="" />
               )}
               {s.telemedicina.activa && (
                 <Tile color="telemedicina" icono="emoji:🩺" titulo={s.telemedicina.titulo} estado="24 hs" tono="neutro" onClick={() => abrir("telemedicina")}
