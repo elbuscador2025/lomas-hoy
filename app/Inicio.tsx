@@ -26,7 +26,8 @@ import QuinielaPantalla, { type ModoQuiniela } from "./Quiniela";
 import ListaJuegos, { JUEGOS } from "./juegos/Juegos";
 import dynamic from "next/dynamic";
 const Peques = dynamic(() => import("./juegos/peques/Peques"), { ssr: false });
-const Cosmo = dynamic(() => import("./juegos/cosmo/Cosmo"), { ssr: false }); // modo chicos: se descarga recién al abrirlo
+const Cosmo = dynamic(() => import("./juegos/cosmo/Cosmo"), { ssr: false });
+const Obra = dynamic(() => import("./juegos/obra/Obra"), { ssr: false }); // modo chicos: se descarga recién al abrirlo
 import Castracion from "./Castracion";
 import Emprendedores from "./Emprendedores";
 import Empleo, { PALABRAS_EMPLEO } from "./Empleo";
@@ -767,6 +768,8 @@ export default function Inicio() {
         <ListaJuegos onAbrir={(id) => abrir(`juego-${id}`)} />
       </Detalle>
     );
+
+  if (vista === "juego-obra") return <Obra onSalir={volver} />; // pantalla completa, sin la barra de la app
 
   if (vista === "juego-cosmo") return <Cosmo onSalir={volver} />; // pantalla completa, sin la barra de la app
 
