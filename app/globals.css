@@ -431,6 +431,8 @@ button, a, .tile { -webkit-tap-highlight-color: transparent; }
 .salud-card .salud-dir { font-size:20px; line-height:1.25; }
 .salud-card .salud-km { font-weight:700; color:var(--c-fuerte); }
 .salud-card .salud-llegar { min-height:52px; font-weight:800; }
+.farm-titulo { font-size: 1.35rem; margin: 4px 0 0; }
+.farm-sub { margin: 0 0 8px; color: var(--texto-suave, #4b587a); }
 .salud-aviso { background:var(--c-bg); border-radius:14px; padding:12px; margin:4px 0 10px; line-height:1.4; font-weight:600; }
 
 .bloque-noche { background:#0B1730; border-radius:16px; padding:10px; margin-top:8px; display:flex; flex-direction:column; gap:8px; color:#fff; }

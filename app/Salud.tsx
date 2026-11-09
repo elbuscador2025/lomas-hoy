@@ -61,17 +61,23 @@ export function GuardiasPantalla(p: Props) {
   );
 }
 
-// Farmacias: las 3 más cercanas grandes y "Ver todas". No hay lista oficial de turnos que se pueda leer sola: se avisa que hay que llamar.
-export function FarmaciasPantalla(p: Props) {
-  const lista = ordenarLugares(p.lugares.filter((l) => l.categoria === "farmacias"), p.yo);
+// Farmacias de 24 horas (siempre abiertas, también de noche y feriados). Teléfonos de la web oficial de Farma24; de Econofarma no hay un número confiable, por eso solo lleva "Cómo llegar".
+const FARMA24 = { fuente: "Farma24 – sucursales (sitio oficial)", fuenteUrl: "https://www.farma24.com.ar/p/sucursales" };
+const FARMACIAS_24: Lugar[] = [
+  { id: "f24-farma24-8101", categoria: "farmacias", nombre: "Farma24+", direccion: "Av. Hipólito Yrigoyen 8101", localidad: "Lomas de Zamora", telefonos: ["011 4242-4000"], horario: "Abierta las 24 hs", ...FARMA24 },
+  { id: "f24-econofarma-9301", categoria: "farmacias", nombre: "Econofarma", direccion: "Av. Hipólito Yrigoyen 9301", localidad: "Lomas de Zamora", telefonos: [], horario: "Abierta las 24 hs", fuente: "OpenStreetMap (colaborativo)", fuenteUrl: "https://www.openstreetmap.org" },
+  { id: "f24-hiper-temperley-324", categoria: "farmacias", nombre: "Hiper Temperley", direccion: "Dorrego 324", localidad: "Temperley", telefonos: ["011 4292-6230"], horario: "Abierta las 24 hs", ...FARMA24 },
+];
+
+// Farmacias: primero las 24 horas, después el botón para buscar otra en Google Maps. La lista grande de PAMI no se muestra (queda en la base y en el panel).
+export function FarmaciasPantalla({ mapa }: { mapa: string }) {
   return (
     <>
-      <p className="salud-aviso">Llamá antes de ir para confirmar que esté abierta. De noche y en feriados, solo atienden las de turno.</p>
-      {p.yo ? <p className="vacio">Ordenado por cercanía a tu ubicación.</p> : <button className="btn claro ancho" onClick={p.onUbicacion}><Icono nombre="pin" tam={20} /> Ordenar por cercanía</button>}
-      {p.errorUbicacion && <p className="aviso-pie">No pudimos obtener tu ubicación. Revisá el permiso del navegador.</p>}
-      <ul className="lista">{(p.verTodas ? lista : lista.slice(0, 3)).map((l) => <Tarjeta key={l.id} l={l} km={p.km(l)} grande />)}</ul>
-      {!p.verTodas && lista.length > 3 && <button className="btn claro ancho" onClick={p.onVerTodas}>Ver todas ({lista.length})</button>}
-      {lista.length === 0 && <p className="vacio">No hay farmacias cargadas por ahora.</p>}
+      <h2 className="farm-titulo">🏥 Abiertas las 24 horas</h2>
+      <p className="farm-sub">Siempre abiertas, también de noche y feriados</p>
+      <ul className="lista">{FARMACIAS_24.map((l) => <Tarjeta key={l.id} l={l} grande />)}</ul>
+      <a className="btn grande-btn" target="_blank" rel="noreferrer" href={mapa}>🔎 Buscar otra farmacia abierta cerca</a>
+      <p className="salud-aviso">Las de 24 horas nunca cierran. Si buscás otra, llamá antes de ir para confirmar que esté abierta.</p>
     </>
   );
 }

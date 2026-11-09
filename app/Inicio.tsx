@@ -211,7 +211,7 @@ export default function Inicio() {
   }, []);
   useEffect(() => { window.scrollTo({ top: 0 }); if (vista === "clima") setDiaClima(0); }, [vista]);
   // Guardias y veterinarias de guardia: se ordenan por cercanía solas (la primera vez el navegador pide el permiso)
-  useEffect(() => { setVerTodas(false); if ((vista === "guardias" || vista === "vets" || vista === "farmacias") && !yo) pedirUbicacion(); }, [vista]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setVerTodas(false); if ((vista === "guardias" || vista === "vets") && !yo) pedirUbicacion(); }, [vista]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Al empezar a escribir se anota un paso en el historial: el "atrás" del celular cierra la búsqueda en vez de salir de la app.
   const cambiarBusqueda = (texto: string) => {
@@ -328,7 +328,7 @@ export default function Inicio() {
       secciones: buscarSecciones(q).filter((x) => activa(x.clave) && (x.id !== "agua" || aguaVisible)),
       oficinas: s.ansesof.activa ? oficinasAnses.filter((o) => coincide(`${o.nombre} ${o.direccion} ${o.localidad} anses`)) : [],
       lugares: ordenarLugares(
-        lugares.filter((l) => l.categoria !== "farmacias" ? coincide([l.nombre, l.direccion, l.localidad, l.telefonos.join(" "), l.horario, cat(l.categoria)?.titulo, cat(l.categoria)?.claves].join(" ")) : coincide([l.nombre, l.direccion].join(" "))),
+        lugares.filter((l) => l.categoria !== "farmacias" && coincide([l.nombre, l.direccion, l.localidad, l.telefonos.join(" "), l.horario, cat(l.categoria)?.titulo, cat(l.categoria)?.claves].join(" "))),
         yo,
       ),
       trueque: s.trueque.activa ? trueque.publicaciones.filter((p) => coincide(`trueque cambio ${p.ofrezco} ${p.busco} ${p.categoria} ${p.barrio}`)) : [],
@@ -673,9 +673,7 @@ export default function Inicio() {
   if (vista === "farmacias")
     return (
       <Detalle color="farmacias" titulo={s.farmacias.titulo} onVolver={volver}>
-        <a className="btn grande-btn" target="_blank" rel="noreferrer" href={mapaBusqueda("farmacias abiertas ahora", yo, { lat: config.clima.latitud, lng: config.clima.longitud }, config.ciudad)}>🕒 Ver farmacias abiertas ahora ↗</a>
-        <FarmaciasPantalla lugares={lugares} yo={yo} km={km} onUbicacion={pedirUbicacion} errorUbicacion={errorUbicacion} ahora={ahora} verTodas={verTodas} onVerTodas={() => setVerTodas(true)} />
-        {lugares.length === 0 && <SinDatos />}
+        <FarmaciasPantalla mapa={mapaBusqueda("farmacias abiertas ahora", yo, { lat: config.clima.latitud, lng: config.clima.longitud }, config.ciudad)} />
       </Detalle>
     );
 
@@ -964,7 +962,7 @@ export default function Inicio() {
         {ollaEnlace && <OllaEnlace id={ollaEnlace} />}
         <BotonAvisosIPhone push={push} />
         <CuadrosOlla />
-        <form className="buscador" role="search" onSubmit={(e) => { e.preventDefault(); (document.activeElement as HTMLElement | null)?.blur(); }}>
+        <form className="buscador" role="search" onSubmit={(e) => { e.preventDefault(); (document.activeElement as HTMLElement | null)?.blur(); if (resultados?.secciones.length === 1 && resultados.secciones[0].id === "farmacias") abrir("farmacias"); }}>
           <Icono nombre="lupa" tam={24} ancho={2.5} />
           <input type="search" placeholder="¿Qué buscás? Farmacia, veterinaria…" aria-label="Buscar" value={q} onChange={(e) => cambiarBusqueda(e.target.value)} />
           {q && <button className="borrar-btn" type="button" aria-label="Borrar la búsqueda y volver al inicio" onClick={cerrarBusqueda}><Icono nombre="cerrar" tam={20} ancho={2.8} /></button>}
@@ -1103,7 +1101,7 @@ export default function Inicio() {
                 </>
               )}
               {s.farmacias.activa && (
-                <Tile color="farmacias" icono="farmacia" titulo={s.farmacias.titulo} estado={plural(lugares.filter((l) => l.categoria === "farmacias").length, "farmacia", "farmacias")} tono="neutro" onClick={() => abrir("farmacias")}
+                <Tile color="farmacias" icono="farmacia" titulo={s.farmacias.titulo} estado="24 hs" tono="neutro" onClick={() => abrir("farmacias")}
                   resumen="Farmacias abiertas ahora · cerca tuyo" />
               )}
               {s.telemedicina.activa && (
