@@ -31,6 +31,7 @@ const Obra = dynamic(() => import("./juegos/obra/Obra"), { ssr: false }); // mod
 import Castracion from "./Castracion";
 import Emprendedores from "./Emprendedores";
 import DeportesPantalla from "./Deportes";
+import AutoTramites from "./AutoTramites";
 import type { DatosDeportes } from "@/lib/deportes";
 import Empleo from "./Empleo";
 import Comunidad from "./Comunidad";
@@ -892,6 +893,13 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "auto")
+    return (
+      <Detalle color="auto" titulo="Auto y trámites" onVolver={volver}>
+        <AutoTramites />
+      </Detalle>
+    );
+
   if (vista === "deportes" && deportes)
     return (
       <Detalle color="clubes" titulo="Deportes para chicos" onVolver={volver}>
@@ -1129,6 +1137,8 @@ export default function Inicio() {
                 <Tile color="comunidad" icono="emoji:🏛️" titulo={s.comunidad.titulo} estado="Online" tono="neutro" onClick={() => abrir("comunidad")}
                   resumen="Turnos y trámites online · Comunidad Lomas" />
               )}
+              <Tile color="auto" icono="emoji:🚗" titulo="Auto y trámites" estado="Ver" tono="neutro" onClick={() => abrir("auto")}
+                resumen="Patente, multas, licencia, VTV y más" />
               {s.agenda.activa && (
                 <Tile color="agenda" icono="emoji:🎉" titulo={s.agenda.titulo} estado={notasAgenda.length ? plural(notasAgenda.length, "nota", "notas") : "Ver"} tono="neutro" onClick={() => abrir("agenda")}
                   resumen="Eventos y actividades en Lomas" />
