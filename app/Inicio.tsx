@@ -149,7 +149,7 @@ export default function Inicio() {
   const [panel, setPanel] = useState<string | null>(null); // adónde lleva el enlace del pie: mi panel
   const s = config.secciones;
   const [deportes, setDeportes] = useState<DatosDeportes | null>(null); // llega vacío si la sección está oculta (salvo para el dueño)
-  useEffect(() => { fetch("/api/deportes", { cache: "no-store" }).then((r) => r.json()).then((x) => x?.visible && setDeportes(x)).catch(() => {}); }, []);
+  useEffect(() => { fetch("/api/lugares?guia=chicos", { cache: "no-store" }).then((r) => r.json()).then((x) => x?.visible && setDeportes(x)).catch(() => {}); }, []);
 
   useEffect(() => {
     cargarDatos().then((r) => { setDatos(r.datos); setLugares(r.lugares); setMascotas(r.mascotas); setTrueque(r.trueque); setTrabajo(r.trabajo); setAnses(r.anses); setSinConexion(r.sinConexion); });
@@ -894,7 +894,7 @@ export default function Inicio() {
 
   if (vista === "deportes" && deportes)
     return (
-      <Detalle color="deportes" titulo="Deportes para chicos" onVolver={volver}>
+      <Detalle color="clubes" titulo="Deportes para chicos" onVolver={volver}>
         <DeportesPantalla datos={deportes} />
       </Detalle>
     );
@@ -1153,7 +1153,7 @@ export default function Inicio() {
                   resumen="Mostrá lo que ofrecés y encontrá clientes" />
               )}
               {deportes && (
-                <Tile color="deportes" icono="emoji:⚽" titulo="Deportes para chicos" estado={deportes.soloDueno ? "Oculta" : "Ver"} tono={deportes.soloDueno ? "aviso" : "neutro"} onClick={() => abrir("deportes")}
+                <Tile color="clubes" icono="emoji:⚽" titulo="Deportes para chicos" estado={deportes.soloDueno ? "Oculta" : "Ver"} tono={deportes.soloDueno ? "aviso" : "neutro"} onClick={() => abrir("deportes")}
                   resumen={deportes.soloDueno ? "Solo la ves vos" : "Clubes y escuelas para chicos"} />
               )}
               {s.castracion.activa && (

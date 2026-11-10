@@ -18,7 +18,7 @@ export default function PanelDeportes() {
 
   const cargar = useCallback(async () => {
     try {
-      const r = await post("/api/panel/deportes", { accion: "listar" });
+      const r = await post("/api/panel/clubes", { accion: "listar" });
       if (r.ok) { const d = await r.json(); setDiscs(d.disciplinas); setLista(d.instituciones); }
     } catch { setMsg("No se pudo cargar la lista. Revisá tu internet y volvé a entrar a la pestaña."); }
   }, []);
@@ -27,13 +27,13 @@ export default function PanelDeportes() {
   async function guardar(e: React.FormEvent) {
     e.preventDefault();
     if (!ed) return;
-    const r = await post("/api/panel/deportes", { accion: "guardar", institucion: ed });
+    const r = await post("/api/panel/clubes", { accion: "guardar", institucion: ed });
     const d = await r.json().catch(() => ({}));
     if (r.ok) { setMsg("Guardado."); setEd({ ...ed, id: d.id }); cargar(); } else setMsg(d.error ?? "No se pudo guardar.");
   }
   async function agregarDisciplina(e: React.FormEvent) {
     e.preventDefault();
-    const r = await post("/api/panel/deportes", { accion: "disciplina", nombre: nueva });
+    const r = await post("/api/panel/clubes", { accion: "disciplina", nombre: nueva });
     const d = await r.json().catch(() => ({}));
     setMsg(r.ok ? `Deporte agregado: ${nueva}.` : d.error ?? "No se pudo agregar.");
     if (r.ok) { setNueva(""); cargar(); }
@@ -46,7 +46,7 @@ export default function PanelDeportes() {
       const b = await achicar(f);
       const form = new FormData();
       form.append("id", ed.id); form.append("foto", b, "foto.jpg");
-      const r = await fetch("/api/panel/deportes/foto", { method: "POST", body: form });
+      const r = await fetch("/api/panel/clubes/foto", { method: "POST", body: form });
       const d = await r.json().catch(() => ({}));
       if (r.status === 401) location.href = "/entrar";
       if (r.ok) { setEd({ ...ed, foto: d.url }); setMsg("Foto subida."); cargar(); } else setMsg(d.error ?? "No se pudo subir la foto.");
@@ -93,7 +93,7 @@ export default function PanelDeportes() {
             <input ref={archivo} type="file" accept="image/*" hidden onChange={subirFoto} />
             <div className="acciones">
               <button type="button" className="btn claro" onClick={() => archivo.current?.click()} disabled={!ed.id}>{ed.foto ? "Cambiar foto" : "Subir foto"}</button>
-              {ed.foto && <button type="button" className="btn claro" onClick={async () => { await post("/api/panel/deportes", { accion: "quitar-foto", id: ed.id }); setEd({ ...ed, foto: "" }); cargar(); }}>Quitar foto</button>}
+              {ed.foto && <button type="button" className="btn claro" onClick={async () => { await post("/api/panel/clubes", { accion: "quitar-foto", id: ed.id }); setEd({ ...ed, foto: "" }); cargar(); }}>Quitar foto</button>}
             </div>
             {!ed.id && <small className="chico">Guardá el club primero para poder subir la foto.</small>}
           </div>
@@ -115,7 +115,7 @@ export default function PanelDeportes() {
               <span><b>{i.nombre}</b>{!i.activa && " (desactivada)"}<br /><small>{i.disciplinas.join(" · ")} · {i.barrio || "barrio: consultar"} · {i.costo === "gratis" ? "Gratis" : i.costo === "pago" ? "Pago" : "costo: consultar"}</small></span>
               <span className="acciones">
                 <button className="btn claro chico" onClick={() => { setEd(i); setMsg(""); }}>Editar</button>
-                <button className="btn claro chico" onClick={async () => { await post("/api/panel/deportes", { accion: "activar", id: i.id, valor: !i.activa }); cargar(); }}>{i.activa ? "Desactivar" : "Activar"}</button>
+                <button className="btn claro chico" onClick={async () => { await post("/api/panel/clubes", { accion: "activar", id: i.id, valor: !i.activa }); cargar(); }}>{i.activa ? "Desactivar" : "Activar"}</button>
               </span>
             </div>
           ))}
