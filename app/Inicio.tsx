@@ -30,6 +30,8 @@ const Cosmo = dynamic(() => import("./juegos/cosmo/Cosmo"), { ssr: false });
 const Obra = dynamic(() => import("./juegos/obra/Obra"), { ssr: false }); // modo chicos: se descarga recién al abrirlo
 import Castracion from "./Castracion";
 import Emprendedores from "./Emprendedores";
+import DeportesPantalla from "./Deportes";
+import type { DatosDeportes } from "@/lib/deportes";
 import Empleo from "./Empleo";
 import Comunidad from "./Comunidad";
 import Agenda from "./Agenda";
@@ -146,6 +148,8 @@ export default function Inicio() {
   useEffect(() => { const o = new URLSearchParams(location.search).get("olla"); if (o && /^[a-f0-9]{8,32}$/.test(o)) setOllaEnlace(o); }, []);
   const [panel, setPanel] = useState<string | null>(null); // adónde lleva el enlace del pie: mi panel
   const s = config.secciones;
+  const [deportes, setDeportes] = useState<DatosDeportes | null>(null); // llega vacío si la sección está oculta (salvo para el dueño)
+  useEffect(() => { fetch("/api/deportes", { cache: "no-store" }).then((r) => r.json()).then((x) => x?.visible && setDeportes(x)).catch(() => {}); }, []);
 
   useEffect(() => {
     cargarDatos().then((r) => { setDatos(r.datos); setLugares(r.lugares); setMascotas(r.mascotas); setTrueque(r.trueque); setTrabajo(r.trabajo); setAnses(r.anses); setSinConexion(r.sinConexion); });
@@ -325,7 +329,7 @@ export default function Inicio() {
     const activa = (clave: string | null) => clave === null || !!(s as unknown as Record<string, { activa: boolean }>)[clave]?.activa;
     const cat = (id: string) => CATEGORIAS.find((c) => c.id === id);
     return {
-      secciones: buscarSecciones(q).filter((x) => activa(x.clave) && (x.id !== "agua" || aguaVisible)),
+      secciones: buscarSecciones(q).filter((x) => activa(x.clave) && (x.id !== "agua" || aguaVisible) && (x.id !== "deportes" || !!deportes)),
       oficinas: s.ansesof.activa ? oficinasAnses.filter((o) => coincide(`${o.nombre} ${o.direccion} ${o.localidad} anses`)) : [],
       lugares: ordenarLugares(
         lugares.filter((l) => l.categoria !== "farmacias" && coincide([l.nombre, l.direccion, l.localidad, l.telefonos.join(" "), l.horario, cat(l.categoria)?.titulo, cat(l.categoria)?.claves].join(" "))),
@@ -888,6 +892,13 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "deportes" && deportes)
+    return (
+      <Detalle color="deportes" titulo="Deportes para chicos" onVolver={volver}>
+        <DeportesPantalla datos={deportes} />
+      </Detalle>
+    );
+
   if (vista?.startsWith("emprendedores") && s.emprendedores.activa)
     return (
       <Detalle color="emprendedores" titulo={s.emprendedores.titulo} onVolver={volver}>
@@ -1140,6 +1151,10 @@ export default function Inicio() {
               {s.emprendedores.activa && (
                 <Tile color="emprendedores" icono="emoji:🛍️" titulo={s.emprendedores.titulo} estado="Nuevo" tono="aviso" onClick={() => abrir("emprendedores")}
                   resumen="Mostrá lo que ofrecés y encontrá clientes" />
+              )}
+              {deportes && (
+                <Tile color="deportes" icono="emoji:⚽" titulo="Deportes para chicos" estado={deportes.soloDueno ? "Oculta" : "Ver"} tono={deportes.soloDueno ? "aviso" : "neutro"} onClick={() => abrir("deportes")}
+                  resumen={deportes.soloDueno ? "Solo la ves vos" : "Clubes y escuelas para chicos"} />
               )}
               {s.castracion.activa && (
                 <Tile color="castracion" icono="emoji:🐾" titulo={s.castracion.titulo} estado="Ver" tono="neutro" onClick={() => abrir("castracion")}
