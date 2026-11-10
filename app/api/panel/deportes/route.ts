@@ -2,10 +2,10 @@ import { randomUUID } from "node:crypto";
 import { del } from "@vercel/blob";
 import { redis } from "@/lib/servidor";
 import { esAdmin } from "@/lib/cuentas";
-import { CLAVE_DISC, CLAVE_INST, CLAVE_VISIBLE, type Costo, type Institucion } from "@/lib/deportes";
-import { deportesVisible, disciplinas, todasInstituciones } from "@/lib/deportes-servidor";
+import { CLAVE_DISC, CLAVE_INST, type Costo, type Institucion } from "@/lib/deportes";
+import { disciplinas, todasInstituciones } from "@/lib/deportes-servidor";
 
-// Mi panel → pestaña Deportes: instituciones, disciplinas y el interruptor "Mostrar sección a los vecinos".
+// Mi panel → pestaña Deportes: instituciones y disciplinas.
 const limpiar = (v: unknown, max: number) => String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
 const url = (v: unknown) => { const t = limpiar(v, 300); return /^https?:\/\//i.test(t) ? t : ""; };
 
@@ -14,8 +14,7 @@ export async function POST(req: Request) {
   if (!(await esAdmin(req))) return Response.json({ ok: false }, { status: 401 });
   const c = await req.json().catch(() => ({}));
 
-  if (c.accion === "listar") return Response.json({ ok: true, visible: await deportesVisible(), disciplinas: await disciplinas(), instituciones: await todasInstituciones() });
-  if (c.accion === "visible") { await redis([["SET", CLAVE_VISIBLE, c.valor ? "1" : "0"]]); return Response.json({ ok: true }); }
+  if (c.accion === "listar") return Response.json({ ok: true, disciplinas: await disciplinas(), instituciones: await todasInstituciones() });
 
   if (c.accion === "disciplina") {
     const nombre = limpiar(c.nombre, 40);

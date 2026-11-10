@@ -1,6 +1,6 @@
 // Primera carga de "Deportes para chicos". Uso: node --env-file=.env.local scripts/cargar-deportes.mjs
 // Solo datos publicados por el propio club o por el Municipio en sus sitios oficiales (consultados en noviembre de 2026). Lo que no está publicado queda vacío ("Consultar" en la app).
-// No pisa fichas que ya existen (para no borrar correcciones hechas desde el panel). La sección queda OCULTA hasta que se prenda el interruptor.
+// No pisa fichas que ya existen (para no borrar correcciones hechas desde el panel). La sección es pública.
 const { KV_REST_API_URL: URL_DB, KV_REST_API_TOKEN: TOKEN } = process.env;
 const redis = async (cmds) => (await (await fetch(`${URL_DB}/pipeline`, { method: "POST", headers: { Authorization: `Bearer ${TOKEN}` }, body: JSON.stringify(cmds) })).json()).map((x) => x.result);
 
@@ -71,5 +71,4 @@ for (const i of lista) {
   nuevos++;
 }
 if (!d) await redis([["SET", "deportes:disc", JSON.stringify(["Fútbol y futsal", "Básquet", "Natación", "Hockey", "Vóley", "Patín", "Taekwondo", "Artes marciales", "Atletismo", "Rugby", "Otras actividades"])]]);
-await redis([["SETNX", "deportes:visible", "0"]]);
-console.log(`Cargadas: ${nuevos} de ${lista.length}. La sección sigue oculta para los vecinos.`);
+console.log(`Cargadas: ${nuevos} de ${lista.length}. La sección es pública.`);

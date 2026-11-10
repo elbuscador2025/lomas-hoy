@@ -8,7 +8,6 @@ export type Institucion = {
 export type DatosDeportes = { visible: boolean; soloDueno: boolean; disciplinas: string[]; instituciones: Institucion[] };
 
 export const DISCIPLINAS_INICIALES = ["Fútbol y futsal", "Básquet", "Natación", "Hockey", "Vóley", "Patín", "Taekwondo", "Artes marciales", "Atletismo", "Rugby", "Otras actividades"];
-export const CLAVE_VISIBLE = "deportes:visible";
 export const CLAVE_DISC = "deportes:disc";
 export const CLAVE_INST = "deportes";
 

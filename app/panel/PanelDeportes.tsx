@@ -7,9 +7,8 @@ import { post } from "./api";
 
 const vacio: Institucion = { id: "", nombre: "", disciplinas: [], direccion: "", barrio: "", edades: "", horarios: "", costo: "", telefono: "", whatsapp: "", inscripcion: "", fuente: "", fuenteUrl: "", foto: "", activa: true, actualizado: "" };
 
-// Pestaña "Deportes": clubes y escuelas deportivas para chicos. Mientras el interruptor esté apagado, solo yo veo la sección en la app.
+// Pestaña "Deportes": clubes y escuelas deportivas para chicos (la sección es pública).
 export default function PanelDeportes() {
-  const [visible, setVisible] = useState(false);
   const [discs, setDiscs] = useState<string[]>([]);
   const [lista, setLista] = useState<Institucion[]>([]);
   const [ed, setEd] = useState<Institucion | null>(null);
@@ -18,8 +17,10 @@ export default function PanelDeportes() {
   const archivo = useRef<HTMLInputElement>(null);
 
   const cargar = useCallback(async () => {
-    const r = await post("/api/panel/deportes", { accion: "listar" });
-    if (r.ok) { const d = await r.json(); setVisible(d.visible); setDiscs(d.disciplinas); setLista(d.instituciones); }
+    try {
+      const r = await post("/api/panel/deportes", { accion: "listar" });
+      if (r.ok) { const d = await r.json(); setDiscs(d.disciplinas); setLista(d.instituciones); }
+    } catch { setMsg("No se pudo cargar la lista. Revisá tu internet y volvé a entrar a la pestaña."); }
   }, []);
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -55,11 +56,6 @@ export default function PanelDeportes() {
 
   return (
     <div>
-      <div className="interruptor-fila">
-        <span><b>Mostrar sección a los vecinos</b><small>Apagado: los vecinos no ven “Deportes para chicos”. Vos sí la ves en la app mientras tengas la sesión abierta.</small></span>
-        <button role="switch" aria-checked={visible} aria-label="Mostrar sección a los vecinos" className={`interruptor ${visible ? "on" : ""}`}
-          onClick={async () => { const n = !visible; setVisible(n); await post("/api/panel/deportes", { accion: "visible", valor: n }); }}><span /></button>
-      </div>
       {msg && <p className="normal">{msg}</p>}
 
       {ed ? (
