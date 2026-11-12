@@ -32,6 +32,7 @@ import Castracion from "./Castracion";
 import Emprendedores from "./Emprendedores";
 import DeportesPantalla from "./Deportes";
 import AutoTramites from "./AutoTramites";
+import AgendaDestacada from "./AgendaDestacada";
 import Jubilados from "./Jubilados";
 import type { DatosJubilados } from "@/lib/jubilados";
 import type { DatosDeportes } from "@/lib/deportes";
@@ -1096,6 +1097,7 @@ export default function Inicio() {
         ) : (
           <>
             <VozDeLomas />
+            {s.agenda.activa && (d.agenda?.contenido || notasAgenda.length > 0) && <AgendaDestacada notas={notasAgenda} onVerTodo={() => abrir("agenda")} />}
             {s.pasa.activa && <BotonPasa onClick={() => abrir("pasa-avisar")} />}
             {(s.tren.activa || s.colectivos.activa) && (
               <section className="transporte coloreado c-tren" aria-label="Transporte">
@@ -1154,10 +1156,6 @@ export default function Inicio() {
                 resumen="Talleres, cursos y centros para salir y disfrutar" />
               <Tile color="auto" icono="emoji:🚗" titulo="Auto y trámites" estado="Ver" tono="neutro" onClick={() => abrir("auto")}
                 resumen="Patente, multas, licencia, VTV y más" />
-              {s.agenda.activa && (
-                <Tile color="agenda" icono="emoji:🎉" titulo={s.agenda.titulo} estado={notasAgenda.length ? plural(notasAgenda.length, "nota", "notas") : "Ver"} tono="neutro" onClick={() => abrir("agenda")}
-                  resumen="Eventos y actividades en Lomas" />
-              )}
               {s.mascotas.activa && (
                 <Tile color="mascotas" icono="patita" titulo={s.mascotas.titulo} onClick={() => abrir("mascotas")}
                   estado={nuevasMascotas ? plural(nuevasMascotas, "nueva", "nuevas") : "Ver"} tono={nuevasMascotas ? "aviso" : "neutro"}
