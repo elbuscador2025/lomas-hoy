@@ -32,6 +32,8 @@ import Castracion from "./Castracion";
 import Emprendedores from "./Emprendedores";
 import DeportesPantalla from "./Deportes";
 import AutoTramites from "./AutoTramites";
+import Jubilados from "./Jubilados";
+import type { DatosJubilados } from "@/lib/jubilados";
 import type { DatosDeportes } from "@/lib/deportes";
 import Empleo from "./Empleo";
 import Comunidad from "./Comunidad";
@@ -150,6 +152,8 @@ export default function Inicio() {
   useEffect(() => { const o = new URLSearchParams(location.search).get("olla"); if (o && /^[a-f0-9]{8,32}$/.test(o)) setOllaEnlace(o); }, []);
   const [panel, setPanel] = useState<string | null>(null); // adónde lleva el enlace del pie: mi panel
   const s = config.secciones;
+  const [mayores, setMayores] = useState<DatosJubilados | null>(null); // centros de jubilados y actividades (la sección es pública)
+  useEffect(() => { fetch("/api/lugares?guia=mayores", { cache: "no-store" }).then((r) => r.json()).then((x) => Array.isArray(x?.centros) && setMayores(x)).catch(() => {}); }, []);
   const [deportes, setDeportes] = useState<DatosDeportes | null>(null); // llega vacío si la sección está oculta (salvo para el dueño)
   useEffect(() => { fetch("/api/lugares?guia=chicos", { cache: "no-store" }).then((r) => r.json()).then((x) => x?.visible && setDeportes(x)).catch(() => {}); }, []);
 
@@ -894,6 +898,13 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "jubilados")
+    return (
+      <Detalle color="jubilados" titulo="Jubilados: salir y disfrutar" onVolver={volver}>
+        <Jubilados datos={mayores ?? { centros: [], actividades: [] }} abrir={abrir} />
+      </Detalle>
+    );
+
   if (vista === "auto")
     return (
       <Detalle color="auto" titulo="Auto y trámites" onVolver={volver}>
@@ -1139,6 +1150,8 @@ export default function Inicio() {
                 <Tile color="comunidad" icono="emoji:🏛️" titulo={s.comunidad.titulo} estado="Online" tono="neutro" onClick={() => abrir("comunidad")}
                   resumen="Turnos y trámites online · Comunidad Lomas" />
               )}
+              <Tile color="jubilados" icono="emoji:🧓" titulo="Jubilados" estado="Ver" tono="neutro" onClick={() => abrir("jubilados")}
+                resumen="Talleres, cursos y centros para salir y disfrutar" />
               <Tile color="auto" icono="emoji:🚗" titulo="Auto y trámites" estado="Ver" tono="neutro" onClick={() => abrir("auto")}
                 resumen="Patente, multas, licencia, VTV y más" />
               {s.agenda.activa && (

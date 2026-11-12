@@ -326,6 +326,26 @@ th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--linea);
 .auto-tarjeta .btn { align-self:stretch; text-align:center; }
 .auto-tarjeta ol { margin:4px 0; padding-left:20px; }
 .auto-tarjeta ol li { margin:4px 0; }
+.c-jubilados { --c-bg:#FDEBD0; --c-fuerte:#9C4A00; }
+/* Jubilados: letra y botones grandes, mucho contraste */
+.mayores { font-size:19px; line-height:1.45; color:#0B1630; }
+.mayores .lugar-principal { gap:10px; padding:18px; }
+.mayores .lugar-principal h2 { font-size:24px; line-height:1.2; margin:0; }
+.mayores .btn { min-height:58px; font-size:19px; align-self:stretch; text-align:center; }
+.mayores .dato { font-size:19px; }
+.mayores-intro { font-size:20px; font-weight:600; margin:4px 0 12px; }
+.mayores-titulo { font-size:26px; margin:22px 0 4px; }
+.mayores-ayuda { display:block; font-size:17px; color:#1F2D4D; background:#fff; border-radius:12px; padding:10px 12px; }
+.mayores .chico { font-size:15px; }
+.mayores-puntos { margin:2px 0 4px; padding-left:22px; }
+.mayores-puntos li { margin:6px 0; }
+.mayores-filtro { display:block; font-size:19px; font-weight:700; }
+.mayores-filtro select, .mayores-buscar { width:100%; min-height:58px; font-size:19px; padding:10px 14px; border:2px solid #8FA3C8; border-radius:14px; background:#fff; color:#0B1630; font-family:inherit; margin-top:6px; }
+.mayores-buscar { margin:10px 0 14px; }
+.mayores-centro > b { font-size:21px; }
+.mayores-consultar { color:#3B4A6B; }
+.mayores-lista > li { list-style:none; margin-bottom:12px; }
+.mayores-cobran { margin-top:18px; }
 .c-disc { --c-bg:#E5E9EF; --c-fuerte:#455A64; }
 .lugar-principal { display:flex; flex-direction:column; gap:4px; background:var(--gris-azul); border-radius:18px; padding:14px; margin:8px 0 14px; overflow-wrap:anywhere; }
 .lugar-principal h2 { margin:0 0 4px; }
@@ -895,3 +915,4 @@ button.voz-aquien { text-decoration:underline; text-decoration-color:#B8C4DD; }
 .voz-form-resp .btn, .voz-form-resp .voz-pie small { white-space:nowrap; }
 .voz-form-resp .voz-pie { flex-wrap:wrap; }
 .hilo-dueno { display:table; margin:0 0 3px; }
+.mayores .mayores-ayuda { color:#1F2D4D; }
