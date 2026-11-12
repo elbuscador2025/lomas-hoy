@@ -197,8 +197,8 @@ export const config = {
       trueque: { activa: true, porDefecto: false, titulo: "Trueque" },
       // Apagado de entrada. Como mucho un aviso por día, a las 19, juntando los trabajos nuevos.
       trabajo: { activa: true, porDefecto: false, titulo: "Trabajo para mayores de 50 años" },
-      // Apagado de entrada. Como mucho un aviso por día (nunca de 23 a 7), juntando las notas de eventos nuevas.
-      agenda: { activa: true, porDefecto: false, titulo: "Agenda de Lomas" },
+      // Prendido para todos los celulares con avisos (se puede apagar). Como mucho un aviso por día (nunca de 23 a 7), juntando las notas de eventos nuevas.
+      agenda: { activa: true, porDefecto: true, titulo: "Agenda de Lomas" },
     },
     horaResumen: { desde: "07:00", hasta: "10:00" }, // el resumen sale en la primera vuelta del proceso automático después de las 7
     maximoPorDia: 6, // por celular, sumando todos los tipos

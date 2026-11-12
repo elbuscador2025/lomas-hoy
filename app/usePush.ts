@@ -10,7 +10,7 @@ export const PUBLICA = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "").trim();
 const json = { "Content-Type": "application/json" };
 
 export const prefsIniciales = (): Prefs => ({
-  v: 2,
+  v: 3,
   tipos: Object.fromEntries(Object.entries(config.push.tipos).map(([k, v]) => [k, (v as { porDefecto?: boolean }).porDefecto ?? v.activa])),
 });
 
@@ -27,7 +27,8 @@ function leerPrefs(): Prefs {
   try {
     const p = JSON.parse(localStorage.getItem(CLAVE) ?? "null");
     // v2: las alertas de tormenta pasaron a estar prendidas para todos (antes no se podían elegir)
-    if (p?.tipos) return { ...prefsIniciales(), ...p, v: 2, tipos: { ...prefsIniciales().tipos, ...p.tipos, ...((p.v ?? 1) < 2 ? { tormenta: true } : {}) } };
+    // v3: los avisos de la Agenda pasaron a estar prendidos para todos los celulares con avisos (se pueden apagar desde "Configurar avisos")
+    if (p?.tipos) return { ...prefsIniciales(), ...p, v: 3, tipos: { ...prefsIniciales().tipos, ...p.tipos, ...((p.v ?? 1) < 2 ? { tormenta: true } : {}), ...((p.v ?? 1) < 3 ? { agenda: true } : {}) } };
   } catch {}
   return prefsIniciales();
 }

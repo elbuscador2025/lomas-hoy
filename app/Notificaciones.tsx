@@ -5,7 +5,7 @@ import { Icono } from "./Iconos";
 import { useInstalar, esIOS, estaInstalada, type Push } from "./usePush";
 import { sonidoActivo, guardarSonido } from "./FeedbackToque";
 
-function PasosIPhone() {
+export function PasosIPhone() {
   return (
     <ol className="pasos">
       <li>Abrí Lomas Hoy en <b>Safari</b>.</li>
@@ -133,6 +133,13 @@ export function AvisarmeNuevos({ push, tipo, textos }: { push: Push; tipo: strin
       : push.estado === "iosSinInstalar" ? "En iPhone, primero agregá Lomas Hoy a la pantalla de inicio y abrila desde el ícono."
       : push.estado === "noSoportado" ? "Este navegador no permite recibir avisos." : "Un momento…");
   }
+  // En iPhone sin instalar la app no llegan avisos: en vez del botón se muestra cómo instalarla (solo en la Agenda)
+  if (tipo === "agenda" && push.estado === "iosSinInstalar") return (
+    <section className="aviso-iphone" aria-label="Instalar la app para recibir avisos">
+      <b>Para recibir avisos en iPhone, primero instalá la app:</b>
+      <PasosIPhone />
+    </section>
+  );
   return activo ? (
     <p className="avisarme-nuevos">{textos?.activo ?? "Te avisamos cuando haya nuevos"} · <button className="link" onClick={() => push.guardar({ ...push.prefs, tipos: { ...push.prefs.tipos, [tipo]: false } })}>{textos?.quitar ?? "Desactivar"}</button></p>
   ) : (

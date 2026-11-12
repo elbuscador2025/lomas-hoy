@@ -945,3 +945,10 @@ button.voz-aquien { text-decoration:underline; text-decoration-color:#B8C4DD; }
 .voz-com .btn:not(.claro):disabled, .voz-form-resp .btn:not(.claro):disabled { background:#5B6F99; color:#fff !important; opacity:1; font-weight:700; cursor:not-allowed; }
 .btn.llamar:disabled, .btn.whatsapp:disabled, .btn.whatsapp-chico:disabled, .btn.cancelar-rojo:disabled, .btn.denuncia-estafa:disabled { opacity:.75; color:#fff !important; font-weight:700; }
 .voz-votar-antes { display:block; margin-top:6px; font-size:13px; color:var(--suave); }
+
+/* La Voz de Lomas: invitación a recibir avisos de eventos (después de votar) */
+.voz-invita { margin-top:14px; background:#fff; color:var(--texto); border-radius:18px; padding:14px; display:flex; flex-direction:column; gap:8px; }
+.voz-invita b { font-size:17px; line-height:1.3; color:#17275a; }
+.voz-invita p { margin:0; font-size:15px; }
+.voz-invita .btn { margin-top:2px; }
+.voz-invita .link { align-self:center; }

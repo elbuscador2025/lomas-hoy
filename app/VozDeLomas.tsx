@@ -1,6 +1,8 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Hilo from "./Hilo";
+import InvitacionAvisos from "./InvitacionAvisos";
+import type { Push } from "./usePush";
 import { MAX_COMENTARIO_VOZ, MOTIVOS_VOZ, type EstadoVoz, type ResultadoVoz, type ComentarioVoz } from "@/lib/voz-comun";
 
 // "LA VOZ DE LOMAS": la pregunta del día arriba de todo. Se vota con un toque, sin registro. Después se ven los resultados y se puede dejar un comentario corto.
@@ -25,7 +27,7 @@ const esDueno = () => { try { return !!localStorage.getItem("lomas-hoy:dueno"); 
 const guardada = (pid: string) => { try { return localStorage.getItem(`lomas-hoy:voz:${pid}`); } catch { return null; } };
 const guardar = (pid: string, op: string) => { try { localStorage.setItem(`lomas-hoy:voz:${pid}`, op); } catch {} };
 
-export default function VozDeLomas() {
+export default function VozDeLomas({ push }: { push: Push }) {
   const disp = useRef("");
   const [estado, setEstado] = useState<EstadoVoz | null>(null);
   const [oculta, setOculta] = useState(false); // sin pregunta o sin conexión: la tarjeta no se muestra
@@ -157,6 +159,8 @@ export default function VozDeLomas() {
           {resultados.total === 0 ? <p className="voz-n">Todavía no hay votos de otros vecinos.</p> : <p className="voz-guardado">✓ ¡Tu voto ya quedó guardado! {resultados.total === 1 ? "Participó 1 vecino" : `Participaron ${resultados.total} vecinos`}.</p>}
         </div>
       )}
+
+      {voto && resultados && <InvitacionAvisos push={push} />}
 
       <div className="voz-com">
         <h3>¿Querés contarnos algo más? (opcional)</h3>

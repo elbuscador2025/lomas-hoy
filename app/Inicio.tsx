@@ -1096,7 +1096,7 @@ export default function Inicio() {
           </section>
         ) : (
           <>
-            <VozDeLomas />
+            <VozDeLomas push={push} />
             {s.agenda.activa && (d.agenda?.contenido || notasAgenda.length > 0) && <AgendaDestacada notas={notasAgenda} onVerTodo={() => abrir("agenda")} />}
             {s.pasa.activa && <BotonPasa onClick={() => abrir("pasa-avisar")} />}
             {(s.tren.activa || s.colectivos.activa) && (
