@@ -140,17 +140,17 @@ export default function VozDeLomas() {
               })}
             </div>
           )}
-          <p className="voz-n">{resultados.total === 0 ? "Todavía no hay votos de otros vecinos." : <>Gracias por votar. {resultados.total === 1 ? "Participó 1 vecino" : `Participaron ${resultados.total} vecinos`}.</>}</p>
+          {resultados.total === 0 ? <p className="voz-n">Todavía no hay votos de otros vecinos.</p> : <p className="voz-guardado">✓ ¡Tu voto ya quedó guardado! {resultados.total === 1 ? "Participó 1 vecino" : `Participaron ${resultados.total} vecinos`}.</p>}
         </div>
       )}
 
       <div className="voz-com">
-        <h3>¿Querés contarnos algo más?</h3>
+        <h3>¿Querés contarnos algo más? (opcional)</h3>
         <form onSubmit={enviar}>
           <textarea value={texto} onChange={(e) => setTexto(e.target.value.slice(0, MAX_COMENTARIO_VOZ))} maxLength={MAX_COMENTARIO_VOZ} rows={2} placeholder="Escribí un comentario corto" aria-label="Tu comentario" />
           <div className="voz-pie">
             <small>{texto.length}/{MAX_COMENTARIO_VOZ} · Sin enlaces ni teléfonos</small>
-            <button className="btn chico" disabled={enviando || texto.trim().length < 2}>{enviando ? "Enviando…" : "Enviar"}</button>
+            {texto.length > 0 && <button className="btn chico" disabled={enviando || texto.trim().length < 2}>{enviando ? "Enviando…" : "Enviar"}</button>}
           </div>
         </form>
         {msgCom && <p className={msgCom.ok ? "voz-ok" : "voz-error"} role="status">{msgCom.t}</p>}

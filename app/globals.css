@@ -875,3 +875,4 @@ body.cosmo-activo { overflow:hidden; overscroll-behavior:none; }
 .voz-motivos button { border:1px solid var(--linea); border-radius:999px; text-decoration:none; padding:6px 10px; color:var(--texto); background:var(--gris-azul); }
 .voz-mas { display:block; margin:8px auto 0; font-size:15px; color:var(--azul); font-weight:600; }
 .voz-com .btn:disabled { background:#D5DDEE; color:#4A5F8A; opacity:1; }
+.voz-guardado { margin:12px 0 0; background:#DDF3E4; color:#1B6B3A; border-radius:12px; padding:10px 12px; font-size:16px; font-weight:800; line-height:1.3; }
