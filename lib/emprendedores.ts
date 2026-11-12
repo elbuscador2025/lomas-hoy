@@ -11,6 +11,7 @@ import { motivoProhibidoPasa } from "@/lib/pasa-comun";
 import { datoProhibido } from "@/lib/estafas";
 import { normalizarWhatsapp } from "@/lib/mascotas-comun";
 import { enviarAUno, notificarAdmin } from "@/lib/push";
+import { extractoHilo, MAX_RESPUESTAS_POR_DIA } from "@/lib/hilo-comun";
 import {
   MAX_FOTOS, MAX_TITULO, MAX_DESCRIPCION, MAX_COMENTARIO, DIAS_VIGENCIA, MAX_BYTES_SERVIDOR, hayProhibida, MENSAJE_PROHIBIDO,
   type EmprendimientoPublico, type EmprendimientoDetalle, type ComentarioEmp,
@@ -24,7 +25,7 @@ type Registro = {
   creado: string; vence: string; disp: string; tokenHash: string; aviso?: string; // aviso = el celular del dueño, para avisarle de las preguntas
   avisoVence?: boolean; oculta?: boolean; denuncias?: Denuncia[];
 };
-type Comentario = { id: string; texto: string; creado: string; duenio: boolean; disp: string; oculta?: boolean; denuncias?: Denuncia[] };
+type Comentario = { id: string; texto: string; creado: string; duenio: boolean; disp: string; padre?: string; aQuien?: string; oculta?: boolean; denuncias?: Denuncia[] };
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 const limpio = (v: unknown, max: number) => String(v ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "").trim().slice(0, max);
@@ -42,6 +43,11 @@ async function comentariosDe(id: string): Promise<Comentario[]> {
   const [x] = await redis([["HVALS", claveC(id)]]);
   return (x as string[]).map((j) => JSON.parse(j) as Comentario).sort((a, b) => a.creado.localeCompare(b.creado));
 }
+// Lo que se ve: los comentarios y las respuestas que no están ocultos; si un comentario está oculto, sus respuestas también
+function visiblesDe(cs: Comentario[]): Comentario[] {
+  const raices = new Set(cs.filter((c) => !c.padre && !c.oculta).map((c) => c.id));
+  return cs.filter((c) => !c.oculta && (c.padre ? raices.has(c.padre) : true));
+}
 const esDuenio = (r: Registro, token: unknown) => {
   if (typeof token !== "string" || !/^[a-f0-9]{48}$/.test(token)) return false;
   const a = Buffer.from(sha(token)), b = Buffer.from(r.tokenHash);
@@ -58,13 +64,19 @@ export async function publicos(): Promise<EmprendimientoPublico[]> {
   const lista = (await todos()).filter(vigente).sort((a, b) => b.creado.localeCompare(a.creado));
   if (!lista.length) return [];
   const cuentas = await redis(lista.map((r) => ["HVALS", claveC(r.id)]));
-  return lista.map((r, i) => publico(r, (cuentas[i] as string[]).map((j) => JSON.parse(j) as Comentario).filter((c) => !c.oculta).length));
+  return lista.map((r, i) => publico(r, visiblesDe((cuentas[i] as string[]).map((j) => JSON.parse(j) as Comentario)).length));
 }
 export async function detalle(id: string): Promise<EmprendimientoDetalle | null> {
   const r = await uno(id);
   if (!r || !vigente(r)) return null;
-  const conv: ComentarioEmp[] = (await comentariosDe(id)).filter((c) => !c.oculta).map((c) => ({ id: c.id, texto: c.texto, creado: c.creado, duenio: c.duenio }));
-  return { ...publico(r, conv.length), conversacion: conv };
+  const vis = visiblesDe(await comentariosDe(id)); // de la más vieja a la más nueva
+  const publicoC = (c: Comentario): ComentarioEmp => {
+    if (!c.aQuien) return { id: c.id, texto: c.texto, creado: c.creado, duenio: c.duenio };
+    const destino = vis.find((t) => t.id === c.aQuien); // si ese mensaje se ocultó o se borró, queda el aviso sin el texto
+    return { id: c.id, texto: c.texto, creado: c.creado, duenio: c.duenio, aQuien: { id: c.aQuien, extracto: destino ? extractoHilo(destino.texto) : "" } };
+  };
+  const conv: ComentarioEmp[] = vis.filter((c) => !c.padre).map((c) => ({ ...publicoC(c), respuestas: vis.filter((x) => x.padre === c.id).map(publicoC) }));
+  return { ...publico(r, vis.length), conversacion: conv };
 }
 
 // ---- Publicar ----
@@ -173,9 +185,17 @@ export async function porToken(token: string) {
 }
 
 // ---- Conversación ----
-export async function comentar(id: string, textoCrudo: unknown, dispositivo: string, ip: string, token: unknown): Promise<{ ok: true; avisar?: () => Promise<void> } | { ok: false; error: string }> {
+export async function comentar(id: string, textoCrudo: unknown, dispositivo: string, ip: string, token: unknown, padre?: string): Promise<{ ok: true; avisar?: () => Promise<void> } | { ok: false; error: string }> {
   const r = await uno(id);
   if (!r || !vigente(r)) return { ok: false, error: "Esta publicación ya no está." };
+  // Se le puede responder a cualquier mensaje que esté a la vista; la respuesta queda en el hilo del comentario original
+  let raiz: string | undefined;
+  if (padre) {
+    const cs = await comentariosDe(id);
+    const origen = cs.find((c) => c.id === padre);
+    if (!origen || !visiblesDe(cs).some((c) => c.id === origen.id)) return { ok: false, error: "Ese mensaje ya no está." };
+    raiz = origen.padre ?? origen.id;
+  }
   const texto = limpio(textoCrudo, MAX_COMENTARIO + 1);
   if (texto.length < 2) return { ok: false, error: "Escribí tu mensaje." };
   if (texto.length > MAX_COMENTARIO) return { ok: false, error: `El mensaje puede tener hasta ${MAX_COMENTARIO} caracteres.` };
@@ -183,13 +203,15 @@ export async function comentar(id: string, textoCrudo: unknown, dispositivo: str
   if (insulto) return { ok: false, error: insulto };
   const disp = huella(dispositivo);
   if (await estaBloqueado(null, disp)) return { ok: false, error: "No podés escribir desde este celular." };
-  const dia = hoyArgentina(), kd = `emp:cdia:${dia}:d:${sha(dispositivo).slice(0, 16)}`, ki = `emp:cdia:${dia}:ip:${sha(ip).slice(0, 16)}`;
+  // Los comentarios (10 por día) y las respuestas (20 por día) cuentan aparte
+  const dia = hoyArgentina(), tipo = padre ? "rdia" : "cdia", tope = padre ? MAX_RESPUESTAS_POR_DIA : MAX_COMENTARIOS_POR_DIA;
+  const kd = `emp:${tipo}:${dia}:d:${sha(dispositivo).slice(0, 16)}`, ki = `emp:${tipo}:${dia}:ip:${sha(ip).slice(0, 16)}`;
   const [d, i] = await redis([["INCR", kd], ["INCR", ki]]);
   await redis([["EXPIRE", kd, 2 * 86400], ["EXPIRE", ki, 2 * 86400]]);
-  if (Number(d) > MAX_COMENTARIOS_POR_DIA || Number(i) > MAX_COMENTARIOS_POR_DIA * 3) return { ok: false, error: "Ya escribiste muchos mensajes hoy. Probá mañana." };
+  if (Number(d) > tope || Number(i) > tope * 3) return { ok: false, error: padre ? `Ya dejaste ${tope} respuestas hoy. Probá mañana.` : "Ya escribiste muchos mensajes hoy. Probá mañana." };
   const duenio = esDuenio(r, token); // lo decide el servidor con el código secreto, no el celular
   const cid = randomUUID().slice(0, 10);
-  const c: Comentario = { id: cid, texto, creado: new Date().toISOString(), duenio, disp };
+  const c: Comentario = { id: cid, texto, creado: new Date().toISOString(), duenio, disp, ...(padre ? { padre: raiz, aQuien: padre } : {}) };
   await redis([["HSET", claveC(id), cid, JSON.stringify(c)], ["EXPIRE", claveC(id), (DIAS_VIGENCIA + 5) * 86400]]);
   // Al emprendedor le llega un aviso cuando alguien pregunta (como mucho uno cada 30 minutos por publicación)
   const avisar = !duenio && r.aviso ? async () => {
@@ -233,8 +255,10 @@ export async function paraPanel() {
     conversacion: (convs[i] as string[]).map((j) => { const { disp: _x, ...c } = JSON.parse(j) as Comentario; return c; }).sort((a, b) => a.creado.localeCompare(b.creado)),
   }));
 }
+// Al borrar un comentario se borran también sus respuestas (quedarían sueltas, sin saber a qué contestan)
 export async function borrarComentario(id: string, cid: string) {
-  const [n] = await redis([["HDEL", claveC(id), cid]]);
+  const hijas = (await comentariosDe(id)).filter((c) => c.padre === cid).map((c) => c.id);
+  const [n] = await redis([["HDEL", claveC(id), cid, ...hijas]]);
   return Number(n) > 0;
 }
 export async function dejarPublicado(id: string, cid?: string) {
@@ -261,7 +285,7 @@ export async function bloquear(id: string, cid?: string) {
     if (!j) return false;
     const c = JSON.parse(j as string) as Comentario;
     disp = c.disp; whatsapp = ""; nota = `Emprendedores (comentario): ${c.texto}`;
-    await redis([["HDEL", claveC(id), cid]]);
+    await borrarComentario(id, cid);
   }
   await agregarBloqueo(whatsapp, disp, nota);
   for (const x of await todos()) if (x.disp === disp) await quitar(x.id);

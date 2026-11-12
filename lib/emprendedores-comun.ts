@@ -5,7 +5,8 @@ export const MAX_FOTOS = 4, MAX_TITULO = 60, MAX_DESCRIPCION = 500, MAX_COMENTAR
 export const MAX_BYTES_FOTO = 250_000, LADO_FOTO = 1000; // la pantalla comprime a esto antes de subir; el servidor acepta hasta MAX_BYTES_FOTO + margen
 export const MAX_BYTES_SERVIDOR = 300_000;
 
-export type ComentarioEmp = { id: string; texto: string; creado: string; duenio: boolean };
+// Un mensaje de la conversación; las respuestas van todas en el hilo del comentario original ("aQuien" = a cuál mensaje contesta)
+export type ComentarioEmp = { id: string; texto: string; creado: string; duenio: boolean; respuestas?: ComentarioEmp[]; aQuien?: { id: string; extracto: string } };
 export type EmprendimientoPublico = {
   id: string; titulo: string; descripcion: string; fotos: string[]; telefono: string; whatsapp: string; creado: string; vence: string; comentarios: number;
 };

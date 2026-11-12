@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icono } from "./Iconos";
+import Hilo from "./Hilo";
 import Denunciar from "./Denunciar";
 import { Cancelar } from "./Trueque";
 import { haceCuanto } from "@/lib/hace";
@@ -105,6 +106,16 @@ function Ver({ id, abrir, volver }: { id: string; abrir: (v: string) => void; vo
     } catch { setError("No se pudo enviar. Revisá tu internet."); }
     finally { setEnviando(false); }
   }
+  // Contestarle a un mensaje (consulta o respuesta): queda en el hilo de la consulta original. Si responde el dueño, el servidor lo marca con su código secreto.
+  async function responder(t: string, destino: string): Promise<{ ok: true } | { ok: false; error: string }> {
+    try {
+      const r = await fetch(`/api/emprendedores/${id}/comentarios`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: t, dispositivo: dispositivo() || crypto.randomUUID(), token, padre: destino }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) return { ok: false, error: d.error ?? "No se pudo enviar. Probá de nuevo." };
+      cargar();
+      return { ok: true };
+    } catch { return { ok: false, error: "No se pudo enviar. Revisá tu internet." }; }
+  }
   async function accion(a: "renovar" | "borrar") {
     setMsg("");
     const r = await fetch(`/api/emprendedores/${id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accion: a, token, aviso: await avisoDelCelular() }) }).catch(() => null);
@@ -158,18 +169,12 @@ function Ver({ id, abrir, volver }: { id: string; abrir: (v: string) => void; vo
         </section>
       )}
 
-      <h2>Consultas ({e.conversacion.length})</h2>
+      <h2>Consultas ({e.comentarios})</h2>
       {e.conversacion.length === 0 && <p className="vacio">Todavía nadie preguntó. {dueno ? "" : "¡Hacé la primera consulta!"}</p>}
-      <ul className="lista emp-conv">
-        {e.conversacion.map((c) => (
-          <li key={c.id} className={c.duenio ? "emp-resp" : undefined}>
-            {c.duenio && <span className="pildora ok">Emprendedor</span>}
-            <span className="emp-texto">{c.texto}</span>
-            <small>{haceCuanto(c.creado)}</small>
-            <Denunciar seccion="emprendedores" id={e.id} cid={c.id} />
-          </li>
-        ))}
-      </ul>
+      {e.conversacion.length > 0 && (
+        <Hilo mensajes={e.conversacion} maxLen={MAX_COMENTARIO} hace={haceCuanto} marcaDueno="✓ Dueño de la publicación" onResponder={responder}
+          renderDenunciar={(m) => <Denunciar seccion="emprendedores" id={e.id} cid={m.id} />} />
+      )}
       <form onSubmit={enviar} className="form">
         <label>{dueno ? "Responder como Emprendedor" : "Hacé tu consulta"}
           <textarea rows={3} maxLength={MAX_COMENTARIO} value={texto} onChange={(x) => setTexto(x.target.value)} placeholder={dueno ? "Tu respuesta" : "¿Qué querés saber?"} />

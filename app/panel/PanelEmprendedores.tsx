@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { post } from "./api";
 
-type Comentario = { id: string; texto: string; creado: string; duenio: boolean; oculta?: boolean; denuncias?: { motivo: string }[] };
+type Comentario = { id: string; texto: string; creado: string; duenio: boolean; padre?: string; aQuien?: string; oculta?: boolean; denuncias?: { motivo: string }[] };
 type Emp = {
   id: string; titulo: string; descripcion: string; fotos: string[]; telefono: string; whatsapp: string; creado: string; vence: string; conAviso: boolean;
   oculta?: boolean; denuncias?: { motivo: string }[]; conversacion: Comentario[];
@@ -18,6 +18,20 @@ export default function PanelEmprendedores() {
   const cargar = useCallback(async () => { const r = await post("/api/panel/emprendedores", { accion: "listar" }); if (r.ok) setLista((await r.json()).lista); }, []);
   useEffect(() => { cargar(); }, [cargar]);
   async function accion(cuerpo: object, ok: string) { const r = await post("/api/panel/emprendedores", cuerpo); setMsg((await r.json().catch(() => ({}))).ok ? ok : "No se pudo."); cargar(); }
+  // Un comentario o una respuesta, con sus botones para dejar, borrar y bloquear
+  const mensaje = (e: Emp, c: Comentario) => (
+    <>
+      <Marca r={c} />
+      {c.aQuien && <small>↳ Respondiendo a: «{(e.conversacion.find((x) => x.id === c.aQuien)?.texto ?? "mensaje que ya no está").slice(0, 40)}»</small>}
+      <span>{c.duenio ? "🟢 Dueño de la publicación: " : ""}{c.texto}</span>
+      <small>{fecha(c.creado)}</small>
+      <div className="acciones">
+        {c.denuncias?.length ? <button className="btn chico" onClick={() => accion({ accion: "dejar", id: e.id, cid: c.id }, "Revisado: se ve de nuevo.")}>Dejar</button> : null}
+        <button className="btn claro chico" onClick={() => { if (confirm(c.padre ? "¿Borrar esta respuesta?" : "¿Borrar este mensaje y sus respuestas?")) accion({ accion: "borrar", id: e.id, cid: c.id }, "Mensaje borrado."); }}>Borrar</button>
+        {!c.duenio && <button className="btn claro chico" onClick={() => { if (confirm("¿Bloquear a quien escribió este mensaje?")) accion({ accion: "bloquear", id: e.id, cid: c.id }, "Bloqueado."); }}>Bloquear</button>}
+      </div>
+    </>
+  );
   return (
     <div>
       {msg && <p className="normal">{msg}</p>}
@@ -44,16 +58,15 @@ export default function PanelEmprendedores() {
               </div>
               {e.conversacion.length > 0 && <b>Conversación ({e.conversacion.length})</b>}
               <ul className="lista emp-conv" style={{ width: "100%" }}>
-                {e.conversacion.map((c) => (
+                {e.conversacion.filter((c) => !c.padre || !e.conversacion.some((x) => x.id === c.padre)).map((c) => (
                   <li key={c.id}>
-                    <Marca r={c} />
-                    <span>{c.duenio ? "🟢 Emprendedor: " : ""}{c.texto}</span>
-                    <small>{fecha(c.creado)}</small>
-                    <div className="acciones">
-                      {c.denuncias?.length ? <button className="btn chico" onClick={() => accion({ accion: "dejar", id: e.id, cid: c.id }, "Revisado: se ve de nuevo.")}>Dejar</button> : null}
-                      <button className="btn claro chico" onClick={() => { if (confirm("¿Borrar este mensaje?")) accion({ accion: "borrar", id: e.id, cid: c.id }, "Mensaje borrado."); }}>Borrar</button>
-                      {!c.duenio && <button className="btn claro chico" onClick={() => { if (confirm("¿Bloquear a quien escribió este mensaje?")) accion({ accion: "bloquear", id: e.id, cid: c.id }, "Bloqueado."); }}>Bloquear</button>}
-                    </div>
+                    {mensaje(e, c)}
+                    {/* las respuestas, debajo de su comentario (de la más vieja a la más nueva) */}
+                    {e.conversacion.some((r) => r.padre === c.id) && (
+                      <ul className="lista" style={{ margin: "6px 0 0 14px", borderLeft: "3px solid #BFD3F2", paddingLeft: 10 }}>
+                        {e.conversacion.filter((r) => r.padre === c.id).map((r) => <li key={r.id}>{mensaje(e, r)}</li>)}
+                      </ul>
+                    )}
                   </li>
                 ))}
               </ul>

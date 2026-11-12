@@ -894,3 +894,4 @@ button.voz-aquien { text-decoration:underline; text-decoration-color:#B8C4DD; }
 .voz-resp .voz-form-resp { margin-left:0; padding-left:0; border-left:0; }
 .voz-form-resp .btn, .voz-form-resp .voz-pie small { white-space:nowrap; }
 .voz-form-resp .voz-pie { flex-wrap:wrap; }
+.hilo-dueno { display:table; margin:0 0 3px; }
