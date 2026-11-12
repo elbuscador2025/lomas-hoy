@@ -76,6 +76,7 @@ export default function VozDeLomas() {
     e.preventDefault();
     if (!estado || enviando) return;
     const t = texto.trim();
+    if (!estado.voto) { setMsgCom({ ok: false, t: "Votá primero para comentar." }); return; }
     if (t.length < 2) { setMsgCom({ ok: false, t: "Escribí tu comentario." }); return; }
     setEnviando(true); setMsgCom(null);
     try {
@@ -163,8 +164,9 @@ export default function VozDeLomas() {
           <textarea value={texto} onChange={(e) => setTexto(e.target.value.slice(0, MAX_COMENTARIO_VOZ))} maxLength={MAX_COMENTARIO_VOZ} rows={2} placeholder="Escribí un comentario corto" aria-label="Tu comentario" />
           <div className="voz-pie">
             <small>{texto.length}/{MAX_COMENTARIO_VOZ} · Sin enlaces ni teléfonos</small>
-            {texto.length > 0 && <button className="btn chico" disabled={enviando || texto.trim().length < 2}>{enviando ? "Enviando…" : "Enviar"}</button>}
+            {texto.length > 0 && <button className="btn chico" disabled={enviando || texto.trim().length < 2 || !voto}>{enviando ? "Enviando…" : "Enviar"}</button>}
           </div>
+          {texto.length > 0 && !voto && <small className="voz-votar-antes">Votá primero para comentar</small>}
         </form>
         {msgCom && <p className={msgCom.ok ? "voz-ok" : "voz-error"} role="status">{msgCom.t}</p>}
 

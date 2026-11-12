@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
 };
-export const viewport: Viewport = { themeColor: "#1F5AD6", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { themeColor: "#1F5AD6", width: "device-width", initialScale: 1, colorScheme: "only light" }; // sin modo oscuro automático del navegador: invierte colores y deja texto oscuro sobre los botones azules
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

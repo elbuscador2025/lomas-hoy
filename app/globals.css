@@ -916,3 +916,16 @@ button.voz-aquien { text-decoration:underline; text-decoration-color:#B8C4DD; }
 .voz-form-resp .voz-pie { flex-wrap:wrap; }
 .hilo-dueno { display:table; margin:0 0 3px; }
 .mayores .mayores-ayuda { color:#1F2D4D; }
+
+/* Botones con fondo azul u oscuro: texto blanco y en negrita, bien legible, en todos los estados (también desactivados) */
+:root { color-scheme: only light; }
+.btn:not(.claro):not(.cobro-boton):not(.quin-boton), .btn.cobro-boton.activo, .btn.quin-boton.activo, .buscar-btn, .volver, .campana, .clima-compacto,
+.compartir-fila .compartir-otras, .filtro.activo, .dias-azul > button, .clima-dias button.activo, .dep-chip.on, .jg-grande, .jg-mini.destacado, .jg-ctrl, .jg-casilla, .noche-btn, .sos {
+  color:#fff !important; font-weight:700; text-shadow:none;
+}
+.btn:not(.claro):not(.cobro-boton):not(.quin-boton):hover, .btn:not(.claro):not(.cobro-boton):not(.quin-boton):active, .btn:not(.claro):not(.cobro-boton):not(.quin-boton):focus,
+.btn:not(.claro):not(.cobro-boton):not(.quin-boton):focus-visible, .volver:hover, .volver:active, .volver:focus { color:#fff !important; }
+.btn:not(.claro):not(.cobro-boton):not(.quin-boton):not(.llamar):not(.whatsapp):not(.whatsapp-chico):not(.cancelar-rojo):not(.denuncia-estafa):disabled,
+.voz-com .btn:not(.claro):disabled, .voz-form-resp .btn:not(.claro):disabled { background:#5B6F99; color:#fff !important; opacity:1; font-weight:700; cursor:not-allowed; }
+.btn.llamar:disabled, .btn.whatsapp:disabled, .btn.whatsapp-chico:disabled, .btn.cancelar-rojo:disabled, .btn.denuncia-estafa:disabled { opacity:.75; color:#fff !important; font-weight:700; }
+.voz-votar-antes { display:block; margin-top:6px; font-size:13px; color:var(--suave); }
