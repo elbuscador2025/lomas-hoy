@@ -226,6 +226,12 @@ test("agenda: toma las notas que anuncian eventos en Lomas y descarta las que ha
     nota("Festival gratis en Córdoba este fin de semana"),
     nota("El Polaco toca gratis este domingo en Lanús"),
     nota("Lomas de Zamora abrió una nueva inscripción gratuita para talleres"),
+    nota("Temperley, Los Andes y Banfield: la agenda de los equipos del sur para el fin de semana"),
+    nota("Día de los Fieles Difuntos: habrá misas y una jornada especial en el Cementerio de Lomas"),
+    nota("Convocan a escritores y editoriales para la primera Feria del Libro de la Cortázar en Banfield"),
+    nota("Lomas licitó la obra pública para repavimentar la avenida: habrá cortes de tránsito"),
+    nota("El Concejo de Lomas aprobó el aumento de la tasa: la agenda política de la semana"),
+    nota("Detuvieron a un hombre por un robo en Banfield"),
   ], cfg);
   assert.deepEqual(r.map((x) => x.titulo), ["Banfield tendrá su primer festival de fanzines con talleres y música", "Lomas de Zamora abrió una nueva inscripción gratuita para talleres"]);
 });

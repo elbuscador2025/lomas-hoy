@@ -264,17 +264,24 @@ export function cuandoEnTexto(texto) {
 }
 
 // ---- Agenda de Lomas: notas de los diarios locales que ANUNCIAN eventos (reglas fijas, sin IA) ----
-// Una nota entra si el título habla de un evento o actividad (festival, feria, show, gratis, inscripción, taller...), nombra un lugar de Lomas y no está en pasado ("se realizó", "culminó", "fue un éxito"...).
+// Una nota entra si el título habla de un evento o actividad (festival, feria, show, gratis, inscripción, taller...), nombra un lugar de Lomas, no está en pasado ("se realizó", "culminó", "fue un éxito"...) y no es una noticia común ni algo a lo que el vecino no puede ir (NO_AGENDA).
 // No se sacan fechas ni lugares de la nota: solo se muestra el título y el enlace a la nota completa.
-const EVENTO_AGENDA = /\b(festival(es)?|feria(s)?|show(s)?|recital(es)?|concierto(s)?|gratis|gratuit[oa]s?|inscripcion(es)?|inscribite|taller(es)?|actividad(es)?|evento(s)?|agenda|espectaculo(s)?|obra de teatro|proyeccion(es)?|funcion(es)?|exposicion|expo|kermes|jornada(s)?|capacitacion(es)?|curso(s)?)\b/;
+const EVENTO_AGENDA = /\b(festival(es)?|feria(s)?|show(s)?|recital(es)?|concierto(s)?|gratis|gratuit[oa]s?|inscripcion(es)?|inscribite|taller(es)?|actividad(es)?|evento(s)?|espectaculo(s)?|obra de teatro|proyeccion(es)?|funcion(es)?|exposicion|expo|kermes|jornada(s)?|capacitacion(es)?|curso(s)?)\b/;
 const PASADO_AGENDA = /\b(se realizo|se realizaron|realizo|realizaron|se llevo a cabo|se llevaron a cabo|culmino|culminaron|fue un exito|finalizo|finalizaron|concluyo|concluyeron|tuvo lugar|participaron|participo|vivieron|disfrutaron|se vivio|se lleno|reunio|recorrieron|recorrio|recibieron|recibio|dejo|congrego|conmemoraron|celebraron|inauguraron|inauguro|entregaron|presentaron|volvio a sonar|se capacitaron|aprendieron|estuvo|cuadruplico|encontraron|crearon|creo|hicieron|logro|lograron|superaron|visitaron|asistieron|asistio|completaron|cerro|cerraron|por que|son claves|telemedicina)\b/;
+// NO entran (ante la duda, no): partidos y fixtures, misas y cementerio, convocatorias para expositores o artistas (no son para el vecino que va), y noticias comunes (obras públicas, policiales, política, tarifas).
+const NO_AGENDA = /\b(agenda de los equipos|fixture|partidos?|programacion deportiva|convoca(n|toria)( a| para)? (escritores|editoriales|emprendedores|comerciantes|artistas|expositores|proveedores)|misas?|cementerio|velatorio|sepelio|obras? publicas?|obras de (cloacas?|pavimento|asfalto|agua|infraestructura)|plan de obras|licitacion(es)?|bacheo|asfalto|repavimentacion|detuvieron|detenid[oa]s?|robos?|robaron|homicidio|asesinato|accidente|choque|incendio|presupuesto|concejal(es)?|hcd|tarifas?|aumento|decreto|ordenanza)\b/;
+const lugarAgenda = (cfg) => palabras([...cfg.localidades, "lomas", "lomense", "lomenses", "unlz", "municipio", "plaza grigera", "teatro del municipio", "auditorio sur"]);
+/** ¿El título anuncia un evento o actividad de Lomas al que el vecino puede ir o anotarse? */
+export function tituloEsEvento(titular, cfg) {
+  const t = sinTildes(titular);
+  return EVENTO_AGENDA.test(t) && lugarAgenda(cfg).test(t) && !PASADO_AGENDA.test(t) && !NO_AGENDA.test(t);
+}
 export function buscarEventos(notas, cfg, ahora = new Date()) {
-  const lugar = palabras([...cfg.localidades, "lomas", "lomense", "lomenses", "unlz", "municipio", "plaza grigera", "teatro del municipio", "auditorio sur"]);
   const vistos = new Set();
   return notas
     .filter((n) => n.titular && /^https?:\/\//.test(n.link) && !Number.isNaN(n.fecha.getTime()))
     .filter((n) => ahora - n.fecha <= cfg.agenda.diasVigencia * 86400_000 && n.fecha - ahora < 86400_000)
-    .filter((n) => { const t = sinTildes(n.titular); return EVENTO_AGENDA.test(t) && lugar.test(t) && !PASADO_AGENDA.test(t); })
+    .filter((n) => tituloEsEvento(n.titular, cfg))
     .filter((n) => !vistos.has(n.link) && vistos.add(n.link))
     .sort((a, b) => b.fecha - a.fecha)
     .map((n) => ({ titulo: sentencia(n.titular.replace(/\s+/g, " ").trim()).slice(0, 220), medio: n.medio, link: n.link, fecha: n.fecha.toISOString() }));

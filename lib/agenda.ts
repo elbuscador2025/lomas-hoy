@@ -4,6 +4,7 @@ import { config } from "@/lomas.config.mjs";
 import { redis, hoyArgentina } from "@/lib/servidor";
 import { ahoraAR } from "@/lib/avisos";
 import { notificarSeguro } from "@/lib/push";
+import { tituloEsEvento } from "@/scripts/fuentes.mjs";
 
 export type NotaAgenda = { titulo: string; medio: string; link: string; fecha: string };
 export type Agenda = { notas: NotaAgenda[] };
@@ -17,7 +18,8 @@ export async function fusionarAgenda(nuevo: Agenda): Promise<Agenda> {
   const limite = Date.now() - config.agenda.diasVigencia * DIA;
   const porLink = new Map<string, NotaAgenda>();
   for (const n of [...antes, ...nuevo.notas]) porLink.set(n.link, n);
-  const notas = [...porLink.values()].filter((n) => new Date(n.fecha).getTime() >= limite).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  // Se vuelve a revisar todo lo guardado con las reglas de hoy: lo que ya no es un evento sale de la Agenda (sigue en Noticias)
+  const notas = [...porLink.values()].filter((n) => new Date(n.fecha).getTime() >= limite && tituloEsEvento(n.titulo, config)).sort((a, b) => b.fecha.localeCompare(a.fecha));
   const aAvisar = nuevo.notas.filter((n) => !conocidas.has(n.link) && new Date(n.fecha).getTime() >= limite);
   if (aAvisar.length) await redis(aAvisar.map((n) => ["HSET", "agenda:pendientes", n.link, n.titulo] as (string | number)[]).concat([["EXPIRE", "agenda:pendientes", 20 * 86400]]));
   return { notas };
