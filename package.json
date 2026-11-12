@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "actualizar": "node scripts/actualizar.mjs",
-    "test": "node --test scripts/fuentes.test.mjs"
+    "test": "node --test scripts/fuentes.test.mjs scripts/voz.test.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.1",

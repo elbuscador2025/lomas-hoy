@@ -35,6 +35,7 @@ import AutoTramites from "./AutoTramites";
 import type { DatosDeportes } from "@/lib/deportes";
 import Empleo from "./Empleo";
 import Comunidad from "./Comunidad";
+import VozDeLomas from "./VozDeLomas";
 import Agenda from "./Agenda";
 import Telemedicina from "./Telemedicina";
 import { OllaEnlace, CuadrosOlla } from "./Olla";
@@ -1083,6 +1084,7 @@ export default function Inicio() {
           </section>
         ) : (
           <>
+            <VozDeLomas />
             {s.pasa.activa && <BotonPasa onClick={() => abrir("pasa-avisar")} />}
             {(s.tren.activa || s.colectivos.activa) && (
               <section className="transporte coloreado c-tren" aria-label="Transporte">

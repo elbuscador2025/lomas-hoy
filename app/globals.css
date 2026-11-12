@@ -839,3 +839,39 @@ body.cosmo-activo { overflow:hidden; overscroll-behavior:none; }
 .dep-foto-grande { width:100%; max-height:220px; object-fit:cover; border-radius:14px; }
 .dep-ficha .dato { display:block; }
 .dep-sin-contacto { color:var(--suave); }
+
+/* ---------- La Voz de Lomas ---------- */
+.voz { margin:0 0 18px; border-radius:26px; padding:18px 16px 16px; color:#fff; background:linear-gradient(145deg,#1F5AD6 0%,#3B3FD8 55%,#6A2FD0 100%); box-shadow:0 10px 28px rgba(31,90,214,.38); overflow:hidden; }
+.voz-cab { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+.voz-marca { font-size:13px; font-weight:900; letter-spacing:.14em; background:#FFD54A; color:#1a2250; padding:5px 11px; border-radius:999px; }
+.voz-dia { font-size:13px; font-weight:600; opacity:.92; }
+.voz .voz-pregunta { font-size:24px; line-height:1.2; font-weight:800; letter-spacing:-.3px; margin:6px 0 14px; color:#fff; }
+.voz-opciones, .voz-res { display:flex; flex-direction:column; gap:9px; }
+.voz-op { min-height:58px; border:0; border-radius:16px; background:#fff; color:#17275a; font-size:18px; font-weight:700; padding:10px 16px; text-align:left; cursor:pointer; box-shadow:0 2px 0 rgba(0,0,0,.2); }
+.voz-op:active { transform:translateY(1px); box-shadow:none; }
+.voz-op:disabled { opacity:.6; cursor:default; }
+.voz-primero { margin:0 0 10px; font-weight:800; font-size:17px; color:#FFE27A; }
+.voz-n { margin:12px 0 0; font-size:14px; opacity:.95; }
+.voz-error { margin:10px 0 0; background:#FDE1E1; color:#B3261E; border-radius:10px; padding:8px 12px; font-weight:600; font-size:15px; }
+.voz-ok { margin:10px 0 0; background:#DDF3E4; color:#1B6B3A; border-radius:10px; padding:8px 12px; font-weight:600; font-size:15px; }
+.voz-fila { position:relative; display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:52px; padding:0 14px; border-radius:14px; background:#fff; color:#17275a; overflow:hidden; }
+.voz-fila .voz-barra { position:absolute; inset:0 auto 0 0; background:#CFE0FF; transition:width .6s ease; }
+.voz-fila.mia .voz-barra { background:#FFD54A; }
+.voz-fila span, .voz-fila b { position:relative; z-index:1; }
+.voz-fila span { font-weight:700; }
+.voz-fila b { font-size:18px; }
+.voz-com { margin-top:16px; background:#fff; color:var(--texto); border-radius:18px; padding:14px; }
+.voz-com h3 { margin:0 0 8px; font-size:17px; color:#17275a; }
+.voz-com textarea { display:block; width:100%; border:2px solid var(--linea); border-radius:12px; padding:10px 12px; font:16px/1.35 inherit; font-family:inherit; color:var(--texto); background:#fff; resize:none; }
+.voz-com textarea:focus { outline:3px solid var(--celeste); border-color:var(--azul); }
+.voz-pie { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; }
+.voz-pie small { color:var(--suave); font-size:13px; }
+.voz-lista { list-style:none; margin:12px 0 0; padding:0; }
+.voz-lista li { padding:10px 0; border-top:1px solid var(--linea); font-size:16px; overflow-wrap:anywhere; }
+.voz-meta { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-top:4px; }
+.voz-meta small { color:var(--suave); font-size:13px; }
+.voz-den, .voz-motivos button, .voz-mas { background:none; border:0; padding:6px 2px; color:var(--suave); font-size:13px; text-decoration:underline; cursor:pointer; min-height:32px; }
+.voz-motivos { display:flex; flex-wrap:wrap; gap:6px; }
+.voz-motivos button { border:1px solid var(--linea); border-radius:999px; text-decoration:none; padding:6px 10px; color:var(--texto); background:var(--gris-azul); }
+.voz-mas { display:block; margin:8px auto 0; font-size:15px; color:var(--azul); font-weight:600; }
+.voz-com .btn:disabled { background:#D5DDEE; color:#4A5F8A; opacity:1; }

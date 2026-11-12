@@ -4,6 +4,7 @@ import { CATEGORIAS, type Lugar } from "@/lib/datos";
 import PanelBarrios from "./PanelBarrios";
 import PanelTrueque from "./PanelTrueque";
 import PanelEmprendedores from "./PanelEmprendedores";
+import PanelVoz from "./PanelVoz";
 import PanelQR from "./PanelQR";
 import BlobUso from "./BlobUso";
 import ControlEnlaces from "./ControlEnlaces";
@@ -42,7 +43,7 @@ const fecha = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone:
 export default function Panel() {
   const [datos, setDatos] = useState<Datos | null>(null);
   const [lugares, setLugares] = useState<Lugar[]>([]);
-  const [pestana, setPestana] = useState<"stats" | "lugares" | "barrios" | "push" | "mascotas" | "anses" | "coop" | "ansesof" | "castracion" | "merenderos" | "pasa" | "sugerencias" | "agua" | "trueque" | "emprendedores" | "deportes" | "trabajo" | "qr" | "bloqueados" | "denuncias">("stats");
+  const [pestana, setPestana] = useState<"stats" | "lugares" | "barrios" | "push" | "mascotas" | "anses" | "coop" | "ansesof" | "castracion" | "merenderos" | "pasa" | "sugerencias" | "agua" | "trueque" | "emprendedores" | "voz" | "deportes" | "trabajo" | "qr" | "bloqueados" | "denuncias">("stats");
   const [editando, setEditando] = useState<(Lugar & { tels: string; direccionOriginal?: string }) | null>(null);
   const [mensaje, setMensaje] = useState("");
 
@@ -53,6 +54,7 @@ export default function Panel() {
     if (location.hash === "#mascotas") setPestana("mascotas");
     if (location.hash === "#trueque") setPestana("trueque");
     if (location.hash === "#emprendedores") setPestana("emprendedores");
+    if (location.hash === "#voz") setPestana("voz");
     if (location.hash === "#trabajo") setPestana("trabajo");
     if (location.hash === "#denuncias") setPestana("denuncias");
     post("/api/panel").then(async (r) => { if (r.ok) { try { localStorage.setItem("lomas-hoy:dueno", "1"); } catch {} setDatos(await r.json()); cargarLugares(); } }); // al entrar al panel, este celular queda marcado como del dueño: sus visitas no se cuentan
@@ -116,6 +118,7 @@ export default function Panel() {
         <button className={`btn ${pestana === "agua" ? "" : "claro"}`} onClick={() => setPestana("agua")}>Agua</button>
         <button className={`btn ${pestana === "trueque" ? "" : "claro"}`} onClick={() => setPestana("trueque")}>Trueque</button>
         {config.secciones.emprendedores.activa && <button className={`btn ${pestana === "emprendedores" ? "" : "claro"}`} onClick={() => setPestana("emprendedores")}>Emprendedores</button>}
+        <button className={`btn ${pestana === "voz" ? "" : "claro"}`} onClick={() => setPestana("voz")}>La Voz de Lomas</button>
         <button className={`btn ${pestana === "deportes" ? "" : "claro"}`} onClick={() => setPestana("deportes")}>Deportes</button>
         <button className={`btn ${pestana === "trabajo" ? "" : "claro"}`} onClick={() => setPestana("trabajo")}>Trabajo</button>
         <button className={`btn ${pestana === "qr" ? "" : "claro"}`} onClick={() => setPestana("qr")}>Código QR</button>
@@ -126,6 +129,7 @@ export default function Panel() {
       {pestana === "barrios" && <PanelBarrios />}
       {pestana === "trueque" && <PanelTrueque />}
       {pestana === "emprendedores" && config.secciones.emprendedores.activa && <PanelEmprendedores />}
+      {pestana === "voz" && <PanelVoz />}
       {pestana === "deportes" && <PanelDeportes />}
       {pestana === "trabajo" && <PanelTrabajo />}
       {pestana === "qr" && <PanelQR />}
