@@ -10,7 +10,7 @@ import { datoProhibido } from "@/lib/estafas";
 import { BANCO } from "@/lib/voz-banco";
 import {
   MAX_COMENTARIO_VOZ, MAX_COMENTARIOS_POR_DIA_VOZ, MAX_RESPUESTAS_POR_DIA_VOZ, MAX_TEXTO_PREGUNTA, MAX_TEXTO_OPCION, MOTIVOS_VOZ,
-  motivoComentarioInvalido, porcentajes, elegirPorRotacion,
+  motivoComentarioInvalido, porcentajes, elegirPorRotacion, extractoVoz,
   type PreguntaVoz, type ResultadoVoz, type EstadoVoz, type ComentarioVoz,
 } from "@/lib/voz-comun";
 
@@ -22,7 +22,7 @@ const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 const limpio = (v: unknown, max: number) => String(v ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, max);
 
 type Denuncia = { motivo: string; disp: string; t: string };
-type Comentario = { id: string; texto: string; creado: string; disp: string; padre?: string; oculta?: boolean; denuncias?: Denuncia[] };
+type Comentario = { id: string; texto: string; creado: string; disp: string; padre?: string; aQuien?: string; oculta?: boolean; denuncias?: Denuncia[] };
 
 const kPreg = `${P}:preg`, kSembrado = `${P}:sembrado`, kHist = `${P}:hist`;
 const kDia = (f: string) => `${P}:dia:${f}`, kMan = (f: string) => `${P}:man:${f}`;
@@ -70,8 +70,14 @@ export async function resultadosDe(p: PreguntaVoz): Promise<ResultadoVoz> {
 
 async function comentariosVisibles(pid: string, max = 20): Promise<ComentarioVoz[]> {
   const [x] = await redis([["HVALS", kComentarios(pid)]]);
-  const todos = (x as string[]).map((j) => JSON.parse(j) as Comentario).filter((c) => !c.oculta);
-  const publico = (c: Comentario): ComentarioVoz => ({ id: c.id, texto: c.texto, creado: c.creado });
+  const crudos = (x as string[]).map((j) => JSON.parse(j) as Comentario);
+  const todos = crudos.filter((c) => !c.oculta);
+  // Cada respuesta dice a quién le contesta (si ese mensaje se ocultó o se borró, queda el aviso sin el texto)
+  const publico = (c: Comentario): ComentarioVoz => {
+    if (!c.aQuien) return { id: c.id, texto: c.texto, creado: c.creado };
+    const destino = todos.find((t) => t.id === c.aQuien);
+    return { id: c.id, texto: c.texto, creado: c.creado, aQuien: { id: c.aQuien, extracto: destino ? extractoVoz(destino.texto) : "" } };
+  };
   const principales = todos.filter((c) => !c.padre).sort((a, b) => b.creado.localeCompare(a.creado)).slice(0, max);
   // Las respuestas van debajo de su comentario (de la más vieja a la más nueva). Si el comentario está oculto, sus respuestas también.
   return principales.map((p) => ({ ...publico(p), respuestas: todos.filter((r) => r.padre === p.id).sort((a, b) => a.creado.localeCompare(b.creado)).map(publico) }));
@@ -122,11 +128,19 @@ export async function comentar(textoCrudo: unknown, dispositivo: string, ip: str
   const p = await preguntaDeFecha(hoyArgentina());
   if (!p) return { ok: false, error: "Hoy no hay pregunta.", status: 404 };
   const esRespuesta = !!padre;
-  if (padre) { // solo se responde a un comentario (un nivel) que esté a la vista, no a otra respuesta
+  let raiz: string | undefined; // la respuesta queda en el hilo del comentario original, aunque le conteste a otra respuesta
+  let origenTexto = "";
+  if (padre) { // se le puede responder a cualquier mensaje que esté a la vista
     const [jp] = await redis([["HGET", kComentarios(p.id), padre]]);
     const origen = jp ? (JSON.parse(jp as string) as Comentario) : null;
     if (!origen || origen.oculta) return { ok: false, error: "Ese comentario ya no está.", status: 404 };
-    if (origen.padre) return { ok: false, error: "Respondé al comentario original.", status: 400 };
+    raiz = origen.padre ?? origen.id;
+    origenTexto = origen.texto;
+    if (origen.padre) {
+      const [jr] = await redis([["HGET", kComentarios(p.id), raiz]]);
+      const r = jr ? (JSON.parse(jr as string) as Comentario) : null;
+      if (!r || r.oculta) return { ok: false, error: "Ese comentario ya no está.", status: 404 };
+    }
   }
   const texto = limpio(textoCrudo, MAX_COMENTARIO_VOZ + 1);
   if (texto.length < 2) return { ok: false, error: esRespuesta ? "Escribí tu respuesta." : "Escribí tu comentario.", status: 400 };
@@ -135,7 +149,7 @@ export async function comentar(textoCrudo: unknown, dispositivo: string, ip: str
   if (motivo) return { ok: false, error: motivo, status: 400 };
   const disp = huella(dispositivo);
   if (await estaBloqueado(null, disp)) return { ok: false, error: "No podés comentar desde este celular.", status: 403 };
-  // Los comentarios (3 por día) y las respuestas (10 por día) cuentan aparte
+  // Los comentarios (3 por día) y las respuestas (20 por día) cuentan aparte
   const tipo = esRespuesta ? "r" : "c", tope = esRespuesta ? MAX_RESPUESTAS_POR_DIA_VOZ : MAX_COMENTARIOS_POR_DIA_VOZ;
   const dia = hoyArgentina(), kd = `${P}:lim:${tipo}:${dia}:d:${sha(dispositivo).slice(0, 16)}`, ki = `${P}:lim:${tipo}:${dia}:ip:${sha(ip).slice(0, 16)}`;
   const [d, i] = await redis([["INCR", kd], ["INCR", ki]]);
@@ -146,9 +160,9 @@ export async function comentar(textoCrudo: unknown, dispositivo: string, ip: str
   const [x] = await redis([["HVALS", kComentarios(p.id)]]);
   const previos = (x as string[]).map((j) => JSON.parse(j) as Comentario);
   if (previos.some((c) => c.disp === disp && c.texto.toLowerCase() === texto.toLowerCase())) return { ok: false, error: "Ya dejaste ese comentario.", status: 400 };
-  const c: Comentario = { id: randomUUID().slice(0, 10), texto, creado: new Date().toISOString(), disp, ...(padre ? { padre } : {}) };
+  const c: Comentario = { id: randomUUID().slice(0, 10), texto, creado: new Date().toISOString(), disp, ...(padre ? { padre: raiz, aQuien: padre } : {}) };
   await redis([["HSET", kComentarios(p.id), c.id, JSON.stringify(c)], ["EXPIRE", kComentarios(p.id), ANIO]]);
-  return { ok: true, comentario: { id: c.id, texto: c.texto, creado: c.creado } };
+  return { ok: true, comentario: { id: c.id, texto: c.texto, creado: c.creado, ...(padre ? { aQuien: { id: padre, extracto: extractoVoz(origenTexto) } } : {}) } };
 }
 
 /** Cada celular cuenta una vez; con 3 denuncias el comentario se oculta hasta que yo lo revise (mismo criterio que el resto de la app). */

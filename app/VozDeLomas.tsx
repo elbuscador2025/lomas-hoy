@@ -35,7 +35,8 @@ export default function VozDeLomas() {
   const [msgCom, setMsgCom] = useState<{ ok: boolean; t: string } | null>(null);
   const [verMas, setVerMas] = useState(false);
   const [denunciando, setDenunciando] = useState<string | null>(null);
-  const [respondiendo, setRespondiendo] = useState<string | null>(null); // comentario al que se está contestando
+  const [respondiendo, setRespondiendo] = useState<string | null>(null); // mensaje (comentario o respuesta) al que se está contestando
+  const [resaltado, setResaltado] = useState<string | null>(null); // mensaje al que se fue desde "Respondiendo a", resaltado un segundo
   const [textoResp, setTextoResp] = useState("");
   const [enviandoResp, setEnviandoResp] = useState(false);
   const [msgResp, setMsgResp] = useState<{ cid: string; t: string } | null>(null);
@@ -93,7 +94,17 @@ export default function VozDeLomas() {
     setEnviando(false);
   }
 
-  async function enviarRespuesta(e: React.FormEvent, padre: string) {
+  // Va hasta el mensaje al que se le contestó (abriendo el hilo si estaba cerrado) y lo resalta un segundo
+  function irA(id: string, raiz: string) {
+    setHilosAbiertos((s) => new Set(s).add(raiz));
+    setTimeout(() => {
+      document.getElementById(`voz-m-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setResaltado(id);
+      setTimeout(() => setResaltado((x) => (x === id ? null : x)), 1200);
+    }, 60);
+  }
+
+  async function enviarRespuesta(e: React.FormEvent, padre: string, raiz: string) {
     e.preventDefault();
     if (!estado || enviandoResp) return;
     const t = textoResp.trim();
@@ -103,8 +114,8 @@ export default function VozDeLomas() {
       const r = await fetch("/api/voz/comentarios", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: t, dispositivo: disp.current, padre }) });
       const j = await r.json().catch(() => ({}));
       if (r.ok && j.ok) {
-        setEstado((x) => (x ? { ...x, comentarios: x.comentarios.map((c) => (c.id === padre ? { ...c, respuestas: [...(c.respuestas ?? []), j.comentario as ComentarioVoz] } : c)) } : x));
-        setHilosAbiertos((s) => new Set(s).add(padre)); // se abre el hilo para que se vea la respuesta recién enviada
+        setEstado((x) => (x ? { ...x, comentarios: x.comentarios.map((c) => (c.id === raiz ? { ...c, respuestas: [...(c.respuestas ?? []), j.comentario as ComentarioVoz] } : c)) } : x));
+        setHilosAbiertos((s) => new Set(s).add(raiz)); // se abre el hilo para que se vea la respuesta recién enviada
         setRespondiendo(null); setTextoResp("");
       } else setMsgResp({ cid: padre, t: j.error || "No se pudo enviar. Probá de nuevo." });
     } catch { setMsgResp({ cid: padre, t: "No hay conexión. Probá de nuevo." }); }
@@ -126,9 +137,12 @@ export default function VozDeLomas() {
   const comentarios = estado.comentarios.filter((c) => !aparte.has(c.id));
   const lista = verMas ? comentarios : comentarios.slice(0, MAX_VISIBLES);
 
-  // Un comentario o una respuesta: texto, hora, "Responder" (solo en los comentarios, no en las respuestas) y "Denunciar"
-  const fila = (c: ComentarioVoz, esRespuesta: boolean) => (
+  // Un comentario o una respuesta: a quién le contesta, texto, hora, "Responder" (en todos los mensajes) y "Denunciar"
+  const fila = (c: ComentarioVoz, raiz: string) => (
     <>
+      {c.aQuien && (c.aQuien.extracto
+        ? <button className="voz-aquien" onClick={() => irA(c.aQuien!.id, raiz)}>↳ Respondiendo a: «{c.aQuien.extracto}»</button>
+        : <small className="voz-aquien">↳ Respondiendo a un mensaje que ya no está</small>)}
       <span>{c.texto}</span>
       <div className="voz-meta">
         <small>{hace(c.creado)}</small>
@@ -139,12 +153,27 @@ export default function VozDeLomas() {
           </span>
         ) : (
           <span className="voz-acciones">
-            {!esRespuesta && <button className="voz-resp-btn" onClick={() => { setRespondiendo(respondiendo === c.id ? null : c.id); setTextoResp(""); setMsgResp(null); }}>Responder</button>}
+            <button className="voz-resp-btn" onClick={() => { setRespondiendo(respondiendo === c.id ? null : c.id); setTextoResp(""); setMsgResp(null); }}>Responder</button>
             <button className="voz-den" onClick={() => setDenunciando(c.id)}>Denunciar</button>
           </span>
         )}
       </div>
     </>
+  );
+
+  // Formulario para contestarle a un mensaje (el de ese comentario o respuesta): la respuesta queda en el hilo del comentario original
+  const formResp = (msgId: string, raiz: string) => respondiendo === msgId && (
+    <form className="voz-form-resp" onSubmit={(e) => enviarRespuesta(e, msgId, raiz)}>
+      <textarea autoFocus value={textoResp} onChange={(e) => setTextoResp(e.target.value.slice(0, MAX_COMENTARIO_VOZ))} maxLength={MAX_COMENTARIO_VOZ} rows={2} placeholder="Escribí tu respuesta" aria-label="Tu respuesta" />
+      <div className="voz-pie">
+        <small>{textoResp.length}/{MAX_COMENTARIO_VOZ}</small>
+        <span className="voz-botones">
+          <button type="button" className="btn claro chico" onClick={() => { setRespondiendo(null); setMsgResp(null); }}>Cancelar</button>
+          {textoResp.length > 0 && <button className="btn chico" disabled={enviandoResp || textoResp.trim().length < 2}>{enviandoResp ? "Enviando…" : "Enviar"}</button>}
+        </span>
+      </div>
+      {msgResp?.cid === msgId && <p className="voz-error" role="alert">{msgResp.t}</p>}
+    </form>
   );
 
   return (
@@ -207,29 +236,22 @@ export default function VozDeLomas() {
               const aMostrar = abierto ? resp : resp.slice(0, RESPUESTAS_VISIBLES);
               return (
                 <li key={c.id}>
-                  {fila(c, false)}
+                  <div id={`voz-m-${c.id}`} className={`voz-msg${resaltado === c.id ? " voz-resaltado" : ""}`}>{fila(c, c.id)}</div>
+                  {formResp(c.id, c.id)}
                   {aMostrar.length > 0 && (
                     <ul className="voz-resp">
-                      {aMostrar.map((r) => <li key={r.id}>{fila(r, true)}</li>)}
+                      {aMostrar.map((r) => (
+                        <li key={r.id}>
+                          <div id={`voz-m-${r.id}`} className={`voz-msg${resaltado === r.id ? " voz-resaltado" : ""}`}>{fila(r, c.id)}</div>
+                          {formResp(r.id, c.id)}
+                        </li>
+                      ))}
                     </ul>
                   )}
                   {resp.length > RESPUESTAS_VISIBLES && !abierto && (
                     <button className="voz-mas-resp" onClick={() => setHilosAbiertos((s) => new Set(s).add(c.id))}>
                       Ver {resp.length - RESPUESTAS_VISIBLES} {resp.length - RESPUESTAS_VISIBLES === 1 ? "respuesta más" : "respuestas más"}
                     </button>
-                  )}
-                  {respondiendo === c.id && (
-                    <form className="voz-form-resp" onSubmit={(e) => enviarRespuesta(e, c.id)}>
-                      <textarea autoFocus value={textoResp} onChange={(e) => setTextoResp(e.target.value.slice(0, MAX_COMENTARIO_VOZ))} maxLength={MAX_COMENTARIO_VOZ} rows={2} placeholder="Escribí tu respuesta" aria-label="Tu respuesta" />
-                      <div className="voz-pie">
-                        <small>{textoResp.length}/{MAX_COMENTARIO_VOZ}</small>
-                        <span className="voz-botones">
-                          <button type="button" className="btn claro chico" onClick={() => { setRespondiendo(null); setMsgResp(null); }}>Cancelar</button>
-                          {textoResp.length > 0 && <button className="btn chico" disabled={enviandoResp || textoResp.trim().length < 2}>{enviandoResp ? "Enviando…" : "Enviar"}</button>}
-                        </span>
-                      </div>
-                      {msgResp?.cid === c.id && <p className="voz-error" role="alert">{msgResp.t}</p>}
-                    </form>
                   )}
                 </li>
               );

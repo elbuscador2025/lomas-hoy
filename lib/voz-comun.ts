@@ -1,15 +1,24 @@
 // La Voz de Lomas: lo que comparten la pantalla y el servidor (tipos, límites y el filtro de los comentarios).
 // Sin dependencias: así se puede probar solo.
 export const MAX_COMENTARIO_VOZ = 200;
-export const MAX_COMENTARIOS_POR_DIA_VOZ = 3, MAX_RESPUESTAS_POR_DIA_VOZ = 10, RESPUESTAS_VISIBLES = 3;
+export const MAX_COMENTARIOS_POR_DIA_VOZ = 3, MAX_RESPUESTAS_POR_DIA_VOZ = 20, RESPUESTAS_VISIBLES = 3;
 export const MAX_TEXTO_PREGUNTA = 120, MAX_TEXTO_OPCION = 60;
 export const MOTIVOS_VOZ = ["Insulta o es agresivo", "Parece estafa o publicidad", "Datos personales", "Otro"];
 
 export type OpcionVoz = { id: string; texto: string };
 export type PreguntaVoz = { id: string; texto: string; opciones: OpcionVoz[]; activa: boolean; orden: number; creada: string };
 export type ResultadoVoz = { total: number; opciones: { id: string; votos: number; pct: number }[] };
-// Un comentario puede tener respuestas (un solo nivel: no se responde a una respuesta)
-export type ComentarioVoz = { id: string; texto: string; creado: string; respuestas?: ComentarioVoz[] };
+// Un comentario tiene respuestas, todas en el mismo hilo (una debajo de la otra, en orden de llegada). Se puede responder a cualquier mensaje: "aQuien" dice a cuál contesta
+// (extracto vacío = ese mensaje ya no está a la vista).
+export type ComentarioVoz = { id: string; texto: string; creado: string; respuestas?: ComentarioVoz[]; aQuien?: { id: string; extracto: string } };
+
+/** Primeras palabras de un mensaje, para mostrar a quién se le contesta. */
+export function extractoVoz(texto: string): string {
+  const palabras = texto.trim().split(/\s+/);
+  let t = palabras.slice(0, 6).join(" ");
+  if (t.length > 40) t = t.slice(0, 40).replace(/\s+\S*$/, "") || t.slice(0, 40);
+  return t.length < texto.trim().length ? `${t}…` : t;
+}
 export type EstadoVoz = {
   ok: true;
   pregunta: { id: string; texto: string; opciones: OpcionVoz[] };

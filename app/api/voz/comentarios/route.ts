@@ -1,7 +1,7 @@
 import { comentar } from "@/lib/voz";
 import { ipDe } from "@/lib/cuentas";
 
-// Comentario corto (hasta 200 caracteres) debajo de la pregunta del día, o respuesta a un comentario ("padre"). Sin enlaces ni teléfonos. 3 comentarios y 10 respuestas por día por celular.
+// Comentario corto (hasta 200 caracteres) debajo de la pregunta del día, o respuesta a un comentario ("padre"). Sin enlaces ni teléfonos. 3 comentarios y 20 respuestas por día por celular.
 export async function POST(req: Request) {
   if (!req.headers.get("content-type")?.includes("application/json")) return Response.json({ ok: false }, { status: 415 });
   const c = await req.json().catch(() => ({}));
