@@ -69,7 +69,7 @@ export async function evaluarResumen(sufijo = "") {
   if (hm < v.desde || hm >= v.hasta) return;
   const d = await cargar();
   await notificarSeguro({
-    tipo: "resumen", clave: `resumen:${ahora.slice(0, 10)}${sufijo}`, ttl: 2 * 86400, urgente: true,
+    tipo: "resumen", clave: `resumen:${ahora.slice(0, 10)}${sufijo}`, ttl: 2 * 86400, urgente: true, ttlEnvio: 6 * 3600,
     titulo: textoSaludo(d).titulo, cuerpo: textoSaludo(d).cuerpo, url: "/",
   });
 }

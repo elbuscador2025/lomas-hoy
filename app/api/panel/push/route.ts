@@ -16,6 +16,8 @@ export async function POST(req: Request) {
   const subs = await todasLasSuscripciones();
   const dias = Array.from({ length: 14 }, (_, i) => hoyArgentina(new Date(Date.now() - i * 86400_000)));
   const r = await redis([...dias.map((d) => ["HMGET", `push:dia:${d}`, "enviados", "fallidos"]), ["LRANGE", "push:log", 0, 19]]);
+  const registro = (r[dias.length] as string[]).map((x) => JSON.parse(x) as { evento?: string });
+  const llegadas = await redis(registro.map((x) => ["HLEN", `push:rec:${x.evento ?? "-"}`])); // cuántos celulares confirmaron que les llegó
   return Response.json({
     ok: true,
     total: subs.length,
@@ -23,6 +25,6 @@ export async function POST(req: Request) {
       const [e, f] = (r[i] as (string | null)[]) ?? [];
       return { dia, enviados: Number(e) || 0, fallidos: Number(f) || 0 };
     }).filter((d) => d.enviados || d.fallidos),
-    registro: (r[dias.length] as string[]).map((x) => JSON.parse(x)),
+    registro: registro.map((x, i) => ({ ...x, llegaron: Number(llegadas[i]) || 0 })),
   });
 }

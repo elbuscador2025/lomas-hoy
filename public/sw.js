@@ -1,5 +1,5 @@
 // Guarda la app en el celu para que abra sin internet, y muestra las notificaciones.
-const CACHE = "lomas-hoy-v7";
+const CACHE = "lomas-hoy-v8";
 const AVISOS = "lomas-hoy-avisos"; // "Mis avisos": lo que llegó en los últimos 7 días, guardado en el propio celular
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.add("/")));
@@ -42,6 +42,14 @@ async function guardarAviso(d) {
   const ventanas = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
   ventanas.forEach((v) => v.postMessage({ lomasHoy: "aviso" }));
 }
+// Le avisa al servidor que la notificación llegó y se mostró (para ver en mi panel cuántas llegan de verdad). Si falla, no pasa nada.
+async function confirmarLlegada(d) {
+  try {
+    const sub = await self.registration.pushManager.getSubscription();
+    if (!sub || !d.tag) return;
+    await fetch("/api/push/recibido", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint, tag: d.tag }), keepalive: true });
+  } catch {}
+}
 self.addEventListener("push", (e) => {
   let d = {};
   try { d = e.data.json(); } catch {}
@@ -54,7 +62,7 @@ self.addEventListener("push", (e) => {
       tag: d.tag || undefined,
       data: { url: d.url || "/" },
     }),
-  ]));
+  ]).then(() => confirmarLlegada(d)));
 });
 // Al tocarla se abre la app directamente en ese aviso o sección.
 self.addEventListener("notificationclick", (e) => {

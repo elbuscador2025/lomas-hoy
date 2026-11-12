@@ -5,7 +5,7 @@ import { post } from "./api";
 type Resumen = {
   total: number;
   dias: { dia: string; enviados: number; fallidos: number }[];
-  registro: { t: string; tipo: string; titulo?: string; evento?: string; interesadas?: number; enviadas?: number; fallidas?: number; omitida?: string; error?: string; errores?: string[]; borradas?: number }[];
+  registro: { t: string; tipo: string; titulo?: string; evento?: string; interesadas?: number; enviadas?: number; fallidas?: number; omitida?: string; error?: string; errores?: string[]; llegaron?: number; borradas?: number }[];
 };
 const hora = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
 
@@ -60,6 +60,7 @@ export default function PanelPush() {
             <br /><small>
               {x.omitida ? `No se mandó: ${x.omitida}` : x.error ? `Error: ${x.error}`
                 : `Para ${x.interesadas ?? "?"} · enviadas ${x.enviadas ?? 0} · fallaron ${x.fallidas ?? 0}${x.borradas ? ` · ${x.borradas} suscripciones vencidas borradas` : ""}`}
+              {x.t >= "2026-11-12T13:00" && !x.omitida && !x.error && x.tipo !== "bienvenida" ? ` · llegaron al celular (confirmado): ${x.llegaron ?? 0}` : ""}
               {x.errores?.length ? ` · ${x.errores.join(" | ")}` : ""}
             </small>
           </li>
