@@ -1,14 +1,15 @@
 // La Voz de Lomas: lo que comparten la pantalla y el servidor (tipos, límites y el filtro de los comentarios).
 // Sin dependencias: así se puede probar solo.
 export const MAX_COMENTARIO_VOZ = 200;
-export const MAX_COMENTARIOS_POR_DIA_VOZ = 3;
+export const MAX_COMENTARIOS_POR_DIA_VOZ = 3, MAX_RESPUESTAS_POR_DIA_VOZ = 10, RESPUESTAS_VISIBLES = 3;
 export const MAX_TEXTO_PREGUNTA = 120, MAX_TEXTO_OPCION = 60;
 export const MOTIVOS_VOZ = ["Insulta o es agresivo", "Parece estafa o publicidad", "Datos personales", "Otro"];
 
 export type OpcionVoz = { id: string; texto: string };
 export type PreguntaVoz = { id: string; texto: string; opciones: OpcionVoz[]; activa: boolean; orden: number; creada: string };
 export type ResultadoVoz = { total: number; opciones: { id: string; votos: number; pct: number }[] };
-export type ComentarioVoz = { id: string; texto: string; creado: string };
+// Un comentario puede tener respuestas (un solo nivel: no se responde a una respuesta)
+export type ComentarioVoz = { id: string; texto: string; creado: string; respuestas?: ComentarioVoz[] };
 export type EstadoVoz = {
   ok: true;
   pregunta: { id: string; texto: string; opciones: OpcionVoz[] };

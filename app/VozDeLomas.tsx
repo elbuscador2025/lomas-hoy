@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MAX_COMENTARIO_VOZ, MOTIVOS_VOZ, type EstadoVoz, type ResultadoVoz, type ComentarioVoz } from "@/lib/voz-comun";
+import { MAX_COMENTARIO_VOZ, MOTIVOS_VOZ, RESPUESTAS_VISIBLES, type EstadoVoz, type ResultadoVoz, type ComentarioVoz } from "@/lib/voz-comun";
 
 // "LA VOZ DE LOMAS": la pregunta del día arriba de todo. Se vota con un toque, sin registro. Después se ven los resultados y se puede dejar un comentario corto.
 const hace = (iso: string) => {
@@ -35,6 +35,11 @@ export default function VozDeLomas() {
   const [msgCom, setMsgCom] = useState<{ ok: boolean; t: string } | null>(null);
   const [verMas, setVerMas] = useState(false);
   const [denunciando, setDenunciando] = useState<string | null>(null);
+  const [respondiendo, setRespondiendo] = useState<string | null>(null); // comentario al que se está contestando
+  const [textoResp, setTextoResp] = useState("");
+  const [enviandoResp, setEnviandoResp] = useState(false);
+  const [msgResp, setMsgResp] = useState<{ cid: string; t: string } | null>(null);
+  const [hilosAbiertos, setHilosAbiertos] = useState<Set<string>>(new Set()); // comentarios con todas sus respuestas a la vista
   const [aparte, setAparte] = useState<Set<string>>(new Set()); // comentarios denunciados por este celular (no se le vuelven a mostrar)
 
   const aplicarVoto = (s: EstadoVoz, opcion: string, resultados: ResultadoVoz): EstadoVoz => ({ ...s, voto: opcion, resultados, participantes: resultados.total });
@@ -88,6 +93,24 @@ export default function VozDeLomas() {
     setEnviando(false);
   }
 
+  async function enviarRespuesta(e: React.FormEvent, padre: string) {
+    e.preventDefault();
+    if (!estado || enviandoResp) return;
+    const t = textoResp.trim();
+    if (t.length < 2) { setMsgResp({ cid: padre, t: "Escribí tu respuesta." }); return; }
+    setEnviandoResp(true); setMsgResp(null);
+    try {
+      const r = await fetch("/api/voz/comentarios", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: t, dispositivo: disp.current, padre }) });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.ok) {
+        setEstado((x) => (x ? { ...x, comentarios: x.comentarios.map((c) => (c.id === padre ? { ...c, respuestas: [...(c.respuestas ?? []), j.comentario as ComentarioVoz] } : c)) } : x));
+        setHilosAbiertos((s) => new Set(s).add(padre)); // se abre el hilo para que se vea la respuesta recién enviada
+        setRespondiendo(null); setTextoResp("");
+      } else setMsgResp({ cid: padre, t: j.error || "No se pudo enviar. Probá de nuevo." });
+    } catch { setMsgResp({ cid: padre, t: "No hay conexión. Probá de nuevo." }); }
+    setEnviandoResp(false);
+  }
+
   async function denunciar(cid: string, motivo: string) {
     if (!estado) return;
     setDenunciando(null);
@@ -102,6 +125,27 @@ export default function VozDeLomas() {
   const { pregunta, voto, resultados, participantes } = estado;
   const comentarios = estado.comentarios.filter((c) => !aparte.has(c.id));
   const lista = verMas ? comentarios : comentarios.slice(0, MAX_VISIBLES);
+
+  // Un comentario o una respuesta: texto, hora, "Responder" (solo en los comentarios, no en las respuestas) y "Denunciar"
+  const fila = (c: ComentarioVoz, esRespuesta: boolean) => (
+    <>
+      <span>{c.texto}</span>
+      <div className="voz-meta">
+        <small>{hace(c.creado)}</small>
+        {denunciando === c.id ? (
+          <span className="voz-motivos">
+            {MOTIVOS_VOZ.map((m) => <button key={m} onClick={() => denunciar(c.id, m)}>{m}</button>)}
+            <button onClick={() => setDenunciando(null)}>Cancelar</button>
+          </span>
+        ) : (
+          <span className="voz-acciones">
+            {!esRespuesta && <button className="voz-resp-btn" onClick={() => { setRespondiendo(respondiendo === c.id ? null : c.id); setTextoResp(""); setMsgResp(null); }}>Responder</button>}
+            <button className="voz-den" onClick={() => setDenunciando(c.id)}>Denunciar</button>
+          </span>
+        )}
+      </div>
+    </>
+  );
 
   return (
     <section className="voz" aria-label="La Voz de Lomas">
@@ -157,20 +201,39 @@ export default function VozDeLomas() {
 
         {lista.length > 0 && (
           <ul className="voz-lista">
-            {lista.map((c) => (
-              <li key={c.id}>
-                <span>{c.texto}</span>
-                <div className="voz-meta">
-                  <small>{hace(c.creado)}</small>
-                  {denunciando === c.id ? (
-                    <span className="voz-motivos">
-                      {MOTIVOS_VOZ.map((m) => <button key={m} onClick={() => denunciar(c.id, m)}>{m}</button>)}
-                      <button onClick={() => setDenunciando(null)}>Cancelar</button>
-                    </span>
-                  ) : <button className="voz-den" onClick={() => setDenunciando(c.id)}>Denunciar</button>}
-                </div>
-              </li>
-            ))}
+            {lista.map((c) => {
+              const resp = (c.respuestas ?? []).filter((r) => !aparte.has(r.id));
+              const abierto = hilosAbiertos.has(c.id);
+              const aMostrar = abierto ? resp : resp.slice(0, RESPUESTAS_VISIBLES);
+              return (
+                <li key={c.id}>
+                  {fila(c, false)}
+                  {aMostrar.length > 0 && (
+                    <ul className="voz-resp">
+                      {aMostrar.map((r) => <li key={r.id}>{fila(r, true)}</li>)}
+                    </ul>
+                  )}
+                  {resp.length > RESPUESTAS_VISIBLES && !abierto && (
+                    <button className="voz-mas-resp" onClick={() => setHilosAbiertos((s) => new Set(s).add(c.id))}>
+                      Ver {resp.length - RESPUESTAS_VISIBLES} {resp.length - RESPUESTAS_VISIBLES === 1 ? "respuesta más" : "respuestas más"}
+                    </button>
+                  )}
+                  {respondiendo === c.id && (
+                    <form className="voz-form-resp" onSubmit={(e) => enviarRespuesta(e, c.id)}>
+                      <textarea autoFocus value={textoResp} onChange={(e) => setTextoResp(e.target.value.slice(0, MAX_COMENTARIO_VOZ))} maxLength={MAX_COMENTARIO_VOZ} rows={2} placeholder="Escribí tu respuesta" aria-label="Tu respuesta" />
+                      <div className="voz-pie">
+                        <small>{textoResp.length}/{MAX_COMENTARIO_VOZ}</small>
+                        <span className="voz-botones">
+                          <button type="button" className="btn claro chico" onClick={() => { setRespondiendo(null); setMsgResp(null); }}>Cancelar</button>
+                          {textoResp.length > 0 && <button className="btn chico" disabled={enviandoResp || textoResp.trim().length < 2}>{enviandoResp ? "Enviando…" : "Enviar"}</button>}
+                        </span>
+                      </div>
+                      {msgResp?.cid === c.id && <p className="voz-error" role="alert">{msgResp.t}</p>}
+                    </form>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
         {comentarios.length > MAX_VISIBLES && <button className="voz-mas" onClick={() => setVerMas((v) => !v)}>{verMas ? "Ver menos" : `Ver los ${comentarios.length} comentarios`}</button>}

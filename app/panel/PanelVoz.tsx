@@ -5,7 +5,7 @@ import { post } from "./api";
 type Opcion = { id: string; texto: string };
 type Res = { total: number; opciones: { id: string; votos: number; pct: number }[] };
 type Pregunta = { id: string; texto: string; opciones: Opcion[]; activa: boolean; orden: number; resultados: Res; fechas: string[] };
-type Coment = { id: string; texto: string; creado: string; preguntaId: string; pregunta: string; oculta?: boolean; denuncias?: { motivo: string }[] };
+type Coment = { padre?: string; id: string; texto: string; creado: string; preguntaId: string; pregunta: string; oculta?: boolean; denuncias?: { motivo: string }[] };
 type Datos = { hoy: { fecha: string; preguntaId: string | null; manual: boolean }; manana: { fecha: string; preguntaId: string | null }; preguntas: Pregunta[]; comentarios: Coment[] };
 type Borrador = { id?: string; texto: string; opciones: Opcion[]; activa: boolean };
 
@@ -31,6 +31,26 @@ export default function PanelVoz() {
     if (!edit) return;
     if (await accion({ accion: "guardar", pregunta: { id: edit.id, texto: edit.texto, opciones: edit.opciones, activa: edit.activa } }, edit.id ? "Pregunta guardada." : "Pregunta creada.")) setEdit(null);
   }
+  const todos = d?.comentarios ?? [];
+  const ids = new Set(todos.map((c) => c.id));
+  // Las respuestas van debajo de su comentario; si el comentario original ya no está en la lista, se muestran sueltas
+  const principales = todos.filter((c) => !c.padre || !ids.has(c.padre));
+  const respuestasDe = new Map<string, Coment[]>();
+  for (const r of todos.filter((c) => c.padre && ids.has(c.padre)).sort((x, y) => x.creado.localeCompare(y.creado))) respuestasDe.set(r.padre!, [...(respuestasDe.get(r.padre!) ?? []), r]);
+  const respuestasTotal = todos.length - principales.length;
+  const tarjeta = (c: Coment, esResp: boolean) => (
+    <>
+      {c.denuncias?.length ? <span className="pildora grave">{c.oculta ? "Oculto" : "Denunciado"} · {c.denuncias.length} · {[...new Set(c.denuncias.map((x) => x.motivo))].join(", ")}</span> : c.oculta ? <span className="pildora grave">Oculto por mí</span> : null}
+      <span>{esResp ? "↳ Respuesta: " : ""}{c.texto}</span>
+      <small>{fecha(c.creado)} · {c.pregunta}</small>
+      <div className="acciones">
+        {c.denuncias?.length ? <button className="btn chico" onClick={() => accion({ accion: "dejar", id: c.preguntaId, cid: c.id }, "Revisado: se ve de nuevo.")}>Dejar publicado</button> : null}
+        <button className="btn claro chico" onClick={() => accion({ accion: "ocultar", id: c.preguntaId, cid: c.id, oculta: !c.oculta }, c.oculta ? "Ahora se ve." : "Oculto.")}>{c.oculta ? "Mostrar" : "Ocultar"}</button>
+        <button className="btn claro chico" onClick={() => { if (confirm(esResp ? "¿Borrar esta respuesta?" : "¿Borrar este comentario y sus respuestas?")) accion({ accion: "borrar", id: c.preguntaId, cid: c.id }, "Borrado."); }}>Borrar</button>
+        <button className="btn claro chico" onClick={() => { if (confirm("¿Bloquear a quien escribió esto? Ese celular no va a poder votar ni comentar.")) accion({ accion: "bloquear", id: c.preguntaId, cid: c.id }, "Bloqueado."); }}>Bloquear</button>
+      </div>
+    </>
+  );
   const hoyP = d?.preguntas.find((p) => p.id === d.hoy.preguntaId);
   const mananaP = d?.preguntas.find((p) => p.id === d.manana.preguntaId);
 
@@ -91,21 +111,18 @@ export default function PanelVoz() {
         ))}
       </ul>
 
-      <h2>Comentarios ({d?.comentarios.length ?? 0})</h2>
+      <h2>Comentarios ({principales.length}{respuestasTotal ? ` y ${respuestasTotal} ${respuestasTotal === 1 ? "respuesta" : "respuestas"}` : ""})</h2>
       {d && d.comentarios.length === 0 && <p className="vacio">Todavía no hay comentarios.</p>}
       <ul className="lista">
-        {d?.comentarios.map((c) => (
+        {principales.map((c) => (
           <li key={c.preguntaId + c.id} className="mascota">
-            <div className="mascota-datos">
-              {c.denuncias?.length ? <span className="pildora grave">{c.oculta ? "Oculto" : "Denunciado"} · {c.denuncias.length} · {[...new Set(c.denuncias.map((x) => x.motivo))].join(", ")}</span> : c.oculta ? <span className="pildora grave">Oculto por mí</span> : null}
-              <span>{c.texto}</span>
-              <small>{fecha(c.creado)} · {c.pregunta}</small>
-              <div className="acciones">
-                {c.denuncias?.length ? <button className="btn chico" onClick={() => accion({ accion: "dejar", id: c.preguntaId, cid: c.id }, "Revisado: se ve de nuevo.")}>Dejar publicado</button> : null}
-                <button className="btn claro chico" onClick={() => accion({ accion: "ocultar", id: c.preguntaId, cid: c.id, oculta: !c.oculta }, c.oculta ? "Ahora se ve." : "Oculto.")}>{c.oculta ? "Mostrar" : "Ocultar"}</button>
-                <button className="btn claro chico" onClick={() => { if (confirm("¿Borrar este comentario?")) accion({ accion: "borrar", id: c.preguntaId, cid: c.id }, "Borrado."); }}>Borrar</button>
-                <button className="btn claro chico" onClick={() => { if (confirm("¿Bloquear a quien escribió esto? Ese celular no va a poder votar ni comentar.")) accion({ accion: "bloquear", id: c.preguntaId, cid: c.id }, "Bloqueado."); }}>Bloquear</button>
-              </div>
+            <div className="mascota-datos" style={{ width: "100%" }}>
+              {tarjeta(c, false)}
+              {(respuestasDe.get(c.id) ?? []).length > 0 && (
+                <ul className="lista" style={{ width: "100%", marginLeft: 14, borderLeft: "3px solid var(--celeste)", paddingLeft: 10 }}>
+                  {respuestasDe.get(c.id)!.map((r) => <li key={r.id}>{tarjeta(r, true)}</li>)}
+                </ul>
+              )}
             </div>
           </li>
         ))}

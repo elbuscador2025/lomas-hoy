@@ -130,6 +130,59 @@ async function main() {
   lp = await panel({ accion: "listar" }); assert.equal(lp.j.hoy.manual, false); assert.ok(lp.j.hoy.preguntaId); ok("volver a la rotación automática");
   assert.equal((await panel({ accion: "elegir", id: preg.id, cuando: "manana" })).j.ok, true); lp = await panel({ accion: "listar" }); assert.equal(lp.j.manana.preguntaId, preg.id); ok("elegir la pregunta de mañana");
 
+  console.log("Respuestas a comentarios");
+  const P1 = celu(), Q = celu(), Z = celu(), W = celu(), R1 = celu(), R2 = celu(), R3 = celu();
+  assert.equal((await json("/api/voz/comentarios", { texto: "Comentario principal para responder", dispositivo: P1 })).s, 200);
+  const hoyP = (await ver(P1)).pregunta.id;
+  const padreId = (await ver(P1)).comentarios.find((c) => c.texto === "Comentario principal para responder").id;
+  const resp = (texto, dispositivo, padre = padreId) => json("/api/voz/comentarios", { texto, dispositivo, padre });
+  const rq = await resp("Estoy de acuerdo, el domingo es lo mejor", Q); assert.equal(rq.s, 200); assert.equal(rq.j.comentario.texto, "Estoy de acuerdo, el domingo es lo mejor");
+  let hilo = (await ver(P1)).comentarios.find((c) => c.id === padreId);
+  assert.equal(hilo.respuestas.length, 1); assert.equal(hilo.respuestas[0].texto, "Estoy de acuerdo, el domingo es lo mejor"); ok("la respuesta queda dentro del hilo del comentario al que contesta");
+  assert.ok(!(await ver(P1)).comentarios.some((c) => c.id === rq.j.comentario.id)); ok("la respuesta no aparece como un comentario suelto");
+  assert.equal((await resp("Y yo también", W, rq.j.comentario.id)).s, 400); ok("no se puede responder a una respuesta (un solo nivel)");
+  assert.equal((await resp("Hola", W, "noexiste123")).s, 404); ok("responder a un comentario que no existe → 404");
+  for (const t of ["mirá https://oferta.com", "escribime a @ventas_ya", "llamá al 11 5555-5555", "mi dni 30123456", "cbu 0000003100010000000001", "x".repeat(201), "   "]) assert.equal((await resp(t, W)).s, 400, t);
+  ok("la respuesta tiene las mismas reglas: sin enlaces, usuarios, teléfonos, DNI, CBU, más de 200 letras ni vacía");
+  assert.equal((await resp("sos un pelotudo", W)).s, 400); ok("y sin insultos");
+  assert.equal((await resp("Estoy de acuerdo, el domingo es lo mejor", Q)).s, 400); ok("el mismo texto repetido → rechazado");
+  // Límite: 10 respuestas por día por celular, aparte del límite de 3 comentarios
+  for (let i = 1; i <= 10; i++) assert.equal((await resp("Respuesta número " + i + " del vecino", Z)).s, 200, "r" + i);
+  assert.equal((await resp("Respuesta número 11 del vecino", Z)).s, 429); ok("límite: 10 respuestas por día por celular (la 11.ª → 429)");
+  assert.equal((await json("/api/voz/comentarios", { texto: "Mi comentario propio de hoy", dispositivo: Z })).s, 200); ok("las respuestas no gastan los 3 comentarios del día");
+  const X2 = celu();
+  for (const t of ["Comentario uno aparte", "Comentario dos aparte", "Comentario tres aparte"]) await json("/api/voz/comentarios", { texto: t, dispositivo: X2 });
+  assert.equal((await json("/api/voz/comentarios", { texto: "Comentario cuatro aparte", dispositivo: X2 })).s, 429);
+  assert.equal((await resp("Con tres comentarios igual puedo responder", X2)).s, 200); ok("y quien ya hizo 3 comentarios todavía puede responder");
+  hilo = (await ver(P1)).comentarios.find((c) => c.id === padreId);
+  assert.equal(hilo.respuestas.length, 12); assert.deepEqual(hilo.respuestas.map((r) => r.creado), [...hilo.respuestas.map((r) => r.creado)].sort()); ok("el hilo trae todas las respuestas, de la más vieja a la más nueva (la pantalla muestra 3 y «Ver X más»)");
+  // Denunciar una respuesta
+  const rid = hilo.respuestas.find((r) => r.texto.startsWith("Respuesta número 1 ")).id;
+  await Promise.all([R1, R2, R3].map((d) => json("/api/voz/denunciar", { pregunta: hoyP, cid: rid, motivo: "Insulta o es agresivo", dispositivo: d })));
+  hilo = (await ver(P1)).comentarios.find((c) => c.id === padreId);
+  assert.equal(hilo.respuestas.some((r) => r.id === rid), false); assert.equal(hilo.respuestas.length, 11); ok("una respuesta con 3 denuncias se oculta y el comentario sigue");
+  let lp2 = await panel({ accion: "listar" });
+  const enPanel = lp2.j.comentarios.find((c) => c.id === rid);
+  assert.equal(enPanel.padre, padreId); assert.equal(enPanel.oculta, true); assert.equal(enPanel.denuncias.length, 3); assert.ok(!("disp" in enPanel)); ok("en mi panel la respuesta figura con su comentario original, oculta y con sus 3 denuncias");
+  assert.equal((await panel({ accion: "dejar", id: hoyP, cid: rid })).j.ok, true); assert.equal((await ver(P1)).comentarios.find((c) => c.id === padreId).respuestas.length, 12); ok("«Dejar publicado» devuelve la respuesta");
+  const r2id = hilo.respuestas[0].id;
+  assert.equal((await panel({ accion: "ocultar", id: hoyP, cid: r2id, oculta: true })).j.ok, true); assert.equal((await ver(P1)).comentarios.find((c) => c.id === padreId).respuestas.some((r) => r.id === r2id), false); ok("ocultar una respuesta desde el panel");
+  await panel({ accion: "ocultar", id: hoyP, cid: r2id, oculta: false });
+  // Si se oculta el comentario, sus respuestas tampoco se ven (y no se puede responder)
+  await panel({ accion: "ocultar", id: hoyP, cid: padreId, oculta: true });
+  assert.equal((await ver(P1)).comentarios.some((c) => c.id === padreId || c.respuestas?.length > 11), false); ok("al ocultar un comentario, se oculta todo su hilo");
+  assert.equal((await resp("Respondo a algo oculto", W)).s, 404); ok("no se puede responder a un comentario oculto");
+  await panel({ accion: "ocultar", id: hoyP, cid: padreId, oculta: false });
+  // Bloquear a quien escribió una respuesta
+  const Bq = celu(); assert.equal((await resp("Respuesta para bloquear", Bq)).s, 200);
+  const bid = (await ver(P1)).comentarios.find((c) => c.id === padreId).respuestas.find((r) => r.texto === "Respuesta para bloquear").id;
+  assert.equal((await panel({ accion: "bloquear", id: hoyP, cid: bid })).j.ok, true); bloqueados.push(huella("|" + huella(Bq)));
+  assert.equal((await ver(P1)).comentarios.find((c) => c.id === padreId).respuestas.some((r) => r.id === bid), false); ok("bloquear a quien escribió una respuesta la borra");
+  assert.equal((await resp("Sigo respondiendo", Bq)).s, 403); ok("y ese celular ya no puede responder");
+  // Borrar el comentario borra sus respuestas
+  assert.equal((await panel({ accion: "borrar", id: hoyP, cid: padreId })).j.ok, true);
+  lp2 = await panel({ accion: "listar" }); assert.ok(!lp2.j.comentarios.some((c) => c.id === padreId || c.padre === padreId)); ok("borrar un comentario borra también sus respuestas (no quedan sueltas)");
+
   console.log("Panel: comentarios y bloqueo");
   const Y = celu();
   await json("/api/voz/comentarios", { texto: "Comentario para bloquear", dispositivo: Y });
@@ -155,5 +208,5 @@ try {
   await limpiar();
   // Los bloqueos de prueba se sacan de la lista real de "Bloqueados"
   const [vals] = await redis([["HVALS", "bloqueados"]]);
-  for (const j of vals ?? []) { const b = JSON.parse(j); if (String(b.nota).startsWith("La Voz de Lomas: Comentario para bloquear")) await redis([["HDEL", "bloqueados", b.id]]); }
+  for (const j of vals ?? []) { const b = JSON.parse(j); if (String(b.nota).startsWith("La Voz de Lomas: Comentario para bloquear") || String(b.nota).startsWith("La Voz de Lomas: Respuesta para bloquear")) await redis([["HDEL", "bloqueados", b.id]]); }
 }
