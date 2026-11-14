@@ -37,7 +37,7 @@ export default function AgendaDestacada({ notas, onVerTodo, push }: { notas: Not
           <span className="agenda-dest-avisos activo">🔔 Avisos activados</span>
         ) : push.estado !== "noSoportado" && (
           // Activa los avisos igual que el botón de adentro de la Agenda; si el celular necesita pasos extra (iPhone sin instalar, bloqueado), se abre la Agenda que los explica
-          <button className="agenda-dest-avisos" disabled={push.ocupado} onClick={() => (push.estado === "inactivo" ? push.activar({ ...push.prefs, tipos: { ...push.prefs.tipos, agenda: true } }) : onVerTodo())}>🔔 Avisarme</button>
+          <button className="agenda-dest-avisos" disabled={push.ocupado} onClick={() => (push.estado === "inactivo" ? push.activar({ ...push.prefs, tipos: { ...push.prefs.tipos, agenda: true } }) : onVerTodo())}>🔔 Avisame de eventos nuevos</button>
         )}
       </div>
     </section>

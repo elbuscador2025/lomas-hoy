@@ -973,3 +973,5 @@ button.voz-aquien { text-decoration:underline; text-decoration-color:#B8C4DD; }
 .agenda-dest-avisos.activo { border-color:transparent; background:transparent; color:#6B2A47; padding:8px 6px; font-size:15px; cursor:default; }
 .avisarme-explica { margin:6px 0; font-weight:700; }
 .agenda-dest-fila .agenda-dest-btn.btn { flex:1 1 0; min-width:0; white-space:normal; line-height:1.2; padding-left:10px; padding-right:10px; }
+.agenda-dest-fila .agenda-dest-btn.btn { flex:1 1 100%; }
+.agenda-dest-avisos:not(.activo) { flex:1 1 100%; min-height:48px; }
