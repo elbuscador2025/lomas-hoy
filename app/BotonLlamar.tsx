@@ -3,11 +3,11 @@ import { useState } from "react";
 import { telLink } from "@/lib/datos";
 
 // Botón verde "Llamar": antes de marcar pide confirmación, para no llamar sin querer.
-export default function BotonLlamar({ nombre, numero }: { nombre: string; numero: string }) {
+export default function BotonLlamar({ nombre, numero, etiqueta }: { nombre: string; numero: string; etiqueta?: string }) {
   const [abierto, setAbierto] = useState(false);
   return (
     <>
-      <button className="btn llamar" onClick={() => setAbierto(true)}>Llamar {numero}</button>
+      <button className="btn llamar" onClick={() => setAbierto(true)}>{etiqueta ?? `Llamar ${numero}`}</button>
       {abierto && (
         <div className="modal-fondo" role="dialog" aria-modal="true" aria-label="Confirmar llamada">
           <div className="modal">

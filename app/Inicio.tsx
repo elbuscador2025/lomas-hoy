@@ -270,11 +270,11 @@ export default function Inicio() {
   const aguaAhora = aguaTodos.filter((c) => c.desde && c.desde <= ahora).sort((a, b) => (a.hasta ?? "").localeCompare(b.hasta ?? ""));
   const aguaProx = aguaTodos.filter((c) => c.desde && c.desde > ahora).sort((a, b) => (a.desde ?? "").localeCompare(b.desde ?? ""));
   const aguaNotas = aguaTodos.filter((c) => !c.desde);
-  const [aguaEstado, aguaTono, aguaResumen]: [string, Tono, string] = !d.agua?.contenido ? ["Sin datos", "neutro", "Sin cortes informados"]
+  const [aguaEstado, aguaTono, aguaResumen]: [string, Tono, string] = !d.agua?.contenido ? ["Sin datos", "neutro", "Sin cortes informados por AySA"]
     : aguaAhora.length ? [plural(aguaAhora.length, "corte", "cortes"), "aviso", `Corte en ${aguaAhora[0].localidad}${aguaAhora[0].hasta ? ` hasta las ${horaCorta(aguaAhora[0].hasta)} hs` : ""}${aguaAhora.length > 1 ? ` y ${aguaAhora.length - 1} más` : ""}`]
     : aguaProx.length ? ["Programado", "aviso", `Corte en ${aguaProx[0].localidad}: ${diaCorto((aguaProx[0].desde ?? "").slice(0, 10))}, desde las ${horaCorta(aguaProx[0].desde ?? "")} hs`]
     : aguaNotas.length ? ["Aviso", "aviso", textoCorteAgua(aguaNotas[0]).linea]
-    : ["Normal", "ok", "Sin cortes informados"];
+    : ["Sin cortes informados por AySA", "neutro", "Si te falta agua o hay poca presión, hacé el reclamo"]; // AySA no publica la baja presión: la app no puede decir que está "normal"
   const nombreDiaCorto = (f: string) => capitalizar(new Date(`${f}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: ZONA, weekday: "short", day: "numeric" }).replace(/[.,]/g, ""));
   const hoyDia = clima?.porDia?.find((x) => x.fecha === ahora.slice(0, 10)) ?? clima?.porDia?.[0];
   const maxMin = hoyDia ? { max: Math.round(hoyDia.max), min: Math.round(hoyDia.min) } : null;
@@ -632,7 +632,10 @@ export default function Inicio() {
     return (
       <Detalle color="agua" titulo={s.agua.titulo} onVolver={volver}>
         {!d.agua?.contenido ? <SinDatos error={d.agua?.error} /> : aguaTodos.length === 0 ? (
-          <p>Sin cortes informados.</p>
+          <>
+            <p><b>Sin cortes informados por AySA.</b></p>
+            <p className="vacio">Ojo: AySA no publica los avisos de baja presión ni los problemas que no registró. Si hoy te falta agua o te llega con poca presión, hacé el reclamo.</p>
+          </>
         ) : (
           <ul className="lista">
             {[...aguaAhora, ...aguaProx, ...aguaNotas].map((c) => (
@@ -649,6 +652,13 @@ export default function Inicio() {
         {d.agua?.contenido && d.agua.contenido.diariosSinLeer.length > 0 && (
           <p className="aviso-pie">No se pudo leer: {d.agua.contenido.diariosSinLeer.join(", ")}.</p>
         )}
+        <section className="lugar-principal" aria-label="Reclamo a AySA">
+          <b>¿Poca presión o sin agua? Hacé el reclamo a AySA</b>
+          <BotonLlamar nombre="AySA (atención técnica)" numero="0800-321-2482" etiqueta="📞 Hacer un reclamo a AySA · 0800-321-2482" />
+          <a className="btn claro ancho" target="_blank" rel="noreferrer" href="https://wa.me/5491159845794">💬 Reclamo técnico por WhatsApp de AySA ↗</a>
+          <a className="btn claro ancho" target="_blank" rel="noreferrer" href="https://aysa.com.ar/usuarios/canales_atencion">Todos los canales de atención de AySA ↗</a>
+          <small className="chico">Atención técnica de AySA: 0800-321-AGUA (2482), todos los días. Tené a mano tu número de cuenta (está en la factura). Datos de la página oficial de AySA.</small>
+        </section>
         <p className="vacio">Información de AySA publicada por medios locales.</p>
         <a className="btn claro ancho" target="_blank" rel="noreferrer" href={config.agua.paginaPublica}>Consultar en AySA</a>
         <Pie seccion="agua" fuente={config.agua.fuente} fila={d.agua} />
