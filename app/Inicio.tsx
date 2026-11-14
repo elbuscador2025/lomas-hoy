@@ -33,6 +33,9 @@ import Emprendedores from "./Emprendedores";
 import DeportesPantalla from "./Deportes";
 import AutoTramites from "./AutoTramites";
 import AgendaDestacada from "./AgendaDestacada";
+import Estudiar from "./Estudiar";
+import Impuestos from "./Impuestos";
+import Rescate from "./Rescate";
 import Jubilados from "./Jubilados";
 import type { DatosJubilados } from "@/lib/jubilados";
 import type { DatosDeportes } from "@/lib/deportes";
@@ -909,6 +912,27 @@ export default function Inicio() {
       </Detalle>
     );
 
+  if (vista === "estudiar")
+    return (
+      <Detalle color="estudiar" titulo="Estudiá gratis" onVolver={volver}>
+        <Estudiar />
+      </Detalle>
+    );
+
+  if (vista === "impuestos")
+    return (
+      <Detalle color="impuestos" titulo="Impuestos y tasas" onVolver={volver}>
+        <Impuestos abrir={abrir} />
+      </Detalle>
+    );
+
+  if (vista === "rescate" || vista?.startsWith("rescate-"))
+    return (
+      <Detalle color="rescate" titulo={vista === "rescate-publicar" ? "Publicar un animal" : vista.startsWith("rescate-ver:") ? "Animal que necesita ayuda" : "Perro al rescate"} onVolver={volver}>
+        <Rescate vista={vista} abrir={abrir} volver={volver} />
+      </Detalle>
+    );
+
   if (vista === "jubilados")
     return (
       <Detalle color="jubilados" titulo="Jubilados: salir y disfrutar" onVolver={volver}>
@@ -1164,6 +1188,12 @@ export default function Inicio() {
               )}
               <Tile color="jubilados" icono="emoji:🧓" titulo="Jubilados" estado="Ver" tono="neutro" onClick={() => abrir("jubilados")}
                 resumen="Talleres, cursos y centros para salir y disfrutar" />
+              <Tile color="estudiar" icono="emoji:🎓" titulo="Estudiá gratis" estado="Ver" tono="neutro" onClick={() => abrir("estudiar")}
+                resumen="Oficios, terminar la secundaria y cursos con certificado" />
+              <Tile color="rescate" icono="emoji:🐶" titulo="Perro al rescate" estado="Ayudá" tono="aviso" onClick={() => abrir("rescate")}
+                resumen="Denunciá el maltrato animal y ayudá a animales en la calle" />
+              <Tile color="impuestos" icono="emoji:🧾" titulo="Impuestos y tasas" estado="Ver" tono="neutro" onClick={() => abrir("impuestos")}
+                resumen="Consultá y pagá en la página oficial" />
               <Tile color="auto" icono="emoji:🚗" titulo="Auto y trámites" estado="Ver" tono="neutro" onClick={() => abrir("auto")}
                 resumen="Patente, multas, licencia, VTV y más" />
               {s.mascotas.activa && (

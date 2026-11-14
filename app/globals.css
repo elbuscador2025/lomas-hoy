@@ -952,3 +952,15 @@ button.voz-aquien { text-decoration:underline; text-decoration-color:#B8C4DD; }
 .voz-invita p { margin:0; font-size:15px; }
 .voz-invita .btn { margin-top:2px; }
 .voz-invita .link { align-self:center; }
+
+/* Estudiá gratis, Perro al rescate, Impuestos y tasas */
+.c-estudiar { --c-bg:#E4F1FF; --c-fuerte:#1565C0; }
+.c-rescate { --c-bg:#FFEBD9; --c-fuerte:#BF5B04; }
+.c-impuestos { --c-bg:#E6F4EA; --c-fuerte:#1B6B3A; }
+.resc-denuncia ol.resc-pasos { margin:6px 0; padding-left:20px; display:flex; flex-direction:column; gap:14px; }
+.resc-denuncia ol.resc-pasos > li { display:flex; flex-direction:column; gap:8px; }
+.resc-denuncia .btn { align-self:stretch; text-align:center; }
+.resc-solo-info { background:#fff; border-radius:12px; padding:10px 12px; margin:4px 0; }
+.resc-titulo { margin:22px 0 4px; }
+.resc-reglas { margin:6px 0 0; padding-left:20px; font-weight:600; }
+.resc-reglas li { margin:4px 0; }

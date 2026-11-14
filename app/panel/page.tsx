@@ -26,6 +26,7 @@ import PanelMerenderos from "./PanelMerenderos";
 import PanelAgua from "./PanelAgua";
 import PanelDeportes from "./PanelDeportes";
 import PanelJubilados from "./PanelJubilados";
+import PanelRescate from "./PanelRescate";
 import MiCuenta from "./MiCuenta";
 import { post, salir } from "./api";
 
@@ -44,7 +45,7 @@ const fecha = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone:
 export default function Panel() {
   const [datos, setDatos] = useState<Datos | null>(null);
   const [lugares, setLugares] = useState<Lugar[]>([]);
-  const [pestana, setPestana] = useState<"stats" | "lugares" | "barrios" | "push" | "mascotas" | "anses" | "coop" | "ansesof" | "castracion" | "merenderos" | "pasa" | "sugerencias" | "agua" | "trueque" | "emprendedores" | "voz" | "deportes" | "jubilados" | "trabajo" | "qr" | "bloqueados" | "denuncias">("stats");
+  const [pestana, setPestana] = useState<"stats" | "lugares" | "barrios" | "push" | "mascotas" | "anses" | "coop" | "ansesof" | "castracion" | "merenderos" | "pasa" | "sugerencias" | "agua" | "trueque" | "emprendedores" | "voz" | "deportes" | "jubilados" | "rescate" | "trabajo" | "qr" | "bloqueados" | "denuncias">("stats");
   const [editando, setEditando] = useState<(Lugar & { tels: string; direccionOriginal?: string }) | null>(null);
   const [mensaje, setMensaje] = useState("");
 
@@ -54,6 +55,7 @@ export default function Panel() {
   useEffect(() => {
     if (location.hash === "#mascotas") setPestana("mascotas");
     if (location.hash === "#trueque") setPestana("trueque");
+    if (location.hash === "#rescate") setPestana("rescate");
     if (location.hash === "#emprendedores") setPestana("emprendedores");
     if (location.hash === "#voz") setPestana("voz");
     if (location.hash === "#trabajo") setPestana("trabajo");
@@ -121,6 +123,7 @@ export default function Panel() {
         {config.secciones.emprendedores.activa && <button className={`btn ${pestana === "emprendedores" ? "" : "claro"}`} onClick={() => setPestana("emprendedores")}>Emprendedores</button>}
         <button className={`btn ${pestana === "voz" ? "" : "claro"}`} onClick={() => setPestana("voz")}>La Voz de Lomas</button>
         <button className={`btn ${pestana === "deportes" ? "" : "claro"}`} onClick={() => setPestana("deportes")}>Deportes</button>
+        <button className={`btn ${pestana === "rescate" ? "" : "claro"}`} onClick={() => setPestana("rescate")}>Perro al rescate</button>
         <button className={`btn ${pestana === "jubilados" ? "" : "claro"}`} onClick={() => setPestana("jubilados")}>Jubilados</button>
         <button className={`btn ${pestana === "trabajo" ? "" : "claro"}`} onClick={() => setPestana("trabajo")}>Trabajo</button>
         <button className={`btn ${pestana === "qr" ? "" : "claro"}`} onClick={() => setPestana("qr")}>Código QR</button>
@@ -133,6 +136,7 @@ export default function Panel() {
       {pestana === "emprendedores" && config.secciones.emprendedores.activa && <PanelEmprendedores />}
       {pestana === "voz" && <PanelVoz />}
       {pestana === "deportes" && <PanelDeportes />}
+      {pestana === "rescate" && <PanelRescate />}
       {pestana === "jubilados" && <PanelJubilados />}
       {pestana === "trabajo" && <PanelTrabajo />}
       {pestana === "qr" && <PanelQR />}

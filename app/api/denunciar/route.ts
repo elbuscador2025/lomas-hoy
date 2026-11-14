@@ -2,6 +2,7 @@ import { config } from "@/lomas.config.mjs";
 import { after } from "next/server";
 import { denunciar } from "@/lib/moderacion";
 import { denunciar as denunciarEmp } from "@/lib/emprendedores";
+import { denunciar as denunciarResc } from "@/lib/rescate";
 import { redis } from "@/lib/servidor";
 
 // Denunciar una publicación de Trueque o Trabajo para mayores de 50 años. Con 3 denuncias de celulares distintos se oculta hasta que yo la revise.
@@ -13,6 +14,13 @@ export async function POST(req: Request) {
     if (!config.secciones.emprendedores.activa) return Response.json({ ok: false }, { status: 404 });
     if (!id || dispositivo.length < 8 || dispositivo.length > 64) return Response.json({ ok: false }, { status: 400 });
     const hecho = await denunciarEmp(id, cid, String(c.motivo ?? ""), dispositivo).catch((e) => { console.error("denuncia", e); return false as const; });
+    if (hecho) after(() => hecho.avisar().catch((e) => console.error("denuncia", e)));
+    return Response.json({ ok: true });
+  }
+  if (c.seccion === "rescate") { // publicaciones y comentarios de Perro al rescate
+    const id = String(c.id ?? "").slice(0, 20), cid = c.cid ? String(c.cid).slice(0, 20) : undefined, dispositivo = String(c.dispositivo ?? "");
+    if (!id || dispositivo.length < 8 || dispositivo.length > 64) return Response.json({ ok: false }, { status: 400 });
+    const hecho = await denunciarResc(id, cid, String(c.motivo ?? ""), dispositivo).catch((e) => { console.error("denuncia", e); return false as const; });
     if (hecho) after(() => hecho.avisar().catch((e) => console.error("denuncia", e)));
     return Response.json({ ok: true });
   }
