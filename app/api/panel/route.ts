@@ -12,12 +12,17 @@ export async function POST(req: Request) {
     ["LRANGE", "reportes", 0, 99],
     ["LRANGE", "actualizacion:log", 0, 7],
     ["HVALS", "push:subs"],
+    ["SETNX", "app:desde", hoyArgentina()], // la fecha desde la que se cuenta la app instalada (queda fija la primera vez)
+    ["GET", "app:desde"],
+    ["SCARD", "app:instalada"],
+    ...dias.map((d) => ["SCARD", `app:${d}`] as (string | number)[]),
   ]);
   const n = dias.length * 2;
   return Response.json({
     ok: true,
-    dias: dias.map((dia, i) => ({ dia, visitantes: r[i * 2], volvieron: r[i * 2 + 1] })).filter((d) => d.visitantes),
+    dias: dias.map((dia, i) => ({ dia, visitantes: r[i * 2], volvieron: r[i * 2 + 1], app: r[n + 8 + i] })).filter((d) => d.visitantes),
     resumen: { visitantes_totales: r[n], volvieron_otro_dia: r[n + 1] },
+    appInstalada: { total: r[n + 7], desde: r[n + 6] },
     celularesConAvisos: (r[n + 4] as string[]).filter((j) => { try { return JSON.parse(j).equipo !== "compu"; } catch { return true; } }).length,
     reportes: (r[n + 2] as string[]).map((x) => JSON.parse(x)),
     corridas: (r[n + 3] as string[]).map((x) => JSON.parse(x)), // las últimas actualizaciones de datos: { t, o }

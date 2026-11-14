@@ -7,7 +7,7 @@ const ROBOT = /bot|crawl|spider|slurp|preview|facebookexternalhit|whatsapp|teleg
 export async function POST(req: Request) {
   if (ROBOT.test(req.headers.get("user-agent") ?? "")) return Response.json({ ok: true });
   if (await esAdmin(req).catch(() => false)) return Response.json({ ok: true }); // con la sesión del panel abierta, tampoco se cuenta al dueño
-  const { id } = await req.json().catch(() => ({}));
+  const { id, app } = await req.json().catch(() => ({}));
   if (typeof id !== "string" || id.length < 8 || id.length > 64) return Response.json({ ok: false }, { status: 400 });
   const dia = hoyArgentina();
   try {
@@ -15,6 +15,8 @@ export async function POST(req: Request) {
     if (primera === 0 && typeof previo === "string" && previo < dia) {
       await redis([["SADD", `vuelve:${dia}`, id], ["SADD", "volvieron", id]]);
     }
+    // Celular con la app instalada (abierta desde el ícono, o instalada desde el navegador): se anota una sola vez por celular y una vez por día
+    if (app === true) await redis([["SADD", `app:${dia}`, id], ["SADD", "app:instalada", id], ["SETNX", "app:desde", dia]]);
     return Response.json({ ok: true });
   } catch {
     return Response.json({ ok: false }, { status: 500 });

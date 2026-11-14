@@ -31,11 +31,12 @@ import MiCuenta from "./MiCuenta";
 import { post, salir } from "./api";
 
 type Datos = {
-  dias: { dia: string; visitantes: number; volvieron: number }[];
+  dias: { dia: string; visitantes: number; volvieron: number; app?: number }[];
   resumen: { visitantes_totales: number; volvieron_otro_dia: number } | null;
   reportes: { creado_en: string; seccion: string; mensaje: string }[];
   corridas?: { t: string; o: string }[];
   celularesConAvisos?: number;
+  appInstalada?: { total: number; desde: string };
   quiniela?: { ultimo: string | null; problemas: string[] } | null;
 };
 
@@ -173,12 +174,13 @@ export default function Panel() {
             <b>{datos.resumen?.volvieron_otro_dia ?? 0}</b>
           </p>
           <p>Celulares con avisos activados: <b>{datos.celularesConAvisos ?? 0}</b></p>
+          <p>Celulares con la app instalada: <b>{datos.appInstalada?.total ?? 0}</b><br /><small>Contando desde {datos.appInstalada?.desde ? datos.appInstalada.desde.split("-").reverse().join("/") : "hoy"}</small></p>
           <h2>Por día</h2>
           <table>
-            <thead><tr><th>Día</th><th>Visitantes</th><th>Que ya habían venido</th></tr></thead>
+            <thead><tr><th>Día</th><th>Visitantes</th><th>Que ya habían venido</th><th>Desde la app instalada</th></tr></thead>
             <tbody>
               {datos.dias.map((d) => (
-                <tr key={d.dia}><td>{d.dia}</td><td>{d.visitantes}</td><td>{d.volvieron}</td></tr>
+                <tr key={d.dia}><td>{d.dia}</td><td>{d.visitantes}</td><td>{d.volvieron}</td><td>{d.app ?? 0}</td></tr>
               ))}
             </tbody>
           </table>

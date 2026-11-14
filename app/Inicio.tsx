@@ -177,6 +177,16 @@ export default function Inicio() {
           .then((r) => { if (r.ok) localStorage.setItem("lomas-hoy:visita", hoy); })
           .catch(() => {});
       }
+      // App instalada: abierta desde el ícono (Android y iPhone) o recién instalada desde el navegador. Se avisa una vez por día, aparte de la visita.
+      const avisarApp = () => {
+        if (localStorage.getItem("lomas-hoy:app") === hoy) return;
+        fetch("/api/visita", { method: "POST", body: JSON.stringify({ id, app: true }) })
+          .then((r) => { if (r.ok) localStorage.setItem("lomas-hoy:app", hoy); })
+          .catch(() => {});
+      };
+      const desdeIcono = matchMedia("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+      if (desdeIcono) avisarApp();
+      window.addEventListener("appinstalled", avisarApp);
     } catch {}
     // Al volver a la app después de un rato, se piden los datos de nuevo (el clima se renueva solo en el servidor).
     let ultima = Date.now();
