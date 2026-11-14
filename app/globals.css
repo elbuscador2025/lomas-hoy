@@ -964,3 +964,12 @@ button.voz-aquien { text-decoration:underline; text-decoration-color:#B8C4DD; }
 .resc-titulo { margin:22px 0 4px; }
 .resc-reglas { margin:6px 0 0; padding-left:20px; font-weight:600; }
 .resc-reglas li { margin:4px 0; }
+
+/* Agenda destacada: botón chico de avisos junto a "Ver toda la agenda" */
+.agenda-dest-fila { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:12px; }
+.agenda-dest-fila .agenda-dest-btn.btn { margin-top:0; flex:1 1 180px; }
+.agenda-dest-avisos { flex:none; min-height:44px; padding:8px 14px; border-radius:14px; border:2px solid #C2185B; background:#fff; color:#8E0F44; font-weight:800; font-size:16px; cursor:pointer; }
+.agenda-dest-avisos:disabled { opacity:.6; }
+.agenda-dest-avisos.activo { border-color:transparent; background:transparent; color:#6B2A47; padding:8px 6px; font-size:15px; cursor:default; }
+.avisarme-explica { margin:6px 0; font-weight:700; }
+.agenda-dest-fila .agenda-dest-btn.btn { flex:1 1 0; min-width:0; white-space:normal; line-height:1.2; padding-left:10px; padding-right:10px; }

@@ -1,6 +1,6 @@
 "use client";
 import Pie from "./Pie";
-import { AvisarmeNuevos } from "./Notificaciones";
+import { AvisarmeNuevos, TEXTO_AVISOS } from "./Notificaciones";
 import { haceCuanto } from "@/lib/hace";
 import type { Push } from "./usePush";
 import type { NotaAgenda } from "@/lib/agenda";
@@ -13,7 +13,7 @@ export default function Agenda({ notas, push, sinDatos }: { notas: NotaAgenda[];
   return (
     <>
       <p className="vacio">Notas de los diarios de Lomas que anuncian festivales, ferias, shows, actividades gratis, talleres e inscripciones. Entrá a la nota para ver el día, la hora y el lugar.</p>
-      <AvisarmeNuevos push={push} tipo="agenda" textos={{ boton: "🔔 Avisarme de eventos nuevos", activo: "Te avisamos de los eventos nuevos", quitar: "Desactivar" }} />
+      <AvisarmeNuevos push={push} tipo="agenda" explica={TEXTO_AVISOS} textos={{ boton: "🔔 Avisarme de eventos nuevos", activo: "Te avisamos de los eventos nuevos", quitar: "Desactivar" }} />
       {sinDatos ? <p className="vacio">Sin datos por ahora. Probá de nuevo en un rato.</p>
         : notas.length === 0 ? <p className="vacio">Por ahora no hay notas de eventos. Volvé a mirar más tarde.</p>
         : (

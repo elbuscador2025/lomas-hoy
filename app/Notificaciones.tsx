@@ -120,8 +120,11 @@ export default function Notificaciones({ push, agua }: { push: Push; agua: boole
   );
 }
 
+// Lo que la app avisa de verdad (resumen de la mañana con quién cobra, paros de colectivos, tren y eventos de la Agenda). El máximo real es de 6 avisos por día, por eso no se promete "uno por día".
+export const TEXTO_AVISOS = "🔔 Te avisamos solo lo importante: paro de colectivos, problemas en el tren, cuándo cobran los jubilados y lo que pasa en Lomas. Pocos avisos, solo lo importante.";
+
 // Botón de Trueque, Trabajo y Mascotas: prende (o apaga) ese tipo de aviso. Es el mismo interruptor de "Configurar avisos".
-export function AvisarmeNuevos({ push, tipo, textos }: { push: Push; tipo: string; textos?: { boton: string; activo: string; quitar: string } }) {
+export function AvisarmeNuevos({ push, tipo, textos, explica }: { push: Push; tipo: string; textos?: { boton: string; activo: string; quitar: string }; explica?: string }) {
   const [msg, setMsg] = useState("");
   const activo = push.estado === "activo" && !!push.prefs.tipos[tipo];
   async function activar() {
@@ -144,6 +147,7 @@ export function AvisarmeNuevos({ push, tipo, textos }: { push: Push; tipo: strin
     <p className="avisarme-nuevos">{textos?.activo ?? "Te avisamos cuando haya nuevos"} · <button className="link" onClick={() => push.guardar({ ...push.prefs, tipos: { ...push.prefs.tipos, [tipo]: false } })}>{textos?.quitar ?? "Desactivar"}</button></p>
   ) : (
     <>
+      {explica && <p className="avisarme-explica">{explica}</p>}
       <button className="btn claro ancho" disabled={push.ocupado} onClick={activar}>{textos?.boton ?? "Avisarme cuando haya nuevos"}</button>
       {msg && <p className="error">{msg}</p>}
     </>

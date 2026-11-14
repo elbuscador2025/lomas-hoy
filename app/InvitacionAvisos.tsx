@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { PasosIPhone } from "./Notificaciones";
+import { PasosIPhone, TEXTO_AVISOS } from "./Notificaciones";
 import type { Push } from "./usePush";
 
 const CLAVE = "lomas-hoy:invitacion-avisos"; // cuándo se mostró (o se contestó) por última vez
@@ -31,13 +31,13 @@ export default function InvitacionAvisos({ push }: { push: Push }) {
     <section className="voz-invita" aria-label="Avisos de eventos">
       {push.estado === "iosSinInstalar" ? (
         <>
-          <b>¿Querés que te avisemos cuando haya eventos nuevos en Lomas? 🔔</b>
+          <b>{TEXTO_AVISOS}</b>
           <p>En iPhone, para recibir avisos primero hay que instalar la app:</p>
           <PasosIPhone />
         </>
       ) : (
         <>
-          <b>¿Querés que te avisemos cuando haya eventos nuevos en Lomas? 🔔</b>
+          <b>{TEXTO_AVISOS}</b>
           <button className="btn grande-btn" disabled={push.ocupado} onClick={si}>Sí, avisame</button>
         </>
       )}
