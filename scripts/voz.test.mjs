@@ -39,10 +39,10 @@ test("rotación: cambia cada día, recorre todas y es estable en el mismo día",
   assert.equal(elegirPorRotacion([], "2026-11-12"), null);
   assert.equal(numeroDeDia("2026-11-13") - numeroDeDia("2026-11-12"), 1);
 });
-test("banco: 31 preguntas con 2 a 4 opciones, sin repetidos ni temas de peleas", () => {
-  assert.equal(BANCO.length, 31);
-  assert.equal(new Set(BANCO.map((b) => b.id)).size, 31);
-  assert.equal(new Set(BANCO.map((b) => b.texto)).size, 31);
+test("banco: 32 preguntas con 2 a 4 opciones, sin repetidos ni temas de peleas", () => {
+  assert.equal(BANCO.length, 32);
+  assert.equal(new Set(BANCO.map((b) => b.id)).size, 32);
+  assert.equal(new Set(BANCO.map((b) => b.texto)).size, 32);
   for (const b of BANCO) {
     assert.ok(b.opciones.length >= 2 && b.opciones.length <= 4, b.id);
     assert.equal(new Set(b.opciones).size, b.opciones.length, b.id);
