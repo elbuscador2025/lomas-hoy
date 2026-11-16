@@ -34,6 +34,7 @@ import DeportesPantalla from "./Deportes";
 import AutoTramites from "./AutoTramites";
 import AgendaDestacada from "./AgendaDestacada";
 import Ilustracion from "./Ilustracion";
+import { IconoLinea, tieneIconoLinea } from "./IconosLinea";
 import PortadaHoy, { type PortadaManual } from "./PortadaHoy";
 import { GRUPOS, AccesosRapidos, TarjetasGrupos } from "./Grupos";
 import Estudiar from "./Estudiar";
@@ -83,13 +84,14 @@ const TITULO_DE: Record<string, string> = {
   guardias: "Guardias 24 hs", salitas: "Salitas", vets: "Veterinarias y salud animal", otros: "Emergencias y servicios",
 };
 
+const ICONO_POR_COLOR: Record<string, string> = { comunidad: "tramitesmuni", trabajo: "trabajoseccion" };
 function Tile({ icono, titulo, resumen, estado, tono, onClick, color, ancho }: {
   ancho?: boolean; color: string; icono: string; titulo: string; resumen: React.ReactNode; estado: string; tono: Tono; onClick: () => void;
 }) {
   return (
     <button className={`tile coloreado c-${color}${ancho ? " tile-ancho" : ""}`} onClick={onClick}>
       <span className="tile-arriba">
-        <span className="tile-icono">{icono === "bola" ? <span className="tile-emoji" aria-hidden>🎱</span> : icono.startsWith("emoji:") ? <span className="tile-emoji" aria-hidden>{icono.slice(6)}</span> : <Icono nombre={icono} tam={28} />}</span>
+        <span className="tile-icono"><IconoLinea nombre={ICONO_POR_COLOR[color] ?? (tieneIconoLinea(color) ? color : "tramitesmuni")} tam={28} /></span>
         {estado && <span className={`pildora ${tono}`}>{estado}</span>}
       </span>
       <b>{titulo}</b>
@@ -494,7 +496,7 @@ export default function Inicio() {
             <Tile color="otros" icono="escudo" titulo="Emergencias y servicios" estado={plural(lugaresDe("otros").length, "número", "números")} tono="neutro" onClick={() => abrir("otros")}
               resumen="Policía, bomberos y reclamos" />
           ),
-    peques: <Tile color="juegos" icono="emoji:🧸" titulo="Pequeños creativos" estado="Gratis" tono="neutro" onClick={() => abrir("juego-peques")}
+    peques: <Tile color="peques" icono="emoji:🧸" titulo="Pequeños creativos" estado="Gratis" tono="neutro" onClick={() => abrir("juego-peques")}
           resumen="Para chicos de 2 a 4 años: pintar y aprender" />,
     empleo: s.empleo.activa && (
           <Tile color="empleo" icono="emoji:💼" titulo={s.empleo.titulo} estado="Gratis" tono="neutro" onClick={() => abrir("empleo")}
@@ -1291,31 +1293,35 @@ export default function Inicio() {
             <VozDeLomas push={push} />
             {s.agenda.activa && (d.agenda?.contenido || notasAgenda.length > 0) && <AgendaDestacada notas={notasAgenda} onVerTodo={() => abrir("agenda")} push={push} />}
             {s.pasa.activa && <BotonPasa onClick={() => abrir("pasa-avisar")} />}
+            <div className="panel-claro">
             {(s.tren.activa || s.colectivos.activa) && (
-              <section className="transporte transporte-compacto coloreado c-tren" aria-label="Transporte">
-                <h2><Icono nombre="tren" tam={24} /> Transporte</h2>
-                {transp.filter((r) => !(r.id === "subte" && r.punto === "sin")).map((r) => (
-                  <button key={r.id} className="renglon" onClick={() => abrir(r.id)}>
-                    <span className={`punto-estado ${r.punto}`} aria-hidden />
-                    <b>{r.nombre}</b>
-                    <span className={`renglon-texto ${r.punto}`}>{r.texto}</span>
-                    <span className="renglon-flecha" aria-hidden>›</span>
-                  </button>
-                ))}
+              <section className="transporte transporte-compacto" aria-label="Transporte">
+                <h2 className="rotulo">Transporte</h2>
+                <div className="transporte-tarjeta">
+                  {transp.filter((r) => !(r.id === "subte" && r.punto === "sin")).map((r) => (
+                    <button key={r.id} className="renglon" onClick={() => abrir(r.id)}>
+                      <span className="renglon-icono"><IconoLinea nombre={r.id === "tren" ? "tren" : r.id === "colectivos" ? "colectivos" : "subte"} tam={26} /></span>
+                      <span className="renglon-datos">
+                        <b>{r.nombre}</b>
+                        <span className={`renglon-texto ${r.punto}`}><i className={`punto-estado ${r.punto}`} aria-hidden /> {r.texto}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </section>
             )}
             <AccesosRapidos onAbrir={abrir} accesos={[
-              { id: "farmacias", emoji: "💊", titulo: "Farmacias", vista: "farmacias", visible: s.farmacias.activa },
-              { id: "guardias", emoji: "🚑", titulo: "Guardias 24 hs", vista: "guardias", visible: s.urgencias.activa },
-              { id: "cobran", emoji: "💰", titulo: "Hoy cobran", vista: "anses", visible: s.anses.activa },
-              { id: "auto", emoji: "🚗", titulo: "Auto y trámites", vista: "auto", visible: true },
-              { id: "impuestos", emoji: "🧾", titulo: "Impuestos y tasas", vista: "impuestos", visible: true },
-              { id: "emergencias", emoji: "🆘", titulo: "Emergencias", vista: "sos", visible: true },
+              { id: "farmacias", titulo: "Farmacias", vista: "farmacias", visible: s.farmacias.activa },
+              { id: "guardias", titulo: "Guardias 24 hs", vista: "guardias", visible: s.urgencias.activa },
+              { id: "cobran", titulo: "Hoy cobran", vista: "anses", visible: s.anses.activa },
+              { id: "auto", titulo: "Auto y trámites", vista: "auto", visible: true },
+              { id: "impuestos", titulo: "Impuestos y tasas", vista: "impuestos", visible: true },
+              { id: "emergencias", titulo: "Emergencias", vista: "sos", visible: true },
             ]} />
             {s.noticias.activa && (
               <button className="boton-noticias" onClick={() => abrir("noticias")}>
-                <span className="bn-circulo"><Icono nombre="noticias" tam={76} ancho={1.8} /></span>
-                <b>{s.noticias.titulo}</b>
+                <span className="bn-icono"><IconoLinea nombre="noticias" tam={28} /></span>
+                <span className="bn-textos"><b>{s.noticias.titulo}</b><small>Lo último de los diarios locales</small></span>
                 {notasHoy > 0 && <span className="bn-etiqueta">{plural(notasHoy, "nueva", "nuevas")}</span>}
               </button>
             )}
@@ -1324,6 +1330,7 @@ export default function Inicio() {
                 resumen="Empleo oficial y gratuito · para todas las edades" />
             )}
             <TarjetasGrupos cuantas={cuantasPorGrupo} onAbrir={abrir} />
+            </div>
             <CartelInstalar />
             <Compartir onWhatsApp={compartirDia} />
           </>
