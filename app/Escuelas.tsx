@@ -8,6 +8,8 @@ import { NIVELES, buscarTexto, telefonoBonito, mapaEscuela, INSCRIPCIONES_POR_DE
 
 const ext = (url: string) => ({ href: url, target: "_blank", rel: "noreferrer" });
 const POR_VEZ = 20;
+const hoyAR = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
+const diaLindo = (f: string) => new Date(`${f}T12:00:00-03:00`).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "numeric", month: "long" });
 const fechaLinda = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "numeric", month: "long", year: "numeric" }) : "");
 
 // ---- 1. Recuadro "Inscripciones 2027" ----
@@ -34,6 +36,10 @@ function Inscripciones({ d }: { d: DatosEscuelas["inscripciones"] }) {
 }
 
 // ---- 3. Universidad Nacional de Lomas de Zamora ----
+const estado = (f: (typeof FACULTADES)[number]) => {
+  if (f.ingreso.consultar || !f.ingreso.cierra) return { texto: "Fechas: consultar", clase: "", cerrada: false };
+  return hoyAR() > f.ingreso.cierra ? { texto: `Cerró el ${diaLindo(f.ingreso.cierra)}`, clase: "esc-cerro", cerrada: true } : { texto: `Abierta hasta el ${diaLindo(f.ingreso.cierra)}`, clase: "esc-abierta", cerrada: false };
+};
 function Universidad() {
   return (
     <section className="esc-univ" aria-label="Universidad Nacional de Lomas de Zamora">
@@ -48,15 +54,16 @@ function Universidad() {
       {FACULTADES.map((f) => (
         <details key={f.id} className="esc-facultad">
           <summary>
-            <span className="esc-fac-titulo"><b>{f.nombre}</b><small>{f.ingreso.consultar ? "Fechas: consultar" : f.ingreso.fechas.split(". ")[0].replace(/\.$/, "")}</small></span>
+            <span className="esc-fac-titulo"><b>{f.nombre}</b><small className={estado(f).clase}>{estado(f).texto}</small></span>
             <span className="esc-fac-flecha" aria-hidden><IconoLinea nombre="flecha" tam={22} /></span>
           </summary>
           <div className="esc-fac-cuerpo">
+            {estado(f).cerrada && <p className="esc-cerrada">La inscripción de esta etapa ya cerró. Consultá en la Facultad si hay una nueva.</p>}
             <h3>Cómo y cuándo inscribirse (ingreso 2027)</h3>
             <p><b>{f.ingreso.fechas}</b></p>
             <p>{f.ingreso.como}</p>
             <p><b>Curso de ingreso:</b> {f.ingreso.curso}</p>
-            <a className="btn grande-btn" {...ext(f.ingreso.enlace)}>Inscribirme en {f.nombre.replace("Facultad de ", "")} ↗</a>
+            <a className="btn grande-btn" {...ext(f.ingreso.enlace)}>{estado(f).cerrada ? "Ver en el sitio de la Facultad" : `Inscribirme en ${f.nombre.replace("Facultad de ", "")}`} ↗</a>
             <h3>Carreras</h3>
             <ul className="esc-lista">{f.carreras.map((c) => <li key={c}>{c}</li>)}</ul>
             <a className="btn claro" {...ext(f.web)}>Sitio de la facultad ↗</a>

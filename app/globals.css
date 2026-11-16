@@ -1155,3 +1155,6 @@ button.voz-aquien { text-decoration:underline; text-decoration-color:#B8C4DD; }
 .esc-selects select { width:100%; min-width:0; }
 .esc-resultados > li.esc-ficha { padding:12px 14px; margin:0; }
 .esc-resultados { gap:10px; }
+.esc-abierta { color:#14532D !important; font-weight:800; }
+.esc-cerro { color:#8A4B00 !important; font-weight:700; }
+.esc-cerrada { background:#FFF4D6; border-radius:12px; padding:10px 12px; font-weight:700; color:#6B4300; }
