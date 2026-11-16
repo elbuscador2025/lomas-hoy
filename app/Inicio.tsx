@@ -4,7 +4,7 @@ import { config } from "@/lomas.config.mjs";
 import {
   cargarDatos, armarNovedades, type Anses, clasificarTren, fechaLarga, hora, hoyMMDD, nombreLindo, proximasHoras,
   CATEGORIAS, ordenarLugares, distanciaKm, distanciaTexto, normalizar, mapaBusqueda, ZONA,
-  type Todo, type Lugar, type Novedad, eventosLuz, tituloCorte,
+  type Todo, type Lugar, type Novedad, eventosLuz, tituloCorte, mapaCorte,
   textoCorteAgua,
 } from "@/lib/datos";
 import { ahoraAR } from "@/lib/avisos";
@@ -766,9 +766,12 @@ export default function Inicio() {
           ) : (
             <ul className="lista">
               {zonasLuz.map((z) => (
-                <li key={z.id}>
-                  <b>{z.titulo}</b> · {plural(z.usuarios, "usuario", "usuarios")} · {z.hasta ? `vuelve aprox. ${z.hasta.slice(11, 16)} hs` : "sin hora estimada"}
-                  {z.subestacion && <><br /><small>Subestación {nombreLindo(z.subestacion).replace(/ De /g, " de ").replace(/^Heroes/, "Héroes")}</small></>}
+                <li key={z.id} className="luz-corte">
+                  <b className="luz-zona">{z.barrio ?? `Zona: ${config.ciudad}`}</b>
+                  {(z.subbarrio || z.calle) && <span className="luz-referencia">{z.subbarrio ? `Barrio ${z.subbarrio}` : ""}{z.subbarrio && z.calle ? " · " : ""}{z.calle ? `Cerca de ${z.calle}` : ""}</span>}
+                  <span>{plural(z.usuarios, "usuario", "usuarios")} sin luz · {z.hasta ? `vuelve aprox. ${z.hasta.slice(11, 16)} hs` : "sin hora estimada"}</span>
+                  {z.subestacion && <small>Subestación {nombreLindo(z.subestacion).replace(/ De /g, " de ").replace(/^Heroes/, "Héroes")}</small>}
+                  <a className="btn claro luz-mapa" href={mapaCorte(z)} target="_blank" rel="noreferrer">Ver en el mapa ↗</a>
                 </li>
               ))}
             </ul>

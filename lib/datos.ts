@@ -228,7 +228,7 @@ export function mapaBusqueda(texto: string, yo: { lat: number; lng: number } | n
 // ---- Cortes de luz del momento ----
 // El ENRE manda un registro por cada grupo de usuarios (con su localidad, a veces "Zona Rural", y un punto). Los registros del mismo corte se juntan en un solo renglón:
 // los que cuelgan del mismo alimentador (o, si no lo dicen, los que están a menos de 1,2 km y tienen la misma hora de vuelta). El barrio y la calle salen de las coordenadas (OpenStreetMap).
-export type EventoLuz = { id: string; titulo: string; barrio: string | null; calle: string | null; usuarios: number; hasta: string | null; subestacion: string | null; lat?: number; lng?: number };
+export type EventoLuz = { id: string; titulo: string; barrio: string | null; subbarrio: string | null; calle: string | null; usuarios: number; hasta: string | null; subestacion: string | null; lat?: number; lng?: number };
 const sinAcentos = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 function localidadLinda(loc: string | null | undefined) {
   if (!loc || /rural|^s\/d$|sin dato|desconoc/i.test(loc.trim()) || sinAcentos(loc) === sinAcentos(config.ciudad)) return null; // "Lomas de Zamora" es el partido, no un barrio
@@ -256,6 +256,11 @@ export function gruposDeCortes(cortes: CorteLuz[]) {
   }
   return grupos.map((g) => ({ ...g, miembros: g.miembros.sort((x, y) => y.usuarios - x.usuarios) })); // el primero es el grupo más grande: de ahí sale el punto del corte
 }
+// "Ver en el mapa": abre Google Maps justo en el punto que informa el ENRE (si no hay punto, busca la calle o la zona dentro de Lomas de Zamora)
+export function mapaCorte(z: { lat?: number; lng?: number; calle: string | null; barrio: string | null }) {
+  const q = z.lat != null && z.lng != null ? `${z.lat},${z.lng}` : [z.calle, z.barrio && z.barrio !== config.ciudad ? z.barrio : null, config.ciudad, "Buenos Aires, Argentina"].filter(Boolean).join(", ");
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+}
 export function tituloCorte(barrio: string | null, calle: string | null) {
   if (barrio) return calle ? `Corte en ${barrio}, cerca de ${calle}` : `Corte en ${barrio}`;
   return calle ? `Corte en Lomas de Zamora, cerca de ${calle}` : "Corte en Lomas de Zamora (zona no informada)";
@@ -263,10 +268,17 @@ export function tituloCorte(barrio: string | null, calle: string | null) {
 export function eventosLuz(cortes: CorteLuz[]): EventoLuz[] {
   return gruposDeCortes(cortes).map((g) => {
     const rep = g.miembros[0];
-    const barrio = g.miembros.find((m) => m.barrio)?.barrio ?? g.miembros.map((m) => localidadLinda(m.localidad)).find(Boolean) ?? null;
+    // Lo que se muestra en grande es la localidad del corte: la que informa el ENRE (si es una localidad del partido) o, si el ENRE solo dice "Lomas de Zamora" o no dice nada,
+    // el barrio que sale de las coordenadas cuando es uno de la lista del partido. Si no se puede saber con seguridad, queda sin barrio ("Zona: Lomas de Zamora").
+    const deEnre = g.miembros.map((m) => localidadLinda(m.localidad)).find(Boolean) ?? null;
+    const deMapa = g.miembros.find((m) => m.barrio)?.barrio ?? null;
+    const deMapaConocido = deMapa ? config.localidades.find((l: string) => sinAcentos(l) === sinAcentos(deMapa)) ?? null : null;
+    const ladoLomas = g.miembros.some((m) => m.localidad && sinAcentos(m.localidad) === sinAcentos(config.ciudad));
+    const barrio: string | null = deEnre ?? deMapaConocido ?? (ladoLomas ? config.ciudad : null);
+    const subbarrio = deMapa && (!barrio || sinAcentos(deMapa) !== sinAcentos(barrio)) ? deMapa : null; // barrio más chico que sale del mapa (ej. Santa Marta, dentro de Ingeniero Budge)
     const calle = rep.calle ?? g.miembros.find((m) => m.calle)?.calle ?? null;
     const hasta = g.miembros.reduce<string | null>((t, m) => (m.normalizacion && (!t || m.normalizacion > t) ? m.normalizacion : t), null);
     const subestacion = g.miembros.find((m) => m.subestacion && !/^s\/d$/i.test(m.subestacion))?.subestacion ?? null;
-    return { id: `${g.clave}|${rep.lat?.toFixed(3) ?? ""}`, titulo: tituloCorte(barrio, calle), barrio, calle, usuarios: g.miembros.reduce((t, m) => t + m.usuarios, 0), hasta, subestacion, lat: rep.lat, lng: rep.lng };
+    return { id: `${g.clave}|${rep.lat?.toFixed(3) ?? ""}`, titulo: tituloCorte(barrio, calle), barrio, subbarrio, calle, usuarios: g.miembros.reduce((t, m) => t + m.usuarios, 0), hasta, subestacion, lat: rep.lat, lng: rep.lng };
   }).sort((a, b) => b.usuarios - a.usuarios);
 }

@@ -1158,3 +1158,10 @@ button.voz-aquien { text-decoration:underline; text-decoration-color:#B8C4DD; }
 .esc-abierta { color:#14532D !important; font-weight:800; }
 .esc-cerro { color:#8A4B00 !important; font-weight:700; }
 .esc-cerrada { background:#FFF4D6; border-radius:12px; padding:10px 12px; font-weight:700; color:#6B4300; }
+
+/* Cortes de luz: la localidad en grande, la referencia de calle debajo y el botón del mapa */
+.luz-corte { display:flex; flex-direction:column; gap:4px; }
+.luz-zona { font-size:24px; line-height:1.2; color:#0F2557; }
+.luz-referencia { font-size:16px; color:#2B3A55; }
+.luz-corte small { color:#5B6577; }
+.luz-mapa { align-self:flex-start; margin-top:4px; }
