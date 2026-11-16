@@ -6,7 +6,7 @@ type Opcion = { id: string; texto: string };
 type Res = { total: number; opciones: { id: string; votos: number; pct: number }[] };
 type Pregunta = { id: string; texto: string; opciones: Opcion[]; activa: boolean; orden: number; resultados: Res; fechas: string[] };
 type Coment = { padre?: string; id: string; texto: string; creado: string; preguntaId: string; pregunta: string; oculta?: boolean; denuncias?: { motivo: string }[] };
-type Datos = { hoy: { fecha: string; preguntaId: string | null; manual: boolean }; manana: { fecha: string; preguntaId: string | null }; preguntas: Pregunta[]; comentarios: Coment[] };
+type Datos = { visible?: boolean; hoy: { fecha: string; preguntaId: string | null; manual: boolean }; manana: { fecha: string; preguntaId: string | null }; preguntas: Pregunta[]; comentarios: Coment[] };
 type Borrador = { id?: string; texto: string; opciones: Opcion[]; activa: boolean };
 
 const fecha = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", dateStyle: "short", timeStyle: "short", hour12: false });
@@ -80,6 +80,15 @@ export default function PanelVoz() {
   return (
     <div>
       {msg && <p className="normal">{msg}</p>}
+
+      <div className="mascota"><div className="mascota-datos" style={{ width: "100%" }}>
+        <label style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 18, fontWeight: 800 }}>
+          <input type="checkbox" role="switch" style={{ width: 26, height: 26 }} checked={d?.visible !== false} disabled={!d}
+            onChange={(e) => accion({ accion: "visible", valor: e.target.checked }, e.target.checked ? "La Voz de Lomas se ve en la portada." : "La Voz de Lomas quedó oculta de la portada.")} />
+          Mostrar en la portada: {d?.visible === false ? "apagado" : "prendido"}
+        </label>
+        <small>{d?.visible === false ? "Apagado: la tarjeta y la invitación a activar avisos que salía después de votar no aparecen. No se borró nada: preguntas, votos y comentarios siguen guardados." : "Prendido: la tarjeta aparece en la pantalla principal con la pregunta de hoy."}</small>
+      </div></div>
 
       <h2>Pregunta de hoy</h2>
       {hoyP ? (

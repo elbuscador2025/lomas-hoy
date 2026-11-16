@@ -1,5 +1,5 @@
 import { esAdmin } from "@/lib/cuentas";
-import { paraPanel, guardarPregunta, activarPregunta, elegirPregunta, ocultarComentario, dejarComentario, borrarComentario, bloquearAutor } from "@/lib/voz";
+import { paraPanel, guardarPregunta, activarPregunta, ponerVozVisible, elegirPregunta, ocultarComentario, dejarComentario, borrarComentario, bloquearAutor } from "@/lib/voz";
 
 // Mi panel → La Voz de Lomas: preguntas, pregunta del día, resultados y comentarios.
 export async function POST(req: Request) {
@@ -9,6 +9,7 @@ export async function POST(req: Request) {
   const id = String(c.id ?? "").slice(0, 20), cid = String(c.cid ?? "").slice(0, 20);
   switch (c.accion) {
     case "listar": return Response.json({ ok: true, ...(await paraPanel()) });
+    case "visible": await ponerVozVisible(c.valor === true); return Response.json({ ok: true });
     case "guardar": return Response.json(await guardarPregunta(c.pregunta ?? {}));
     case "activar": return Response.json({ ok: await activarPregunta(id, c.activa === true) });
     case "elegir": return Response.json({ ok: await elegirPregunta(id || null, c.cuando === "manana" ? "manana" : "hoy") });

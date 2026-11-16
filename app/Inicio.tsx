@@ -47,6 +47,7 @@ import type { DatosDeportes } from "@/lib/deportes";
 import Empleo from "./Empleo";
 import Comunidad from "./Comunidad";
 import VozDeLomas from "./VozDeLomas";
+import InvitacionAvisos from "./InvitacionAvisos";
 import Agenda from "./Agenda";
 import Telemedicina from "./Telemedicina";
 import { OllaEnlace, CuadrosOlla } from "./Olla";
@@ -168,6 +169,8 @@ export default function Inicio() {
   useEffect(() => { const f = () => {}; document.addEventListener("touchstart", f, { passive: true }); return () => document.removeEventListener("touchstart", f); }, []);
   const [portadas, setPortadas] = useState<PortadaManual[]>([]); // las portadas que cargué yo desde el panel (si hay, reemplazan a la foto automática)
   useEffect(() => { fetch("/api/portada").then((r) => (r.ok ? r.json() : [])).then((x) => Array.isArray(x) && setPortadas(x)).catch(() => {}); }, []);
+  const [vozVisible, setVozVisible] = useState<boolean | null>(null); // La Voz de Lomas se prende y apaga desde el panel (null = todavía no se sabe)
+  useEffect(() => { fetch("/api/voz/visible", { cache: "no-store" }).then((r) => r.json()).then((x) => setVozVisible(x.visible !== false)).catch(() => setVozVisible(true)); }, []);
   const [deportes, setDeportes] = useState<DatosDeportes | null>(null); // llega vacío si la sección está oculta (salvo para el dueño)
   useEffect(() => { fetch("/api/lugares?guia=chicos", { cache: "no-store" }).then((r) => r.json()).then((x) => x?.visible && setDeportes(x)).catch(() => {}); }, []);
 
@@ -1306,8 +1309,9 @@ export default function Inicio() {
         ) : (
           <>
             <PortadaHoy manuales={portadas} notas={[...(d.noticias?.contenido?.notas ?? []), ...(s.agenda.activa ? notasAgenda : [])]} onAbrir={abrir} />
-            <VozDeLomas push={push} />
+            {vozVisible && <VozDeLomas push={push} />}
             {s.agenda.activa && (d.agenda?.contenido || notasAgenda.length > 0) && <AgendaDestacada notas={notasAgenda} onVerTodo={() => abrir("agenda")} push={push} />}
+            {vozVisible === false && <InvitacionAvisos push={push} />} {/* con La Voz apagada, la invitación a activar avisos sale acá, debajo de la Agenda */}
             {s.pasa.activa && <BotonPasa onClick={() => abrir("pasa-avisar")} />}
             <div className="panel-claro">
             {(s.tren.activa || s.colectivos.activa) && (

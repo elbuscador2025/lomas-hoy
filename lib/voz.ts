@@ -30,6 +30,11 @@ const kVotos = (id: string) => `${P}:v:${id}`, kCuenta = (id: string) => `${P}:n
 
 const mañana = (f: string) => { const [y, m, d] = f.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10); };
 
+// ---- Interruptor "Mostrar en la portada" (no borra nada: preguntas, votos y comentarios quedan guardados) ----
+const kVisible = `${P}:visible`;
+export async function vozVisible() { const [x] = await redis([["GET", kVisible]]); return x !== "0"; } // sin dato = prendida, como siempre
+export async function ponerVozVisible(v: boolean) { await redis([["SET", kVisible, v ? "1" : "0"]]); }
+
 // ---- Preguntas ----
 async function sembrar() {
   await redis([
@@ -197,6 +202,7 @@ export async function paraPanel() {
     return { ...c, preguntaId: p.id, pregunta: p.texto };
   })).sort((a, b) => b.creado.localeCompare(a.creado)).slice(0, 200);
   return {
+    visible: await vozVisible(),
     hoy: { fecha: hoy, preguntaId: pHoy?.id ?? null, manual: !!manHoy && manHoy === pHoy?.id },
     manana: { fecha: man, preguntaId: manMan ? String(manMan) : null },
     preguntas: preguntas.map((p, i) => ({ ...p, resultados: res[i], fechas: (hist.get(p.id) ?? []).sort() })),
