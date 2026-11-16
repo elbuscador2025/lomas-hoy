@@ -85,6 +85,18 @@ export const ENLACES: Enlace[] = [
   { seccion: "Impuestos y tasas", url: "https://lomasdezamora.eregulations.org/procedure/70?l=es" },
   { seccion: "Impuestos y tasas", url: "https://www.arba.gov.ar/Aplicaciones/AvisoDeudas.asp" },
   { seccion: "Impuestos y tasas", url: "https://web.arba.gov.ar/" },
+  { seccion: "Escuelas y estudios", url: "https://www.argentina.gob.ar/educacion/evaluacion-informacion-educativa/padron-oficial-de-establecimientos-educativos" },
+  { seccion: "Escuelas y estudios", url: "https://abc.gob.ar/calendario_escolar" },
+  { seccion: "Escuelas y estudios", url: "https://abc.gob.ar/" },
+  { seccion: "Escuelas y estudios (UNLZ)", url: "https://www.unlz.edu.ar/" },
+  { seccion: "Escuelas y estudios (UNLZ)", url: "https://www.unlz.edu.ar/?page_id=2363" },
+  { seccion: "Escuelas y estudios (UNLZ)", url: "https://carreras.unlz.edu.ar" },
+  { seccion: "Escuelas y estudios (UNLZ)", url: "https://www.unlz.edu.ar/?p=10043" },
+  { seccion: "Escuelas y estudios (UNLZ)", url: "https://agrarias.unlz.edu.ar/ingreso/" },
+  { seccion: "Escuelas y estudios (UNLZ)", url: "https://www.economicas.unlz.edu.ar/nuevosite/index.php/ingreso-a-la-facultad-ano-2027/" },
+  { seccion: "Escuelas y estudios (UNLZ)", url: "https://servicios.sociales.unlz.edu.ar/preinscripcion/" },
+  { seccion: "Escuelas y estudios (UNLZ)", url: "https://www.derecho.unlz.edu.ar/web2017/" },
+  { seccion: "Escuelas y estudios (UNLZ)", url: "https://ingenieria.unlz.edu.ar/oferta-academica/preinscripcion" },
   { seccion: "Discapacidad", url: "https://www.argentina.gob.ar/discapacidad" },
   { seccion: "Discapacidad", url: "https://www.argentina.gob.ar/andis/cartilla-de-derechos-para-personas-con-discapacidad" },
   { seccion: "Discapacidad", url: "https://www.argentina.gob.ar/servicio/como-obtener-el-certificado-unico-de-discapacidad-cud" },
@@ -114,6 +126,8 @@ export async function revisar(url: string): Promise<{ ok: boolean; detalle: stri
     // Algunos sitios oficiales mandan mal armada la cadena de certificados: los navegadores igual los abren, pero el servidor no puede ver qué página devuelven.
     // No se desactiva la verificación del certificado: esos enlaces quedan marcados como "sin poder verificar" (el sitio responde, pero no se sabe si la página existe).
     if (/UNABLE_TO_VERIFY_LEAF_SIGNATURE|UNABLE_TO_GET_ISSUER_CERT/.test(causa)) return { ok: true, sinVerificar: true, detalle: "certificado incompleto del sitio: no se puede verificar desde el servidor" };
+    // abc.gob.ar usa un cifrado de seguridad muy viejo que el servidor no acepta (los navegadores sí): tampoco se baja la seguridad para revisarlo
+    if (/ERR_SSL_DH_KEY_TOO_SMALL/.test(causa)) return { ok: true, sinVerificar: true, detalle: "el sitio usa un cifrado antiguo: no se puede verificar desde el servidor" };
     return { ok: false, detalle: (e as Error).name === "TimeoutError" ? "no responde" : causa || "no se pudo conectar" };
   }
 }

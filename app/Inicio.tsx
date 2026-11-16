@@ -41,6 +41,7 @@ import Estudiar from "./Estudiar";
 import Impuestos from "./Impuestos";
 import Rescate from "./Rescate";
 import Jubilados from "./Jubilados";
+import Escuelas from "./Escuelas";
 import type { DatosJubilados } from "@/lib/jubilados";
 import type { DatosDeportes } from "@/lib/deportes";
 import Empleo from "./Empleo";
@@ -436,6 +437,8 @@ export default function Inicio() {
           ),
     jubilados: <Tile color="jubilados" icono="emoji:🧓" titulo="Jubilados" estado="Ver" tono="neutro" onClick={() => abrir("jubilados")}
             resumen="Talleres, cursos y centros para salir y disfrutar" />,
+    escuelas: <Tile color="escuelas" icono="emoji:🏫" titulo="Escuelas y estudios" estado="2027" tono="aviso" onClick={() => abrir("escuelas")}
+      resumen="Jardines, escuelas, universidad e inscripciones" />,
     estudiar: <Tile color="estudiar" icono="emoji:🎓" titulo="Estudiá gratis" estado="Ver" tono="neutro" onClick={() => abrir("estudiar")}
             resumen="Oficios, terminar la secundaria y cursos con certificado" />,
     rescate: <Tile color="rescate" icono="emoji:🐶" titulo="Perro al rescate" estado="Ayudá" tono="aviso" onClick={() => abrir("rescate")}
@@ -1080,6 +1083,13 @@ export default function Inicio() {
     return (
       <Detalle color="rescate" titulo={vista === "rescate-publicar" ? "Publicar un animal" : vista.startsWith("rescate-ver:") ? "Animal que necesita ayuda" : "Perro al rescate"} onVolver={volver}>
         <Rescate vista={vista} abrir={abrir} volver={volver} />
+      </Detalle>
+    );
+
+  if (vista === "escuelas")
+    return (
+      <Detalle color="escuelas" titulo="Escuelas y estudios" onVolver={volver}>
+        <Escuelas />
       </Detalle>
     );
 

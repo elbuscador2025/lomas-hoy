@@ -11,8 +11,8 @@ export const GRUPOS: Grupo[] = [
     secciones: ["comunidad", "impuestos", "anses", "ansesof", "auto", "luz", "agua", "otros"] },
   { id: "comunidad", titulo: "Comunidad", resumen: "Mascotas, rescate, trueque y cooperativas",
     secciones: ["mascotas", "rescate", "trueque", "coop"] },
-  { id: "trabajo", titulo: "Trabajo y estudio", resumen: "Empleo, cursos gratis y emprendedores",
-    secciones: ["empleo", "trabajo", "estudiar", "emprendedores"] },
+  { id: "trabajo", titulo: "Trabajo y estudio", resumen: "Empleo, cursos, escuelas y emprendedores",
+    secciones: ["empleo", "trabajo", "estudiar", "escuelas", "emprendedores"] },
   { id: "familia", titulo: "Familia y tiempo libre", resumen: "Jubilados, deportes, juegos y quiniela",
     secciones: ["jubilados", "deportes", "juegos", "peques", "quiniela"] },
 ];
