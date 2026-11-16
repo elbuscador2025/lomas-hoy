@@ -1,20 +1,7 @@
 // Ilustración propia del encabezado: una plaza y el centro de Lomas, con el cielo de fondo. Es un dibujo simple (sin fotos ni logos), liviano y sin interacción.
 export default function Ilustracion() {
   return (
-    <svg className="portal-ilustracion" viewBox="0 0 400 190" preserveAspectRatio="xMidYMax meet" aria-hidden focusable="false">
-      <defs>
-        <radialGradient id="ilu-sol" cx=".5" cy=".5" r=".5">
-          <stop offset="0" stopColor="#FFF3B0" stopOpacity=".95" />
-          <stop offset="1" stopColor="#FFF3B0" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <circle cx="338" cy="44" r="46" fill="url(#ilu-sol)" />
-      <circle cx="338" cy="44" r="15" fill="#FFE27A" />
-      {/* nubes */}
-      <g fill="#fff" opacity=".88">
-        <ellipse cx="70" cy="46" rx="30" ry="9" /><ellipse cx="90" cy="40" rx="20" ry="9" /><ellipse cx="52" cy="42" rx="16" ry="7" />
-        <ellipse cx="238" cy="30" rx="26" ry="7" /><ellipse cx="256" cy="26" rx="16" ry="7" />
-      </g>
+    <svg className="portal-ilustracion" viewBox="0 0 400 190" preserveAspectRatio="xMidYMax slice" aria-hidden focusable="false">
       {/* edificios del fondo */}
       <g fill="#3A74BB" opacity=".85">
         <rect x="4" y="112" width="26" height="78" /><rect x="34" y="98" width="22" height="92" /><rect x="60" y="120" width="30" height="70" />
@@ -45,10 +32,6 @@ export default function Ilustracion() {
       <g>
         <rect x="30" y="140" width="5" height="30" fill="#6B4A2B" /><circle cx="32" cy="130" r="20" fill="#2FA05A" /><circle cx="44" cy="138" r="14" fill="#3DB36A" /><circle cx="20" cy="140" r="13" fill="#278F4F" />
         <rect x="366" y="140" width="5" height="30" fill="#6B4A2B" /><circle cx="368" cy="130" r="20" fill="#2FA05A" /><circle cx="354" cy="139" r="14" fill="#3DB36A" /><circle cx="380" cy="140" r="13" fill="#278F4F" />
-      </g>
-      <g>
-        <rect x="110" y="146" width="3" height="26" fill="#17325F" /><circle cx="111.5" cy="144" r="5" fill="#FFE27A" />
-        <rect x="288" y="146" width="3" height="26" fill="#17325F" /><circle cx="289.5" cy="144" r="5" fill="#FFE27A" />
       </g>
     </svg>
   );

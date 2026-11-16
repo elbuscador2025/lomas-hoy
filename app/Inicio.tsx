@@ -163,6 +163,8 @@ export default function Inicio() {
   const s = config.secciones;
   const [mayores, setMayores] = useState<DatosJubilados | null>(null); // centros de jubilados y actividades (la sección es pública)
   useEffect(() => { fetch("/api/lugares?guia=mayores", { cache: "no-store" }).then((r) => r.json()).then((x) => Array.isArray(x?.centros) && setMayores(x)).catch(() => {}); }, []);
+  // En iPhone el "efecto de botón apretado" (:active) solo anda si la página escucha toques
+  useEffect(() => { const f = () => {}; document.addEventListener("touchstart", f, { passive: true }); return () => document.removeEventListener("touchstart", f); }, []);
   const [portadas, setPortadas] = useState<PortadaManual[]>([]); // las portadas que cargué yo desde el panel (si hay, reemplazan a la foto automática)
   useEffect(() => { fetch("/api/portada").then((r) => (r.ok ? r.json() : [])).then((x) => Array.isArray(x) && setPortadas(x)).catch(() => {}); }, []);
   const [deportes, setDeportes] = useState<DatosDeportes | null>(null); // llega vacío si la sección está oculta (salvo para el dueño)
@@ -1136,7 +1138,7 @@ export default function Inicio() {
       <header className="azul compacto portal" onClick={() => abrir("clima")}>
         <Ilustracion />
         <div className="azul-fila">
-          <span className="marca-bloque"><span className="marca">Lomas Hoy</span><small className="marca-sub">La plaza virtual de Lomas</small></span>
+          <span className="marca-bloque"><span className="marca">Lomas Hoy</span><small className="marca-sub">Todo Lomas en un solo lugar</small></span>
           <span className="azul-botones">
           <button className="sos" aria-label="Emergencias: números para llamar" onClick={(e) => { e.stopPropagation(); abrir("sos"); }}>SOS</button>
           <button className="campana" aria-label={avisosApp.sinVer + vecinos.sinVer ? `Mis avisos: ${avisosApp.sinVer + vecinos.sinVer} sin ver` : "Mis avisos"} onClick={(e) => { e.stopPropagation(); abrir("avisos"); }}>

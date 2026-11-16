@@ -52,7 +52,7 @@ export function TarjetasGrupos({ cuantas, onAbrir }: { cuantas: Record<string, n
               <b>{g.titulo}</b>
               <small>{g.resumen}</small>
             </span>
-            <span className="grupo-flecha"><IconoLinea nombre="flecha" tam={24} /></span>
+            <span className="grupo-flecha"><IconoLinea nombre="flecha" tam={32} /></span>
           </button>
         ))}
       </div>
