@@ -4,7 +4,7 @@ import { listar } from "@/lib/portada";
 export async function GET() {
   try {
     const l = await listar();
-    return Response.json(l.map(({ id, titulo, texto, enlace, foto }) => ({ id, titulo, texto, enlace, foto })), { headers: { "Cache-Control": "public, s-maxage=30" } });
+    return Response.json(l.map(({ id, titulo, texto, enlace, foto }) => ({ id, titulo, texto, enlace, foto })), { headers: { "Cache-Control": "no-store" } });
   } catch {
     return Response.json([]);
   }
