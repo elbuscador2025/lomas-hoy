@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { post } from "./api";
 
 type Opcion = { id: string; texto: string };
@@ -18,6 +18,9 @@ export default function PanelVoz() {
   const [d, setD] = useState<Datos | null>(null);
   const [msg, setMsg] = useState("");
   const [edit, setEdit] = useState<Borrador | null>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+  const editId = edit ? edit.id ?? "nueva" : "";
+  useEffect(() => { if (editId) setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 60); }, [editId]);
   const cargar = useCallback(async () => { const r = await post("/api/panel/voz", { accion: "listar" }); if (r.ok) setD(await r.json()); }, []);
   useEffect(() => { cargar(); }, [cargar]);
   async function accion(cuerpo: object, ok: string) {
@@ -27,6 +30,26 @@ export default function PanelVoz() {
     cargar();
     return !!j.ok;
   }
+  // El formulario de editar se abre justo debajo de la pregunta que se toca (el de "Nueva pregunta", arriba de la lista) y la pantalla baja hasta él
+  const formulario = edit && (
+        <div className="mascota" ref={formRef}><div className="mascota-datos" style={{ width: "100%" }}>
+          <b>{edit.id ? "Editar pregunta" : "Nueva pregunta"}</b>
+          <input value={edit.texto} onChange={(e) => setEdit({ ...edit, texto: e.target.value })} placeholder="La pregunta" maxLength={120} style={{ width: "100%", minHeight: 44, fontSize: 16 }} />
+          {edit.opciones.map((o, i) => (
+            <div key={i} style={{ display: "flex", gap: 6, width: "100%" }}>
+              <input value={o.texto} onChange={(e) => setEdit({ ...edit, opciones: edit.opciones.map((x, j) => (j === i ? { ...x, texto: e.target.value } : x)) })} placeholder={`Opción ${i + 1}`} maxLength={60} style={{ flex: 1, minHeight: 44, fontSize: 16 }} />
+              {edit.opciones.length > 2 && <button className="btn claro chico" onClick={() => setEdit({ ...edit, opciones: edit.opciones.filter((_, j) => j !== i) })}>Quitar</button>}
+            </div>
+          ))}
+          {edit.opciones.length < 4 && <button className="btn claro chico" onClick={() => setEdit({ ...edit, opciones: [...edit.opciones, { id: "", texto: "" }] })}>+ Agregar opción</button>}
+          <label><input type="checkbox" checked={edit.activa} onChange={(e) => setEdit({ ...edit, activa: e.target.checked })} /> Activa (entra en la rotación)</label>
+          <div className="acciones">
+            <button className="btn" onClick={guardar}>Guardar</button>
+            <button className="btn claro" onClick={() => setEdit(null)}>Cancelar</button>
+          </div>
+        </div></div>
+  );
+
   async function guardar() {
     if (!edit) return;
     if (await accion({ accion: "guardar", pregunta: { id: edit.id, texto: edit.texto, opciones: edit.opciones, activa: edit.activa } }, edit.id ? "Pregunta guardada." : "Pregunta creada.")) setEdit(null);
@@ -70,26 +93,10 @@ export default function PanelVoz() {
 
       <h2>Preguntas ({d?.preguntas.length ?? 0})</h2>
       {!edit && <button className="btn" onClick={() => setEdit(vacia())}>+ Nueva pregunta</button>}
-      {edit && (
-        <div className="mascota"><div className="mascota-datos" style={{ width: "100%" }}>
-          <b>{edit.id ? "Editar pregunta" : "Nueva pregunta"}</b>
-          <input value={edit.texto} onChange={(e) => setEdit({ ...edit, texto: e.target.value })} placeholder="La pregunta" maxLength={120} style={{ width: "100%", minHeight: 44, fontSize: 16 }} />
-          {edit.opciones.map((o, i) => (
-            <div key={i} style={{ display: "flex", gap: 6, width: "100%" }}>
-              <input value={o.texto} onChange={(e) => setEdit({ ...edit, opciones: edit.opciones.map((x, j) => (j === i ? { ...x, texto: e.target.value } : x)) })} placeholder={`Opción ${i + 1}`} maxLength={60} style={{ flex: 1, minHeight: 44, fontSize: 16 }} />
-              {edit.opciones.length > 2 && <button className="btn claro chico" onClick={() => setEdit({ ...edit, opciones: edit.opciones.filter((_, j) => j !== i) })}>Quitar</button>}
-            </div>
-          ))}
-          {edit.opciones.length < 4 && <button className="btn claro chico" onClick={() => setEdit({ ...edit, opciones: [...edit.opciones, { id: "", texto: "" }] })}>+ Agregar opción</button>}
-          <label><input type="checkbox" checked={edit.activa} onChange={(e) => setEdit({ ...edit, activa: e.target.checked })} /> Activa (entra en la rotación)</label>
-          <div className="acciones">
-            <button className="btn" onClick={guardar}>Guardar</button>
-            <button className="btn claro" onClick={() => setEdit(null)}>Cancelar</button>
-          </div>
-        </div></div>
-      )}
+      {!edit?.id && formulario}
       <ul className="lista">
         {d?.preguntas.map((p) => (
+          edit?.id === p.id ? <li key={p.id}>{formulario}</li> : (
           <li key={p.id} className="mascota">
             <div className="mascota-datos">
               <span className={`pildora ${p.activa ? "" : "grave"}`}>{p.activa ? "Activa" : "Apagada"}</span>
@@ -108,6 +115,7 @@ export default function PanelVoz() {
               </div>
             </div>
           </li>
+          )
         ))}
       </ul>
 

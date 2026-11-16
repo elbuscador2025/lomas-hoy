@@ -31,6 +31,6 @@ export const BANCO: { id: string; texto: string; opciones: string[] }[] = [
   { id: "b28", texto: "¿En qué momento del año se vive mejor el barrio?", opciones: ["En las fiestas de fin de año", "En verano", "En las vacaciones de invierno", "Todo el año"] },
   { id: "b29", texto: "¿Qué cosa chica mejoraría tu día en el barrio?", opciones: ["Más sombra", "Más bancos en la plaza", "Más árboles", "Más juegos para los chicos"] },
   { id: "b30", texto: "¿Qué es lo primero que le mostrarías a alguien que visita tu barrio?", opciones: ["La plaza", "Una buena comida", "Un club o cancha", "La gente"] },
-  { id: "b31", texto: "¿Qué extrañás de los sábados de antes en Lomas?", opciones: ["🕺 Los boliches y bailes de antes", "🎭 Los carnavales y las murgas del barrio", "🎬 Ir al cine del barrio", "🍻 Juntarse en la vereda"] },
+  { id: "b31", texto: "¿Qué extrañás de los fines de semana de antes en Lomas?", opciones: ["🕺 Los boliches y bailes de antes", "🎭 Los carnavales y las murgas del barrio", "🎬 Ir al cine del barrio", "🍻 Juntarse en la vereda"] },
   { id: "b32", texto: "¿Qué se come hoy domingo en tu casa?", opciones: ["🥩 Asado","🍝 Pastas o ñoquis","🍗 Pollo al horno o milanesas","🍕 Pizza o empanadas"] },
 ];
