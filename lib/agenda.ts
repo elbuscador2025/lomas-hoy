@@ -6,7 +6,7 @@ import { ahoraAR } from "@/lib/avisos";
 import { notificarSeguro } from "@/lib/push";
 import { tituloEsEvento } from "@/scripts/fuentes.mjs";
 
-export type NotaAgenda = { titulo: string; medio: string; link: string; fecha: string };
+export type NotaAgenda = { titulo: string; medio: string; link: string; fecha: string; imagen?: string };
 export type Agenda = { notas: NotaAgenda[] };
 const DIA = 86400_000;
 

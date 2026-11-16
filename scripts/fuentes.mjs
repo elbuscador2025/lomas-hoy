@@ -82,11 +82,16 @@ const sinTildes = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(
 const escapar = (s) => s.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const palabras = (lista, sinAcentos = true) => new RegExp(`\\b(${lista.map((p) => escapar(sinAcentos ? sinTildes(p) : p)).join("|")})\\b`);
 
+// Foto de la nota (solo la dirección: la imagen queda en el sitio del diario): la miniatura o el contenido de imagen del RSS
+const imagenDe = (item) => {
+  const urls = [...item.matchAll(/<(?:media:thumbnail|media:content|enclosure)\b[^>]*?\burl="(https:\/\/[^"\s]+)"[^>]*>/g)].map((m) => m[1]);
+  return urls.reverse().find((u) => /\.(?:jpe?g|png|webp)(?:\?[^"\s]*)?$/i.test(u) && u.length <= 400);
+};
 export function leerRss(xml, medio) {
   return [...xml.matchAll(/<item[\s>][\s\S]*?<\/item>/g)].map(([item]) => {
     const campo = (c) => item.match(new RegExp(`<${c}[^>]*>([\\s\\S]*?)</${c}>`))?.[1]
       ?.replace(/^\s*<!\[CDATA\[|\]\]>\s*$/g, "").trim();
-    return { titular: decodificar(campo("title") ?? ""), link: campo("link") ?? "", fecha: new Date(campo("pubDate") ?? campo("dc:date") ?? ""), medio };
+    return { titular: decodificar(campo("title") ?? ""), link: campo("link") ?? "", fecha: new Date(campo("pubDate") ?? campo("dc:date") ?? ""), medio, imagen: imagenDe(item) };
   });
 }
 
@@ -220,7 +225,7 @@ export function armarNoticias(porDiario, maximo = 30) {
   const vistos = new Set();
   const notas = porDiario.flatMap((x) => x)
     .filter((n) => n.titular && /^https?:\/\//.test(n.link) && !Number.isNaN(n.fecha.getTime()))
-    .map((n) => ({ titulo: sentencia(n.titular.replace(/\s+/g, " ").trim()).slice(0, 220), link: n.link, medio: n.medio, fecha: n.fecha.toISOString() }))
+    .map((n) => ({ titulo: sentencia(n.titular.replace(/\s+/g, " ").trim()).slice(0, 220), link: n.link, medio: n.medio, fecha: n.fecha.toISOString(), ...(n.imagen ? { imagen: n.imagen } : {}) }))
     .filter((n) => { if (vistos.has(n.link)) return false; vistos.add(n.link); return true; })
     .sort((a, b) => b.fecha.localeCompare(a.fecha));
   return notas.slice(0, maximo);
@@ -284,5 +289,5 @@ export function buscarEventos(notas, cfg, ahora = new Date()) {
     .filter((n) => tituloEsEvento(n.titular, cfg))
     .filter((n) => !vistos.has(n.link) && vistos.add(n.link))
     .sort((a, b) => b.fecha - a.fecha)
-    .map((n) => ({ titulo: sentencia(n.titular.replace(/\s+/g, " ").trim()).slice(0, 220), medio: n.medio, link: n.link, fecha: n.fecha.toISOString() }));
+    .map((n) => ({ titulo: sentencia(n.titular.replace(/\s+/g, " ").trim()).slice(0, 220), medio: n.medio, link: n.link, fecha: n.fecha.toISOString(), ...(n.imagen ? { imagen: n.imagen } : {}) }));
 }

@@ -975,3 +975,62 @@ button.voz-aquien { text-decoration:underline; text-decoration-color:#B8C4DD; }
 .agenda-dest-fila .agenda-dest-btn.btn { flex:1 1 0; min-width:0; white-space:normal; line-height:1.2; padding-left:10px; padding-right:10px; }
 .agenda-dest-fila .agenda-dest-btn.btn { flex:1 1 100%; }
 .agenda-dest-avisos:not(.activo) { flex:1 1 100%; min-height:48px; }
+
+/* ===== Portada nueva: encabezado con ilustración, Hoy en Lomas, accesos rápidos y grupos ===== */
+.azul.portal { position:relative; overflow:hidden; isolation:isolate; background:#0A3A8A; padding:12px 16px 46px; text-shadow:0 1px 3px rgba(0,25,80,.6); }
+.portal-ilustracion { position:absolute; inset:0; width:100%; height:100%; z-index:-1; }
+.marca-bloque { display:flex; flex-direction:column; line-height:1.05; }
+.azul.portal .marca { text-transform:uppercase; font-size:27px; font-weight:900; letter-spacing:.6px; }
+.marca-sub { font-size:14px; font-style:italic; font-weight:700; }
+.azul.portal .pildora, .azul.portal .banda-tormenta, .azul.portal .bloque-noche, .azul.portal .campana, .azul.portal .sos { text-shadow:none; }
+.banda-tormenta.banda-aviso { background:#B45309; }
+.hoy-en-lomas { position:relative; margin:4px 0 14px; border-radius:22px; overflow:hidden; background:#0B1730; box-shadow:0 8px 18px rgba(10,40,100,.3); }
+.hoy-enlace { display:block; position:relative; width:100%; height:clamp(128px, 36vw, 164px); padding:0; border:0; background:none; color:#fff; text-align:left; font:inherit; cursor:pointer; text-decoration:none; }
+.hoy-foto { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; animation:hoy-entra .5s ease; }
+@keyframes hoy-entra { from { opacity:0; } to { opacity:1; } }
+@media (prefers-reduced-motion: reduce) { .hoy-foto { animation:none; } }
+.hoy-enlace::after { content:""; position:absolute; inset:0; background:linear-gradient(to top, rgba(5,14,38,.94) 0%, rgba(5,14,38,.7) 36%, rgba(5,14,38,0) 72%); }
+.hoy-etiqueta { position:absolute; top:10px; left:10px; z-index:2; background:rgba(11,23,48,.85); color:#fff; font-weight:800; font-size:13px; padding:4px 10px; border-radius:999px; letter-spacing:.04em; text-transform:uppercase; }
+.hoy-texto { position:absolute; left:0; right:0; bottom:0; z-index:2; padding:10px 14px 12px; display:flex; flex-direction:column; gap:3px; }
+.hoy-texto b { font-size:18px; line-height:1.2; font-weight:800; color:#fff; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; text-shadow:0 1px 3px rgba(0,0,0,.6); }
+.hoy-texto small { font-size:13px; font-weight:700; color:#fff; }
+.hoy-puntos { position:absolute; top:4px; right:4px; z-index:3; display:flex; }
+.hoy-puntos button { width:30px; height:30px; padding:0; border:0; background:none; display:grid; place-items:center; cursor:pointer; }
+.hoy-puntos button span { width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,.55); border:1px solid rgba(0,0,0,.35); }
+.hoy-puntos button.activo span { background:#fff; width:12px; height:12px; }
+.transporte-compacto { display:grid; grid-template-columns:repeat(auto-fit, minmax(0, 1fr)); gap:8px; padding:10px; margin-top:12px; box-shadow:0 4px 12px rgba(16,33,63,.14); }
+.transporte-compacto h2 { grid-column:1 / -1; margin:0; font-size:16px; }
+.transporte-compacto .renglon { position:relative; display:flex; flex-direction:column; align-items:flex-start; gap:2px; min-height:0; padding:8px 10px; border:0; border-radius:14px; background:#fff; box-shadow:0 2px 6px rgba(16,33,63,.12); }
+.transporte-compacto .renglon b { font-size:16px; padding-right:16px; }
+.transporte-compacto .renglon-texto { font-size:14px; line-height:1.25; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.transporte-compacto .renglon-flecha { display:none; }
+.transporte-compacto .punto-estado { position:absolute; top:11px; right:10px; }
+.accesos { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin:14px 0; }
+.acceso { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-height:86px; padding:8px 4px; border:0; border-radius:16px; color:#fff; font:inherit; cursor:pointer; box-shadow:0 5px 12px rgba(10,30,70,.25); }
+.acceso:active { transform:scale(.96); filter:brightness(.92); }
+.acceso-emoji { font-size:28px; line-height:1; }
+.acceso b { font-size:14px; font-weight:800; line-height:1.15; text-align:center; color:#fff; }
+.acceso-farmacias { background:#177A34; } .acceso-guardias { background:#C62828; } .acceso-cobran { background:#0B6E80; }
+.acceso-auto { background:#1E5FBF; } .acceso-impuestos { background:#6A3FB0; } .acceso-emergencias { background:#8A1C1C; }
+.grupos { display:flex; flex-direction:column; gap:12px; margin:16px 0; }
+.grupo-tarjeta { display:flex; align-items:center; gap:14px; width:100%; min-height:96px; padding:14px 16px; border:0; border-radius:22px; color:#fff; text-align:left; font:inherit; cursor:pointer; box-shadow:0 8px 18px rgba(10,30,70,.24), inset 0 1px 0 rgba(255,255,255,.28); }
+.grupo-tarjeta:active { transform:scale(.98); filter:brightness(.92); }
+.grupo-emoji { flex:none; width:60px; height:60px; border-radius:18px; background:rgba(255,255,255,.22); display:grid; place-items:center; font-size:34px; line-height:1; }
+.grupo-textos { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.grupo-textos b { font-size:22px; font-weight:900; line-height:1.15; color:#fff; }
+.grupo-textos small { font-size:14px; font-weight:700; line-height:1.25; color:#fff; }
+.grupo-flecha { flex:none; font-size:36px; font-weight:800; line-height:1; }
+.grupo-salud { background:linear-gradient(135deg, #D32F2F, #9B1B1B); }
+.grupo-tramites { background:linear-gradient(135deg, #1976D2, #0D47A1); }
+.grupo-comunidad { background:linear-gradient(135deg, #2E9E4F, #176B38); }
+.grupo-trabajo { background:linear-gradient(135deg, #D84315, #A32A08); }
+.grupo-familia { background:linear-gradient(135deg, #8E24AA, #4A148C); }
+.c-g-salud { --c-bg:#FFE5E5; --c-fuerte:#C62828; } .c-g-tramites { --c-bg:#E1EEFF; --c-fuerte:#1565C0; } .c-g-comunidad { --c-bg:#E4F5EA; --c-fuerte:#1B6B3A; }
+.c-g-trabajo { --c-bg:#FFE9DF; --c-fuerte:#C2410C; } .c-g-familia { --c-bg:#F1E4F7; --c-fuerte:#6A1B9A; }
+.portada-texto { font-size:19px; line-height:1.45; white-space:pre-line; }
+.boton-pasa { box-shadow:0 4px 10px rgba(194,65,12,.25); }
+.azul.portal { background:linear-gradient(180deg, #0A3A8A 0%, #2373D1 62%, #7CC0F3 100%); }
+.portal-ilustracion { top:auto; bottom:0; height:auto; aspect-ratio:400 / 190; }
+.azul.portal { background:linear-gradient(180deg, #0A3A8A 0%, #1F68C4 60%, #4C97E0 100%); }
+.transporte-compacto { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+.transporte-compacto:has(.renglon:nth-of-type(3)) { grid-template-columns:repeat(3, minmax(0, 1fr)); }

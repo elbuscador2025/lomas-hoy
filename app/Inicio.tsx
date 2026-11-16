@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { config } from "@/lomas.config.mjs";
 import {
   cargarDatos, armarNovedades, type Anses, clasificarTren, fechaLarga, hora, hoyMMDD, nombreLindo, proximasHoras,
@@ -33,6 +33,9 @@ import Emprendedores from "./Emprendedores";
 import DeportesPantalla from "./Deportes";
 import AutoTramites from "./AutoTramites";
 import AgendaDestacada from "./AgendaDestacada";
+import Ilustracion from "./Ilustracion";
+import PortadaHoy, { type PortadaManual } from "./PortadaHoy";
+import { GRUPOS, AccesosRapidos, TarjetasGrupos } from "./Grupos";
 import Estudiar from "./Estudiar";
 import Impuestos from "./Impuestos";
 import Rescate from "./Rescate";
@@ -158,6 +161,8 @@ export default function Inicio() {
   const s = config.secciones;
   const [mayores, setMayores] = useState<DatosJubilados | null>(null); // centros de jubilados y actividades (la sección es pública)
   useEffect(() => { fetch("/api/lugares?guia=mayores", { cache: "no-store" }).then((r) => r.json()).then((x) => Array.isArray(x?.centros) && setMayores(x)).catch(() => {}); }, []);
+  const [portadas, setPortadas] = useState<PortadaManual[]>([]); // las portadas que cargué yo desde el panel (si hay, reemplazan a la foto automática)
+  useEffect(() => { fetch("/api/portada").then((r) => (r.ok ? r.json() : [])).then((x) => Array.isArray(x) && setPortadas(x)).catch(() => {}); }, []);
   const [deportes, setDeportes] = useState<DatosDeportes | null>(null); // llega vacío si la sección está oculta (salvo para el dueño)
   useEffect(() => { fetch("/api/lugares?guia=chicos", { cache: "no-store" }).then((r) => r.json()).then((x) => x?.visible && setDeportes(x)).catch(() => {}); }, []);
 
@@ -393,6 +398,137 @@ export default function Inicio() {
   const centroLomas = { lat: config.clima.latitud, lng: config.clima.longitud }; // el partido de Lomas de Zamora
 
   // ---- Pantallas de detalle ----
+  // ---- Cuadraditos de cada sección (se reparten en los grupos de la pantalla principal; cada uno lleva adonde siempre) ----
+  const tiles: Record<string, React.ReactNode> = {
+    luz: s.luz.activa && (
+            <Tile color="luz" icono="luz" titulo="Luz" estado={luzEstado} tono={luzTono} onClick={() => abrir("luz")}
+              resumen={(!d.luz?.contenido || luzVieja ? "Sin datos por ahora" : zonasLuz.length === 0 ? "Sin cortes" : zonasLuz.length === 1 ? `${tituloCorte(zonasLuz[0].barrio, null)} · ${plural(zonasLuz[0].usuarios, "usuario", "usuarios")}` : `Cortes en ${zonasLuz.length} zonas`) + (programados.length ? ` · ${plural(programados.length, "programado", "programados")}` : "")} />
+          ),
+    agua: s.agua.activa && aguaVisible && (
+            <Tile color="agua" icono="gota" titulo="Agua" estado={aguaEstado} tono={aguaTono} onClick={() => abrir("agua")} resumen={aguaResumen} />
+          ),
+    guardias: s.urgencias.activa && (
+              <Tile color="guardias" icono="guardia" titulo="Guardias 24 hs" estado={plural(lugares.filter(tieneGuardia24).length, "lugar", "lugares")} tono="neutro" onClick={() => abrir("guardias")}
+                resumen="Hospitales y guardias las 24 horas" />
+        ),
+    salitas: s.urgencias.activa && (
+              <Tile color="salitas" icono="guardia" titulo="Salitas" estado={plural(lugares.filter(esSalita).length, "salita", "salitas")} tono="neutro" onClick={() => abrir("salitas")}
+                resumen="Centros de salud del barrio" />
+        ),
+    vets: s.urgencias.activa && (
+              <Tile color="vets" icono="patita" titulo="Veterinarias" estado={`${vets.length} en total`} tono="neutro" onClick={() => abrir("vets")}
+                resumen={abiertas24 ? `${abiertas24} de guardia 24 hs` : "Veterinarias y salud animal"} />
+        ),
+    farmacias: s.farmacias.activa && (
+            <Tile color="farmacias" icono="farmacia" titulo={s.farmacias.titulo} estado="" tono="neutro" onClick={() => abrir("farmacias")} resumen="" />
+          ),
+    telemedicina: s.telemedicina.activa && (
+            <Tile color="telemedicina" icono="emoji:🩺" titulo={s.telemedicina.titulo} estado="24 hs" tono="neutro" onClick={() => abrir("telemedicina")}
+              resumen="Médico por videollamada · 24 hs" />
+          ),
+    comunidad: s.comunidad.activa && (
+            <Tile color="comunidad" icono="emoji:🏛️" titulo={s.comunidad.titulo} estado="Online" tono="neutro" onClick={() => abrir("comunidad")}
+              resumen="Turnos y trámites online · Comunidad Lomas" />
+          ),
+    jubilados: <Tile color="jubilados" icono="emoji:🧓" titulo="Jubilados" estado="Ver" tono="neutro" onClick={() => abrir("jubilados")}
+            resumen="Talleres, cursos y centros para salir y disfrutar" />,
+    estudiar: <Tile color="estudiar" icono="emoji:🎓" titulo="Estudiá gratis" estado="Ver" tono="neutro" onClick={() => abrir("estudiar")}
+            resumen="Oficios, terminar la secundaria y cursos con certificado" />,
+    rescate: <Tile color="rescate" icono="emoji:🐶" titulo="Perro al rescate" estado="Ayudá" tono="aviso" onClick={() => abrir("rescate")}
+            resumen="Denunciá el maltrato animal y ayudá a animales en la calle" />,
+    impuestos: <Tile color="impuestos" icono="emoji:🧾" titulo="Impuestos y tasas" estado="Ver" tono="neutro" onClick={() => abrir("impuestos")}
+            resumen="Consultá y pagá en la página oficial" />,
+    auto: <Tile color="auto" icono="emoji:🚗" titulo="Auto y trámites" estado="Ver" tono="neutro" onClick={() => abrir("auto")}
+            resumen="Patente, multas, licencia, VTV y más" />,
+    mascotas: s.mascotas.activa && (
+            <Tile color="mascotas" icono="patita" titulo={s.mascotas.titulo} onClick={() => abrir("mascotas")}
+              estado={nuevasMascotas ? plural(nuevasMascotas, "nueva", "nuevas") : "Ver"} tono={nuevasMascotas ? "aviso" : "neutro"}
+              resumen={mascotas.length ? `${plural(mascotas.length, "publicación", "publicaciones")} de vecinos` : "Perdidos y encontrados"} />
+          ),
+    anses: s.anses.activa && (
+            <Tile color="anses" icono="dinero" titulo={s.anses.titulo} onClick={() => abrir("anses")}
+              estado={rAnses.hayHoy ? "Hoy" : rAnses.sinDatos ? "Sin datos" : "Mes"} tono={rAnses.hayHoy ? "ok" : "neutro"}
+              resumen="Jubilados, AUH y pensiones" />
+          ),
+    trueque: s.trueque.activa && (
+            <Tile color="trueque" icono="trueque" titulo={s.trueque.titulo} onClick={() => abrir("trueque")}
+              estado={nuevasTrueque ? plural(nuevasTrueque, "nueva", "nuevas") : "Ver"} tono={nuevasTrueque ? "aviso" : "neutro"}
+              resumen={trueque.publicaciones.length ? `${plural(trueque.publicaciones.length, "publicación", "publicaciones")} de vecinos` : "Cambios entre vecinos"} />
+          ),
+    emprendedores: s.emprendedores.activa && (
+            <Tile color="emprendedores" icono="emoji:🛍️" titulo={s.emprendedores.titulo} estado="Nuevo" tono="aviso" onClick={() => abrir("emprendedores")}
+              resumen="Mostrá lo que ofrecés y encontrá clientes" />
+          ),
+    deportes: deportes && (
+            <Tile color="clubes" icono="emoji:⚽" titulo="Deportes para chicos" estado={deportes.soloDueno ? "Oculta" : "Ver"} tono={deportes.soloDueno ? "aviso" : "neutro"} onClick={() => abrir("deportes")}
+              resumen={deportes.soloDueno ? "Solo la ves vos" : "Clubes y escuelas para chicos"} />
+          ),
+    castracion: s.castracion.activa && (
+            <Tile color="castracion" icono="emoji:🐾" titulo={s.castracion.titulo} estado="Ver" tono="neutro" onClick={() => abrir("castracion")}
+              resumen="Turnos y jornadas en los barrios" />
+          ),
+    ansesof: s.ansesof.activa && (
+            <Tile color="ansesof" icono="ansesof" titulo={s.ansesof.titulo} estado="Ver" tono="neutro" onClick={() => abrir("ansesof")}
+              resumen="Oficinas y turnos" />
+          ),
+    quiniela: s.quiniela.activa && (
+            <Tile color="quiniela" icono="bola" titulo={"Quiniela\ny Quini 6"} estado="Ver" tono="neutro" onClick={() => abrir("quiniela")}
+              resumen="" />
+          ),
+    juegos: <Tile color="juegos" icono="emoji:🎮" titulo="Juegos" estado="Gratis" tono="neutro" onClick={() => abrir("juegos")}
+            resumen="Apilá, La Viborita y Ta-Te-Ti" />,
+    coop: s.coop.activa && (
+            <Tile color="coop" icono="coop" titulo={s.coop.titulo} estado="Ver" tono="neutro" onClick={() => { setCoopElegida(""); abrir("coop"); }}
+              resumen="Luminarias, poda, árboles y arreglos del barrio" />
+          ),
+    discapacidad: s.discapacidad.activa && (
+            <Tile color="disc" icono="discapacidad" titulo={s.discapacidad.titulo} estado="Ver" tono="neutro" onClick={() => abrir("discapacidad")}
+              resumen="Trámites, certificado y ayuda" />
+          ),
+    trabajo: s.trabajo.activa && (
+            <Tile color="trabajo" icono="trabajo" titulo={s.trabajo.titulo} onClick={() => abrir("trabajo")}
+              estado={nuevasTrabajo ? plural(nuevasTrabajo, "nueva", "nuevas") : "Ver"} tono={nuevasTrabajo ? "aviso" : "neutro"}
+              resumen="Busco trabajo · Ofrezco trabajo" />
+          ),
+    otros: s.urgencias.activa && (
+            <Tile color="otros" icono="escudo" titulo="Emergencias y servicios" estado={plural(lugaresDe("otros").length, "número", "números")} tono="neutro" onClick={() => abrir("otros")}
+              resumen="Policía, bomberos y reclamos" />
+          ),
+    peques: <Tile color="juegos" icono="emoji:🧸" titulo="Pequeños creativos" estado="Gratis" tono="neutro" onClick={() => abrir("juego-peques")}
+          resumen="Para chicos de 2 a 4 años: pintar y aprender" />,
+    empleo: s.empleo.activa && (
+          <Tile color="empleo" icono="emoji:💼" titulo={s.empleo.titulo} estado="Gratis" tono="neutro" onClick={() => abrir("empleo")}
+            resumen="Empleo oficial y gratuito · para todas las edades" />
+        ),
+  };
+  const grupoAbierto = vista?.startsWith("grupo-") ? GRUPOS.find((g) => `grupo-${g.id}` === vista) : undefined;
+  const cuantasPorGrupo = Object.fromEntries(GRUPOS.map((g) => [g.id, g.secciones.filter((k) => tiles[k]).length]));
+  const alertaLuz = s.luz.activa && !luzVieja && zonasLuz.length > 0 ? (zonasLuz.length === 1 ? `Corte de luz: ${tituloCorte(zonasLuz[0].barrio, null)}` : `Cortes de luz en ${zonasLuz.length} zonas`) : "";
+  const alertaAgua = s.agua.activa && aguaVisible && aguaTono === "aviso" ? aguaResumen.replace(/^💧\s*/, "") : "";
+
+  if (grupoAbierto)
+    return (
+      <Detalle color={`g-${grupoAbierto.id}`} titulo={grupoAbierto.titulo} onVolver={volver}>
+        <p className="vacio">{grupoAbierto.resumen}</p>
+        <div className="grilla">
+          {grupoAbierto.secciones.map((k) => tiles[k] ? <Fragment key={k}>{tiles[k]}</Fragment> : null)}
+        </div>
+      </Detalle>
+    );
+
+  if (vista?.startsWith("portada-ver:")) {
+    const p = portadas.find((x) => x.id === vista.slice(12));
+    return (
+      <Detalle color="g-comunidad" titulo={p?.titulo ?? "Hoy en Lomas"} onVolver={volver}>
+        {p ? (<>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="foto-mascota" src={p.foto} alt="" />
+          {p.texto && <p className="portada-texto">{p.texto}</p>}
+        </>) : <p className="vacio">Esta portada ya no está.</p>}
+      </Detalle>
+    );
+  }
+
   if (vista === "clima") {
     const a = clima?.ahora;
     const dias = clima?.porDia ?? [];
@@ -995,9 +1131,10 @@ export default function Inicio() {
   // ---- Pantalla principal ----
   return (
     <main className="home">
-      <header className="azul compacto" onClick={() => abrir("clima")}>
+      <header className="azul compacto portal" onClick={() => abrir("clima")}>
+        <Ilustracion />
         <div className="azul-fila">
-          <span className="marca">Lomas Hoy</span>
+          <span className="marca-bloque"><span className="marca">Lomas Hoy</span><small className="marca-sub">La plaza virtual de Lomas</small></span>
           <span className="azul-botones">
           <button className="sos" aria-label="Emergencias: números para llamar" onClick={(e) => { e.stopPropagation(); abrir("sos"); }}>SOS</button>
           <button className="campana" aria-label={avisosApp.sinVer + vecinos.sinVer ? `Mis avisos: ${avisosApp.sinVer + vecinos.sinVer} sin ver` : "Mis avisos"} onClick={(e) => { e.stopPropagation(); abrir("avisos"); }}>
@@ -1013,6 +1150,16 @@ export default function Inicio() {
         {(alerta || tormenta) && (
           <button className="banda-tormenta" onClick={(e) => { e.stopPropagation(); abrir("tormenta"); }}>
             <Icono nombre="tormenta" tam={22} /> <span>{alerta ? textoAlerta : tormenta?.texto} <u>Ver el detalle ›</u></span>
+          </button>
+        )}
+        {alertaLuz && (
+          <button className="banda-tormenta banda-aviso" onClick={(e) => { e.stopPropagation(); abrir("luz"); }}>
+            <span aria-hidden>💡</span> <span>{alertaLuz} <u>Ver el detalle ›</u></span>
+          </button>
+        )}
+        {alertaAgua && (
+          <button className="banda-tormenta banda-aviso" onClick={(e) => { e.stopPropagation(); abrir("agua"); }}>
+            <span aria-hidden>💧</span> <span>{alertaAgua} <u>Ver el detalle ›</u></span>
           </button>
         )}
         <button className="clima-compacto" aria-label="Ver el clima: hora por hora y 5 días">
@@ -1140,11 +1287,12 @@ export default function Inicio() {
           </section>
         ) : (
           <>
+            <PortadaHoy manuales={portadas} notas={[...(d.noticias?.contenido?.notas ?? []), ...(s.agenda.activa ? notasAgenda : [])]} onAbrir={abrir} />
             <VozDeLomas push={push} />
             {s.agenda.activa && (d.agenda?.contenido || notasAgenda.length > 0) && <AgendaDestacada notas={notasAgenda} onVerTodo={() => abrir("agenda")} push={push} />}
             {s.pasa.activa && <BotonPasa onClick={() => abrir("pasa-avisar")} />}
             {(s.tren.activa || s.colectivos.activa) && (
-              <section className="transporte coloreado c-tren" aria-label="Transporte">
+              <section className="transporte transporte-compacto coloreado c-tren" aria-label="Transporte">
                 <h2><Icono nombre="tren" tam={24} /> Transporte</h2>
                 {transp.filter((r) => !(r.id === "subte" && r.punto === "sin")).map((r) => (
                   <button key={r.id} className="renglon" onClick={() => abrir(r.id)}>
@@ -1156,6 +1304,14 @@ export default function Inicio() {
                 ))}
               </section>
             )}
+            <AccesosRapidos onAbrir={abrir} accesos={[
+              { id: "farmacias", emoji: "💊", titulo: "Farmacias", vista: "farmacias", visible: s.farmacias.activa },
+              { id: "guardias", emoji: "🚑", titulo: "Guardias 24 hs", vista: "guardias", visible: s.urgencias.activa },
+              { id: "cobran", emoji: "💰", titulo: "Hoy cobran", vista: "anses", visible: s.anses.activa },
+              { id: "auto", emoji: "🚗", titulo: "Auto y trámites", vista: "auto", visible: true },
+              { id: "impuestos", emoji: "🧾", titulo: "Impuestos y tasas", vista: "impuestos", visible: true },
+              { id: "emergencias", emoji: "🆘", titulo: "Emergencias", vista: "sos", visible: true },
+            ]} />
             {s.noticias.activa && (
               <button className="boton-noticias" onClick={() => abrir("noticias")}>
                 <span className="bn-circulo"><Icono nombre="noticias" tam={76} ancho={1.8} /></span>
@@ -1167,100 +1323,7 @@ export default function Inicio() {
               <Tile ancho color="empleo" icono="emoji:💼" titulo={s.empleo.titulo} estado="Gratis" tono="neutro" onClick={() => abrir("empleo")}
                 resumen="Empleo oficial y gratuito · para todas las edades" />
             )}
-            <div className="grilla">
-              {s.luz.activa && (
-                <Tile color="luz" icono="luz" titulo="Luz" estado={luzEstado} tono={luzTono} onClick={() => abrir("luz")}
-                  resumen={(!d.luz?.contenido || luzVieja ? "Sin datos por ahora" : zonasLuz.length === 0 ? "Sin cortes" : zonasLuz.length === 1 ? `${tituloCorte(zonasLuz[0].barrio, null)} · ${plural(zonasLuz[0].usuarios, "usuario", "usuarios")}` : `Cortes en ${zonasLuz.length} zonas`) + (programados.length ? ` · ${plural(programados.length, "programado", "programados")}` : "")} />
-              )}
-              {s.agua.activa && aguaVisible && (
-                <Tile color="agua" icono="gota" titulo="Agua" estado={aguaEstado} tono={aguaTono} onClick={() => abrir("agua")} resumen={aguaResumen} />
-              )}
-              {s.urgencias.activa && (
-                <>
-                  <Tile color="guardias" icono="guardia" titulo="Guardias 24 hs" estado={plural(lugares.filter(tieneGuardia24).length, "lugar", "lugares")} tono="neutro" onClick={() => abrir("guardias")}
-                    resumen="Hospitales y guardias las 24 horas" />
-                  <Tile color="salitas" icono="guardia" titulo="Salitas" estado={plural(lugares.filter(esSalita).length, "salita", "salitas")} tono="neutro" onClick={() => abrir("salitas")}
-                    resumen="Centros de salud del barrio" />
-                  <Tile color="vets" icono="patita" titulo="Veterinarias" estado={`${vets.length} en total`} tono="neutro" onClick={() => abrir("vets")}
-                    resumen={abiertas24 ? `${abiertas24} de guardia 24 hs` : "Veterinarias y salud animal"} />
-                </>
-              )}
-              {s.farmacias.activa && (
-                <Tile color="farmacias" icono="farmacia" titulo={s.farmacias.titulo} estado="" tono="neutro" onClick={() => abrir("farmacias")} resumen="" />
-              )}
-              {s.telemedicina.activa && (
-                <Tile color="telemedicina" icono="emoji:🩺" titulo={s.telemedicina.titulo} estado="24 hs" tono="neutro" onClick={() => abrir("telemedicina")}
-                  resumen="Médico por videollamada · 24 hs" />
-              )}
-              {s.comunidad.activa && (
-                <Tile color="comunidad" icono="emoji:🏛️" titulo={s.comunidad.titulo} estado="Online" tono="neutro" onClick={() => abrir("comunidad")}
-                  resumen="Turnos y trámites online · Comunidad Lomas" />
-              )}
-              <Tile color="jubilados" icono="emoji:🧓" titulo="Jubilados" estado="Ver" tono="neutro" onClick={() => abrir("jubilados")}
-                resumen="Talleres, cursos y centros para salir y disfrutar" />
-              <Tile color="estudiar" icono="emoji:🎓" titulo="Estudiá gratis" estado="Ver" tono="neutro" onClick={() => abrir("estudiar")}
-                resumen="Oficios, terminar la secundaria y cursos con certificado" />
-              <Tile color="rescate" icono="emoji:🐶" titulo="Perro al rescate" estado="Ayudá" tono="aviso" onClick={() => abrir("rescate")}
-                resumen="Denunciá el maltrato animal y ayudá a animales en la calle" />
-              <Tile color="impuestos" icono="emoji:🧾" titulo="Impuestos y tasas" estado="Ver" tono="neutro" onClick={() => abrir("impuestos")}
-                resumen="Consultá y pagá en la página oficial" />
-              <Tile color="auto" icono="emoji:🚗" titulo="Auto y trámites" estado="Ver" tono="neutro" onClick={() => abrir("auto")}
-                resumen="Patente, multas, licencia, VTV y más" />
-              {s.mascotas.activa && (
-                <Tile color="mascotas" icono="patita" titulo={s.mascotas.titulo} onClick={() => abrir("mascotas")}
-                  estado={nuevasMascotas ? plural(nuevasMascotas, "nueva", "nuevas") : "Ver"} tono={nuevasMascotas ? "aviso" : "neutro"}
-                  resumen={mascotas.length ? `${plural(mascotas.length, "publicación", "publicaciones")} de vecinos` : "Perdidos y encontrados"} />
-              )}
-              {s.anses.activa && (
-                <Tile color="anses" icono="dinero" titulo={s.anses.titulo} onClick={() => abrir("anses")}
-                  estado={rAnses.hayHoy ? "Hoy" : rAnses.sinDatos ? "Sin datos" : "Mes"} tono={rAnses.hayHoy ? "ok" : "neutro"}
-                  resumen="Jubilados, AUH y pensiones" />
-              )}
-              {s.trueque.activa && (
-                <Tile color="trueque" icono="trueque" titulo={s.trueque.titulo} onClick={() => abrir("trueque")}
-                  estado={nuevasTrueque ? plural(nuevasTrueque, "nueva", "nuevas") : "Ver"} tono={nuevasTrueque ? "aviso" : "neutro"}
-                  resumen={trueque.publicaciones.length ? `${plural(trueque.publicaciones.length, "publicación", "publicaciones")} de vecinos` : "Cambios entre vecinos"} />
-              )}
-              {s.emprendedores.activa && (
-                <Tile color="emprendedores" icono="emoji:🛍️" titulo={s.emprendedores.titulo} estado="Nuevo" tono="aviso" onClick={() => abrir("emprendedores")}
-                  resumen="Mostrá lo que ofrecés y encontrá clientes" />
-              )}
-              {deportes && (
-                <Tile color="clubes" icono="emoji:⚽" titulo="Deportes para chicos" estado={deportes.soloDueno ? "Oculta" : "Ver"} tono={deportes.soloDueno ? "aviso" : "neutro"} onClick={() => abrir("deportes")}
-                  resumen={deportes.soloDueno ? "Solo la ves vos" : "Clubes y escuelas para chicos"} />
-              )}
-              {s.castracion.activa && (
-                <Tile color="castracion" icono="emoji:🐾" titulo={s.castracion.titulo} estado="Ver" tono="neutro" onClick={() => abrir("castracion")}
-                  resumen="Turnos y jornadas en los barrios" />
-              )}
-              {s.ansesof.activa && (
-                <Tile color="ansesof" icono="ansesof" titulo={s.ansesof.titulo} estado="Ver" tono="neutro" onClick={() => abrir("ansesof")}
-                  resumen="Oficinas y turnos" />
-              )}
-              {s.quiniela.activa && (
-                <Tile color="quiniela" icono="bola" titulo={"Quiniela\ny Quini 6"} estado="Ver" tono="neutro" onClick={() => abrir("quiniela")}
-                  resumen="" />
-              )}
-              <Tile color="juegos" icono="emoji:🎮" titulo="Juegos" estado="Gratis" tono="neutro" onClick={() => abrir("juegos")}
-                resumen="Apilá, La Viborita y Ta-Te-Ti" />
-              {s.coop.activa && (
-                <Tile color="coop" icono="coop" titulo={s.coop.titulo} estado="Ver" tono="neutro" onClick={() => { setCoopElegida(""); abrir("coop"); }}
-                  resumen="Luminarias, poda, árboles y arreglos del barrio" />
-              )}
-              {s.discapacidad.activa && (
-                <Tile color="disc" icono="discapacidad" titulo={s.discapacidad.titulo} estado="Ver" tono="neutro" onClick={() => abrir("discapacidad")}
-                  resumen="Trámites, certificado y ayuda" />
-              )}
-              {s.trabajo.activa && (
-                <Tile color="trabajo" icono="trabajo" titulo={s.trabajo.titulo} onClick={() => abrir("trabajo")}
-                  estado={nuevasTrabajo ? plural(nuevasTrabajo, "nueva", "nuevas") : "Ver"} tono={nuevasTrabajo ? "aviso" : "neutro"}
-                  resumen="Busco trabajo · Ofrezco trabajo" />
-              )}
-              {s.urgencias.activa && (
-                <Tile color="otros" icono="escudo" titulo="Emergencias y servicios" estado={plural(lugaresDe("otros").length, "número", "números")} tono="neutro" onClick={() => abrir("otros")}
-                  resumen="Policía, bomberos y reclamos" />
-              )}
-            </div>
+            <TarjetasGrupos cuantas={cuantasPorGrupo} onAbrir={abrir} />
             <CartelInstalar />
             <Compartir onWhatsApp={compartirDia} />
           </>

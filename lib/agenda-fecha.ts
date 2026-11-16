@@ -1,7 +1,7 @@
 // Agenda de Lomas, tarjeta de la pantalla principal: qué día es el evento, solo si el título lo dice ("este viernes", "el sábado", "15 de noviembre", "hoy", "mañana").
 // Las notas no traen la fecha del evento como dato aparte, y no se inventa: sin día en el título, la nota no cuenta como evento con fecha.
 // Sin dependencias: así se puede probar solo.
-export type NotaCorta = { titulo: string; medio: string; link: string; fecha: string };
+export type NotaCorta = { titulo: string; medio: string; link: string; fecha: string; imagen?: string };
 export type EventoVisto = NotaCorta & { dia: string | null; lugar: string; esNota: boolean }; // dia = "AAAA-MM-DD" del evento (o null)
 
 const sinTildes = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
