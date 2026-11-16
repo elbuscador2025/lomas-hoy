@@ -612,6 +612,7 @@ export default function Inicio() {
       <Detalle color="guardias" titulo={alerta ? `Alerta ${alerta.nivel} del SMN` : "Aviso de tormenta"} onVolver={volver}>
         {alerta ? (
           <>
+            <p className="alerta-empieza" role="status">{cuandoAl?.empieza}</p>
             <p className="aviso-estafa" role="note">{textoAlerta}</p>
             <h2>Cuándo</h2>
             <p>{cuandoAl?.largo}</p>

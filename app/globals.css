@@ -1165,3 +1165,6 @@ button.voz-aquien { text-decoration:underline; text-decoration-color:#B8C4DD; }
 .luz-referencia { font-size:16px; color:#2B3A55; }
 .luz-corte small { color:#5B6577; }
 .luz-mapa { align-self:flex-start; margin-top:4px; }
+
+/* Alerta del SMN: cuándo empieza, en grande arriba de todo */
+.alerta-empieza { margin:0 0 12px; padding:14px 16px; border-radius:16px; background:#0B1730; color:#fff; font-size:28px; line-height:1.15; font-weight:900; text-align:center; }
