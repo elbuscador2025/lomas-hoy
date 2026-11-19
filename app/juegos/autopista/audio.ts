@@ -46,7 +46,8 @@ export function crearAudio(avisar: (e: EstadoEstereo) => void): AudioAutopista {
   let ctx: AudioContext | null = null, musica: GainNode | null = null, motorG: GainNode | null = null;
   let o1: OscillatorNode | null = null, o2: OscillatorNode | null = null, filtro: BiquadFilterNode | null = null, vientoG: GainNode | null = null, ruido: AudioBuffer | null = null;
   let vivo = true, motorOn = true;
-  const el = new Audio(); el.preload = "none"; el.id = "ap-audio"; el.setAttribute("playsinline", ""); el.style.display = "none";
+  const el = new Audio(); el.crossOrigin = "anonymous"; el.preload = "none"; // crossOrigin: la canción puede venir del almacenamiento de archivos (otro sitio) y tiene que poder pasar por el control de volumen
+  let urlPrueba = URL_PRUEBA; el.id = "ap-audio"; el.setAttribute("playsinline", ""); el.style.display = "none";
   document.body.appendChild(el);
   let url: string | null = null, silencio: string | null = null;
   const e: EstadoEstereo = { encendido: false, sonando: false, actual: 0, pistas: [{ id: "prueba", nombre: "Canción de prueba", tipo: "prueba", tam: 0 }], volMusica: leerNumero(CLAVE_VOL_MUSICA, 0.7), volMotor: leerNumero(CLAVE_VOL_MOTOR, 0.6), mensaje: "", ocupado: false, usado: 0 };
@@ -63,6 +64,8 @@ export function crearAudio(avisar: (e: EstadoEstereo) => void): AudioAutopista {
     emitir();
   }
   const t0 = setTimeout(cargarMias, 600);
+  // qué canción de prueba hay cargada ahora (la original o la que subí desde el panel): solo se pide el dato, el archivo se baja al tocar «Jugar»
+  fetch("/api/estereo").then((r) => (r.ok ? r.json() : null)).then((c) => { if (vivo && c?.url && c?.nombre) { urlPrueba = c.url; e.pistas[0] = { ...e.pistas[0], nombre: String(c.nombre).slice(0, 80), tam: Number(c.tam) || 0 }; emitir(); } }).catch(() => {});
 
   const disponibles = () => e.pistas.map((p, i) => [p, i] as const).filter(([p]) => !p.noDisponible).map(([, i]) => i);
   async function reproducir(i: number) {
@@ -71,7 +74,7 @@ export function crearAudio(avisar: (e: EstadoEstereo) => void): AudioAutopista {
     try {
       if (url) { URL.revokeObjectURL(url); url = null; }
       if (silencio) { URL.revokeObjectURL(silencio); silencio = null; }
-      if (p.tipo === "prueba") el.src = URL_PRUEBA;
+      if (p.tipo === "prueba") el.src = urlPrueba;
       else { const g = (await bd("readonly", (s) => s.get(p.id))) as Guardada | undefined; if (!g) throw new Error("falta"); url = URL.createObjectURL(g.blob); el.src = url; }
       await el.play(); e.sonando = true; e.mensaje = "";
     } catch (err) {
