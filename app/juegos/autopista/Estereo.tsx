@@ -34,20 +34,31 @@ function Deslizador({ valor, onCambio, etiqueta }: { valor: number; onCambio: (v
   );
 }
 
-// Estéreo del tablero: Play/Pausa, qué suena, volumen de la música y el botón de las canciones
-export function Estereo({ audio, est, onAbrir }: { audio: AudioAutopista | null; est: EstadoEstereo; onAbrir: () => void }) {
+// Estéreo del tablero: la pantalla táctil de la foto. Al tocar el ícono «Música» se abre el reproductor encima de la pantalla (los otros íconos son de adorno)
+export function Estereo({ audio, est, onAbrir, zona, tarjeta }: { audio: AudioAutopista | null; est: EstadoEstereo; onAbrir: () => void; zona: React.CSSProperties; tarjeta: React.CSSProperties }) {
+  const [abierto, setAbierto] = useState(false);
+  const [visto, setVisto] = useState(false);
   const p = est.pistas[est.actual];
   return (
-    <div className="ap-estereo" role="group" aria-label="Estéreo del camión">
-      <button className="ap-es-btn ap-es-play" onClick={() => audio?.alternar()} aria-label={est.sonando ? "Pausar la música" : "Reproducir la música"}>{est.sonando ? "⏸" : "▶"}</button>
-      <button className="ap-es-btn ap-es-sig" onClick={() => audio?.siguiente()} aria-label="Canción siguiente">⏭</button>
-      <div className="ap-es-pantalla" aria-live="polite">
-        <small>{est.sonando ? "SONANDO" : est.encendido ? "EN PAUSA" : "ESTÉREO"}</small>
-        <span>{p ? p.nombre : "Sin canciones"}</span>
-      </div>
-      <Deslizador valor={est.volMusica} onCambio={(v) => audio?.volumenMusica(v)} etiqueta="Volumen de la música" />
-      <button className="ap-es-btn" onClick={onAbrir} aria-label="Mis canciones">♫</button>
-    </div>
+    <>
+      <button className={`ap-es-icono${visto ? "" : " llama"}`} style={zona} onClick={() => { setAbierto((v) => !v); setVisto(true); }} aria-label="Estéreo: Música" aria-expanded={abierto} />
+      {abierto && (
+        <div className="ap-es-tarjeta" style={tarjeta} role="group" aria-label="Estéreo del camión">
+          <div className="ap-es-cab"><b>♫ Música</b><button onClick={() => setAbierto(false)} aria-label="Cerrar el estéreo">✕</button></div>
+          <div className="ap-es-pantalla" aria-live="polite">
+            <small>{est.sonando ? "SONANDO" : est.encendido ? "EN PAUSA" : "ESTÉREO"}</small>
+            <span>{p ? p.nombre : "Sin canciones"}</span>
+          </div>
+          <div className="ap-es-fila">
+            <button className="ap-es-btn ap-es-play" onClick={() => audio?.alternar()} aria-label={est.sonando ? "Pausar la música" : "Reproducir la música"}>{est.sonando ? "⏸" : "▶"}</button>
+            <button className="ap-es-btn ap-es-sig" onClick={() => audio?.siguiente()} aria-label="Canción siguiente">⏭</button>
+            <span className="ap-es-vol" aria-hidden>🔈</span>
+            <Deslizador valor={est.volMusica} onCambio={(v) => audio?.volumenMusica(v)} etiqueta="Volumen de la música" />
+          </div>
+          <button className="ap-es-agregar" onClick={onAbrir}>Agregar mis canciones</button>
+        </div>
+      )}
+    </>
   );
 }
 

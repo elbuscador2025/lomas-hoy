@@ -1188,23 +1188,44 @@ button.voz-aquien { text-decoration:underline; text-decoration-color:#B8C4DD; }
 /* ===== Carrera de Autopista ===== */
 .ap-pantalla { touch-action:none; }
 .ap-canvas { display:block; background:#1B2238; }
-.ap-tablero { flex:none; background:linear-gradient(#10172E, #070B18); border-top:3px solid #2B3558; padding:8px 10px calc(8px + env(safe-area-inset-bottom, 0px)); display:flex; flex-direction:column; gap:8px; }
-.ap-mandos { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-.ap-volante { flex:none; width:min(38vw, 150px); aspect-ratio:1; touch-action:none; cursor:grab; }
-.ap-rueda { width:100%; height:100%; will-change:transform; filter:drop-shadow(0 4px 6px rgba(0,0,0,.6)); }
-.ap-rueda svg { width:100%; height:100%; display:block; }
-.ap-pedales { display:flex; align-items:flex-end; gap:10px; }
-.ap-pedal { touch-action:none; border:2px solid rgba(255,255,255,.35); border-radius:18px; color:#fff; font:inherit; font-size:14px; font-weight:900; letter-spacing:.04em; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,.5); -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
-.ap-pedal.acel { width:min(26vw, 110px); height:min(34vw, 132px); background:linear-gradient(#2FBF5B, #167A38); }
-.ap-pedal.freno { width:min(22vw, 92px); height:min(26vw, 100px); background:linear-gradient(#E5484D, #A3161D); }
-.ap-pedal.on { transform:translateY(3px) scale(.96); filter:brightness(.85); box-shadow:0 1px 3px rgba(0,0,0,.6); }
+
+/* Vista desde la cabina: la foto llena la pantalla (en la compu, centrada en formato vertical) y todo lo demás va encima */
+.ap-pantalla { align-items:center; background:#05060F; }
+.ap-cabina { position:relative; flex:1; min-height:0; width:100%; max-width:calc(100vh * 941 / 1672); max-width:calc(100dvh * 941 / 1672); overflow:hidden; background:#05060F; }
+.ap-lienzo { position:absolute; inset:0; }
+.ap-lienzo canvas { display:block; }
+.ap-hud { position:absolute; top:0; left:0; right:0; z-index:6; background:rgba(8,12,28,.62); border-bottom:0; }
+.ap-botones { top:40px; z-index:7; }
+.ap-cabina .jg-capa { z-index:12; }
+.ap-volante { position:absolute; z-index:3; border-radius:50%; touch-action:none; cursor:grab; -webkit-tap-highlight-color:transparent; }
+.ap-marca { position:absolute; inset:0; will-change:transform; pointer-events:none; }
+.ap-marca b { position:absolute; inset:0; }
+.ap-marca i { position:absolute; left:50%; top:1.2%; width:2.4%; height:5.2%; margin-left:-1.2%; border-radius:3px; background:rgba(255,255,255,.5); }
+.ap-marca b:first-child i { background:#FFC83D; box-shadow:0 0 6px rgba(255,200,61,.8); }
+.ap-pedales { position:absolute; z-index:4; left:0; right:0; bottom:max(8px, env(safe-area-inset-bottom, 0px)); display:flex; gap:12px; padding:0 12px; pointer-events:none; }
+.ap-pedal { pointer-events:auto; flex:1; height:66px; touch-action:none; border:2px solid rgba(255,255,255,.55); border-radius:18px; color:#fff; font:inherit; font-size:17px; font-weight:900; letter-spacing:.06em; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.55); -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; backdrop-filter:blur(2px); }
+.ap-pedal.acel { background:rgba(31,160,72,.74); }
+.ap-pedal.freno { background:rgba(214,52,58,.74); }
+.ap-pedal.on { transform:translateY(3px) scale(.97); filter:brightness(1.25); box-shadow:0 1px 3px rgba(0,0,0,.6); }
+.ap-es-icono { position:absolute; z-index:5; padding:0; border:0; border-radius:12px; background:transparent; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.ap-es-icono.llama { box-shadow:0 0 0 2px rgba(120,200,255,.9), 0 0 14px rgba(80,170,255,.8); animation:ap-llama 1.4s ease-in-out infinite; }
+@keyframes ap-llama { 50% { box-shadow:0 0 0 2px rgba(120,200,255,.25), 0 0 4px rgba(80,170,255,.2); } }
+.ap-es-tarjeta { position:absolute; z-index:9; width:min(300px, 88%); display:flex; flex-direction:column; gap:8px; padding:10px; border:2px solid #2E5AA8; border-radius:16px; background:linear-gradient(#0E2147, #071027); box-shadow:0 8px 24px rgba(0,0,0,.65), 0 0 18px rgba(46,90,168,.45); transform-origin:top right; animation:ap-abre .16s ease-out; }
+@keyframes ap-abre { from { opacity:0; transform:scale(.4); } }
+.ap-es-cab { display:flex; align-items:center; justify-content:space-between; }
+.ap-es-cab b { font-size:16px; color:#CFE3FF; }
+.ap-es-cab button { width:40px; height:40px; border:0; border-radius:50%; background:#1D2850; color:#fff; font-size:16px; cursor:pointer; }
+.ap-es-fila { display:flex; align-items:center; gap:6px; }
+.ap-es-vol { flex:none; font-size:16px; }
+.ap-es-fila .ap-desliz { flex:1; width:auto; }
+.ap-es-agregar { min-height:44px; border:1px solid #3A5FB0; border-radius:12px; background:linear-gradient(#26407A, #172B58); color:#fff; font:inherit; font-size:15px; font-weight:800; cursor:pointer; }
+.ap-es-agregar:active { filter:brightness(.85); }
 
 /* Estéreo del tablero de la Carrera de Autopista */
-.ap-estereo { display:flex; align-items:center; gap:6px; background:#0A0F1F; border:1px solid #2B3558; border-radius:14px; padding:5px 6px; }
 .ap-es-btn { flex:none; width:44px; height:44px; padding:0; border:1px solid #3A4A8C; border-radius:12px; background:linear-gradient(#26305A, #151C3A); color:#fff; font-size:18px; font-weight:800; cursor:pointer; display:grid; place-items:center; -webkit-tap-highlight-color:transparent; }
 .ap-es-btn:active { transform:scale(.94); filter:brightness(.85); }
 .ap-es-play { background:linear-gradient(#2FBF5B, #167A38); border-color:#58D985; }
-.ap-es-pantalla { flex:1; min-width:0; background:#05110C; border:1px solid #17402A; border-radius:8px; padding:3px 8px; display:flex; flex-direction:column; justify-content:center; height:44px; }
+.ap-es-pantalla { background:#05110C; border:1px solid #17402A; border-radius:8px; padding:5px 10px; display:flex; flex-direction:column; justify-content:center; min-height:46px; }
 .ap-es-pantalla small { font-size:10px; letter-spacing:.12em; color:#4FD38B; font-weight:800; }
 .ap-es-pantalla span { font-size:13px; font-weight:700; color:#B6F5D2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .ap-desliz { flex:none; width:68px; height:44px; display:flex; align-items:center; touch-action:none; cursor:pointer; }

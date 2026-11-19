@@ -1,9 +1,9 @@
 // CARRERA DE AUTOPISTA: el tráfico. Autos y camiones que van por sus carriles (más lentos que el camión del jugador) y que hay que esquivar o pasar.
-// Con el tiempo hay más vehículos y a veces tapan dos carriles. Nunca tapan los tres a la vez: siempre queda un lugar para pasar.
+// Con el tiempo hay más vehículos. La ruta de la foto tiene dos carriles: nunca se tapan los dos a la vez, siempre queda un lugar para pasar.
 import { SEG, LARGO, V_MAX, type Coche } from "./pista";
 
-const CARRILES = [-0.62, 0, 0.62];
-const ANCHO_AUTO = 0.42, ANCHO_CAMION = 0.6, ANCHO_JUGADOR = 0.5;
+const CARRILES = [-0.5, 0.5]; // izquierdo y derecho
+const ANCHO_AUTO = 0.46, ANCHO_CAMION = 0.62, ANCHO_JUGADOR = 0.5;
 const PROFUNDIDAD = 170; // cuánto "mide" un vehículo hacia adelante para el choque
 const VISTA = 100 * SEG;
 
@@ -23,8 +23,8 @@ export function crearTrafico(): Trafico {
   function carrilLibre(z: number, ignorar?: Coche): number | null {
     const ocupados = new Set<number>();
     for (const c of coches) if (c !== ignorar && Math.abs(relativo(c.z, z)) < 3200) ocupados.add(CARRILES.indexOf(c.x));
-    const libres = [0, 1, 2].filter((k) => !ocupados.has(k));
-    if (libres.length <= 1 && ocupados.size >= 2) return null; // dejaría la ruta cerrada: no se pone
+    const libres = CARRILES.map((_, k) => k).filter((k) => !ocupados.has(k));
+    if (ocupados.size >= CARRILES.length - 1) return null; // dejaría la ruta cerrada: no se pone
     return libres.length ? libres[Math.floor(Math.random() * libres.length)] : null;
   }
   function nuevo(z: number, nivel: number, ignorar?: Coche): Coche | null {
