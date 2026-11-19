@@ -1169,3 +1169,18 @@ button.voz-aquien { text-decoration:underline; text-decoration-color:#B8C4DD; }
 /* Alerta del SMN: cuándo empieza, en grande arriba de todo */
 .alerta-empieza { margin:0 0 12px; padding:14px 16px; border-radius:16px; background:#0B1730; color:#fff; font-size:28px; line-height:1.15; font-weight:900; text-align:center; }
 .agenda-dest ~ .voz-invita { border:2px solid #C9D6EE; box-shadow:0 2px 10px rgba(16,33,63,.1); }
+
+/* ===== Aviso de novedades: cartelito arriba, debajo de la barra de arriba; no tapa ni bloquea nada (solo el cartel recibe toques) ===== */
+.novedad { position:fixed; left:12px; right:12px; top:calc(env(safe-area-inset-top, 0px) + 64px); z-index:80; display:flex; justify-content:center; pointer-events:none; }
+.novedad-cartel { position:relative; pointer-events:auto; width:100%; max-width:520px; background:#fff; border:2px solid #C9D6EE; border-left:7px solid #1F5AD6; border-radius:18px; box-shadow:0 8px 22px rgba(10,30,70,.28), 0 1px 3px rgba(10,30,70,.15); animation:novedad-baja .38s ease-out both; touch-action:none; }
+.novedad-cartel.saliendo { animation:novedad-sube .38s ease-in both; }
+@keyframes novedad-baja { from { transform:translateY(-130%); opacity:0; } to { transform:translateY(0); opacity:1; } }
+@keyframes novedad-sube { from { transform:translateY(0); opacity:1; } to { transform:translateY(-130%); opacity:0; } }
+@media (prefers-reduced-motion: reduce) { .novedad-cartel { animation:none; } .novedad-cartel.saliendo { animation:none; opacity:0; } }
+.novedad-cuerpo { display:flex; flex-direction:column; gap:3px; width:100%; padding:12px 44px 12px 14px; border:0; background:none; text-align:left; font:inherit; color:#0F2557; cursor:pointer; }
+.novedad-cuerpo:disabled { cursor:default; }
+.novedad-titulo { font-size:15px; line-height:1.25; color:#1F5AD6; }
+.novedad-texto { font-size:15px; line-height:1.35; font-weight:600; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.novedad-invita { font-size:14px; font-weight:800; color:#143E9E; }
+.novedad-x { position:absolute; top:2px; right:2px; width:44px; height:44px; border:0; background:none; color:#5B6577; font-size:18px; font-weight:800; cursor:pointer; border-radius:50%; }
+.novedad-previa .novedad-cartel { animation:none; }

@@ -29,6 +29,7 @@ import PanelJubilados from "./PanelJubilados";
 import PanelRescate from "./PanelRescate";
 import PanelPortada from "./PanelPortada";
 import PanelEscuelas from "./PanelEscuelas";
+import PanelNovedad from "./PanelNovedad";
 import MiCuenta from "./MiCuenta";
 import { post, salir } from "./api";
 
@@ -48,7 +49,7 @@ const fecha = (iso: string) => new Date(iso).toLocaleString("es-AR", { timeZone:
 export default function Panel() {
   const [datos, setDatos] = useState<Datos | null>(null);
   const [lugares, setLugares] = useState<Lugar[]>([]);
-  const [pestana, setPestana] = useState<"stats" | "lugares" | "barrios" | "push" | "mascotas" | "anses" | "coop" | "ansesof" | "castracion" | "merenderos" | "pasa" | "sugerencias" | "agua" | "trueque" | "emprendedores" | "voz" | "deportes" | "jubilados" | "rescate" | "portada" | "escuelas" | "trabajo" | "qr" | "bloqueados" | "denuncias">("stats");
+  const [pestana, setPestana] = useState<"stats" | "lugares" | "barrios" | "push" | "mascotas" | "anses" | "coop" | "ansesof" | "castracion" | "merenderos" | "pasa" | "sugerencias" | "agua" | "trueque" | "emprendedores" | "voz" | "deportes" | "jubilados" | "rescate" | "portada" | "escuelas" | "novedad" | "trabajo" | "qr" | "bloqueados" | "denuncias">("stats");
   const [editando, setEditando] = useState<(Lugar & { tels: string; direccionOriginal?: string }) | null>(null);
   const [mensaje, setMensaje] = useState("");
 
@@ -61,6 +62,7 @@ export default function Panel() {
     if (location.hash === "#rescate") setPestana("rescate");
     if (location.hash === "#portada") setPestana("portada");
     if (location.hash === "#escuelas") setPestana("escuelas");
+    if (location.hash === "#novedad") setPestana("novedad");
     if (location.hash === "#emprendedores") setPestana("emprendedores");
     if (location.hash === "#voz") setPestana("voz");
     if (location.hash === "#trabajo") setPestana("trabajo");
@@ -126,6 +128,7 @@ export default function Panel() {
         <button className={`btn ${pestana === "agua" ? "" : "claro"}`} onClick={() => setPestana("agua")}>Agua</button>
         <button className={`btn ${pestana === "trueque" ? "" : "claro"}`} onClick={() => setPestana("trueque")}>Trueque</button>
         {config.secciones.emprendedores.activa && <button className={`btn ${pestana === "emprendedores" ? "" : "claro"}`} onClick={() => setPestana("emprendedores")}>Emprendedores</button>}
+        <button className={`btn ${pestana === "novedad" ? "" : "claro"}`} onClick={() => setPestana("novedad")}>Novedades</button>
         <button className={`btn ${pestana === "escuelas" ? "" : "claro"}`} onClick={() => setPestana("escuelas")}>Escuelas</button>
         <button className={`btn ${pestana === "portada" ? "" : "claro"}`} onClick={() => setPestana("portada")}>Portada</button>
         <button className={`btn ${pestana === "voz" ? "" : "claro"}`} onClick={() => setPestana("voz")}>La Voz de Lomas</button>
@@ -141,6 +144,7 @@ export default function Panel() {
       {pestana === "barrios" && <PanelBarrios />}
       {pestana === "trueque" && <PanelTrueque />}
       {pestana === "emprendedores" && config.secciones.emprendedores.activa && <PanelEmprendedores />}
+      {pestana === "novedad" && <PanelNovedad />}
       {pestana === "escuelas" && <PanelEscuelas />}
       {pestana === "portada" && <PanelPortada />}
       {pestana === "voz" && <PanelVoz />}

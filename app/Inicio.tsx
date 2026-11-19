@@ -242,6 +242,8 @@ export default function Inicio() {
     setVista(v);
     window.scrollTo({ top: 0 });
   }, []);
+  // El aviso de novedades (cartelito de arriba) pide abrir una sección: se abre como si se hubiera tocado su botón
+  useEffect(() => { const f = (e: Event) => { const v = (e as CustomEvent<string>).detail; if (typeof v === "string" && /^[a-z0-9][a-z0-9:-]{0,40}$/.test(v)) abrir(v); }; window.addEventListener("lomas:abrir", f); return () => window.removeEventListener("lomas:abrir", f); }, [abrir]);
   const volver = useCallback(() => {
     if (history.state?.lomasHoy) history.back();
     else setVista(null);
