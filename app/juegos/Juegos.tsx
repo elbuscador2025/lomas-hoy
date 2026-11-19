@@ -9,6 +9,7 @@ const TaTeTi = dynamic(() => import("./TaTeTi"), { ssr: false });
 const Peques = dynamic(() => import("./peques/Peques"), { ssr: false });
 const Cosmo = dynamic(() => import("./cosmo/Cosmo"), { ssr: false });
 const Obra = dynamic(() => import("./obra/Obra"), { ssr: false });
+const Autopista = dynamic(() => import("./autopista/Autopista"), { ssr: false });
 
 // Sección "Juegos". Para sumar un juego nuevo: crear su componente en esta carpeta y agregarlo a esta lista (nada más hay que tocar).
 export type Juego = { id: string; nombre: string; emoji: string; descripcion: string; Componente: ComponentType };
@@ -17,6 +18,7 @@ export const JUEGOS: Juego[] = [
   { id: "viborita", nombre: "La Viborita", emoji: "🐍", descripcion: "Comé frutas y crecé sin chocarte", Componente: Viborita },
   { id: "cosmo", nombre: "Cosmo Lomas", emoji: "🚀", descripcion: "Naves contra invasores: defendé el cielo", Componente: Cosmo },
   { id: "obra", nombre: "Zafá Lomas", emoji: "🐶", descripcion: "Trepá la obra y esquivá las pelotas del perro", Componente: Obra },
+  { id: "autopista", nombre: "Carrera de Autopista", emoji: "🚛", descripcion: "Manejá un camión por la autopista, esquivá el tráfico y escuchá tu música", Componente: Autopista },
   { id: "tateti", nombre: "Ta-Te-Ti", emoji: "⭕", descripcion: "Contra la compu o entre dos", Componente: TaTeTi },
   // Pantalla completa propia (modo chicos): Inicio.tsx la abre aparte, sin la barra de la app.
   { id: "peques", nombre: "Pequeños creativos", emoji: "🧸", descripcion: "Para chicos de 2 a 4 años: pintar y aprender", Componente: Peques },

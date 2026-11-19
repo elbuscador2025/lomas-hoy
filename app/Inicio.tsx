@@ -27,7 +27,8 @@ import ListaJuegos, { JUEGOS } from "./juegos/Juegos";
 import dynamic from "next/dynamic";
 const Peques = dynamic(() => import("./juegos/peques/Peques"), { ssr: false });
 const Cosmo = dynamic(() => import("./juegos/cosmo/Cosmo"), { ssr: false });
-const Obra = dynamic(() => import("./juegos/obra/Obra"), { ssr: false }); // modo chicos: se descarga recién al abrirlo
+const Obra = dynamic(() => import("./juegos/obra/Obra"), { ssr: false });
+const Autopista = dynamic(() => import("./juegos/autopista/Autopista"), { ssr: false }); // pantalla completa: se descarga recién al abrirlo // modo chicos: se descarga recién al abrirlo
 import Castracion from "./Castracion";
 import Emprendedores from "./Emprendedores";
 import DeportesPantalla from "./Deportes";
@@ -969,6 +970,8 @@ export default function Inicio() {
     );
 
   if (vista === "juego-obra") return <Obra onSalir={volver} />; // pantalla completa, sin la barra de la app
+
+  if (vista === "juego-autopista") return <Autopista onSalir={volver} />; // pantalla completa, solo vertical
 
   if (vista === "juego-cosmo") return <Cosmo onSalir={volver} />; // pantalla completa, sin la barra de la app
 
