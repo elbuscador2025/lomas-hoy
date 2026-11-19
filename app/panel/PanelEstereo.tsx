@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { upload } from "@vercel/blob/client";
+import { uploadPresigned } from "@vercel/blob/client";
 import { post } from "./api";
 import { MAX_BYTES_ESTEREO, esMp3, nombreDeArchivo } from "@/lib/estereo-comun";
 
@@ -28,7 +28,7 @@ export default function PanelEstereo() {
     setSubiendo(true); setAvance(0);
     try {
       const nombreSeguro = f.name.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9._ -]/g, "_").slice(-80);
-      const blob = await upload(`estereo/${nombreSeguro}`, f, { access: "public", handleUploadUrl: "/api/panel/estereo/subir", contentType: "audio/mpeg", onUploadProgress: (p) => setAvance(Math.round(p.percentage)) });
+      const blob = await uploadPresigned(`estereo/${nombreSeguro}`, f, { access: "public", handleUploadUrl: "/api/panel/estereo/subir", contentType: "audio/mpeg", onUploadProgress: (p) => setAvance(Math.round(p.percentage)) });
       const r = await post("/api/panel/estereo", { accion: "guardar", url: blob.url, nombre: nombreDeArchivo(f.name) });
       const j = await r.json().catch(() => ({}));
       if (!j.ok) return setMsg({ ok: false, t: j.error || "No se pudo guardar." });
